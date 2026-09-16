@@ -1,12 +1,15 @@
 name: 发布主题
 
-# BRAT（Beta Reviewers Auto-update Tool）只认 GitHub Release 上的两个附件：
-#   manifest.json 与 theme.css
-# 主题【不需要】versions.json —— 那是插件的机制，主题没有版本清单文件。
+# Obsidian 社区目录要求：GitHub Release 的 tag 必须与 manifest.json 的 version
+# 【完全一致】，即 1.0.4 而不是 v1.0.4 —— 它靠这个 tag 定位安装资源。
+# 本项目最初沿用 Git 社区的 v 前缀惯例，导致目录报错：
+#   「没有版本与您的清单版本匹配」
 on:
   push:
     tags:
-      - 'v*'
+      # 只匹配以数字开头的 tag（如 1.0.4）。刻意不匹配 v1.0.4：
+      # 带 v 前缀的 tag 对 Obsidian 而言等于不存在。
+      - '[0-9]*'
 
 permissions:
   contents: write
@@ -35,22 +38,23 @@ jobs:
       - name: 主题名合规自查
         run: node tools/check-name.mjs
 
-      - name: 校对 manifest 与 tag 版本一致
+      # 硬性把关：tag 与 manifest.version 必须逐字符相同。
+      # 这是 Obsidian 目录识别发布版本的唯一依据，写错就等于没发布。
+      - name: 校对 tag 与 manifest.version 完全一致
         run: |
-          TAG=${GITHUB_REF_NAME#v}
+          TAG="$GITHUB_REF_NAME"
           PKG=$(node -p 'require("./manifest.json").version')
-          echo "tag=$TAG  manifest=$PKG"
+          echo "tag=$TAG  manifest.version=$PKG"
           if [ "$TAG" != "$PKG" ]; then
-            echo "::error::tag $TAG 与 manifest.json 的版本 $PKG 不一致，请先同步版本号"
+            echo "::error::tag $TAG 与 manifest.json 的 version $PKG 不一致"
+            echo "::error::Obsidian 要求两者完全相同且不带 v 前缀，否则社区目录无法识别该发布版本"
             exit 1
           fi
 
       # 坑位说明：这里必须用【单引号】包住 node -p 的表达式。
       # 曾写成 echo "theme_name=$(node -p \"require('./manifest.json').name\")"，
-      # 在 YAML 里转义后内层双引号会提前结束 shell 字符串，报
-      #   bash: syntax error near unexpected token `('  → 整个发布流程失败。
-      # 多行块 + 单引号才是安全写法。
-      - name: 读取主题名（避免在 workflow 里硬编码，改名后自动同步）
+      # 转义后内层双引号提前结束 shell 字符串，报 syntax error near `('，发布失败。
+      - name: 读取主题名（避免硬编码，改名后自动同步）
         id: meta
         run: |
           THEME_NAME=$(node -p 'require("./manifest.json").name')
