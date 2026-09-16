@@ -46,9 +46,16 @@ function collectCss(dir) {
     if (entry.isDirectory()) out.push(...collectCss(full));
     else if (entry.name.endsWith('.css')) out.push(full);
   }
-  return out.sort((a, b) =>
-    path.relative(SRC, a).localeCompare(path.relative(SRC, b), 'en')
-  );
+  /* 用【码位序】而不是 localeCompare 排序。
+   * localeCompare 的结果取决于运行环境的 ICU/语言数据版本，不同 Node 版本或
+   * 不同 locale 下，对含连字符与数字前缀的文件名可能给出不同顺序 —— 那会让
+   * CI 构建出的 theme.css 与本地不同（内容顺序变了，hash 就不一样）。
+   * 直接比较字符串走的是码位序，跨平台、跨 Node 版本完全确定。 */
+  return out.sort((a, b) => {
+    const ra = path.relative(SRC, a);
+    const rb = path.relative(SRC, b);
+    return ra < rb ? -1 : ra > rb ? 1 : 0;
+  });
 }
 
 /* ---------------------------------------------------------------------------
