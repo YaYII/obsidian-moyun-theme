@@ -139,6 +139,8 @@
   --my-cyber-amber-soft:  rgb(255 194 71 / 0.14);
   --my-cyber-shadow:      rgb(34 224 255 / 0.10);
   --my-cyber-line-soft:   rgb(34 224 255 / 0.34);   /* 生命线等「背景性的线」 */
+  /* 画布与网格也进令牌：换配色族时画布底色要一起换，否则辉光会「浮」起来 */
+  --my-cyber-bg-deep:     #070b12;
 }
 
 /* ==========================================================================
@@ -494,3 +496,70 @@ body.my-tone-songyan {
 .theme-dark.my-tone-yanzhi   { --my-accent: var(--my-accent-custom, var(--my-yanzhi-300));   --my-accent-hover: #eeb3c4; --my-accent-active: var(--my-yanzhi-400); }
 .theme-dark.my-tone-songyan  { --my-accent: var(--my-accent-custom, var(--my-songyan-300));  --my-accent-hover: #b5b5b2; --my-accent-active: var(--my-songyan-400); }
 .theme-dark.my-tone-qinghua  { --my-accent: var(--my-accent-custom, var(--my-qinghua-300));  --my-accent-hover: #a3c2e3; --my-accent-active: var(--my-qinghua-400); }
+
+/* ==========================================================================
+ * F. 图表 · 赛博霓虹的配色族
+ * --------------------------------------------------------------------------
+ * 与八大韵色同理：骨架（描边/发光/画布/网格/字号）只写一遍，配色做成可切换的
+ * 变量组。每一组只覆盖颜色，不动任何布局与几何 —— 这样「加一套配色」的成本
+ * 就是十来行变量，而不是复制一整层 CSS。
+ *
+ * 配色族都放在这里而不是各模块里：颜色值的唯一出处是令牌层。
+ * ======================================================================== */
+
+/* ① 矩阵翠绿 —— 终端荧光绿，最「黑客」的一套 */
+.my-mermaid-cyber-matrix {
+  --my-cyber-bg:      #050a08;
+  --my-cyber-panel:   #08130e;
+  --my-cyber-cyan:    #3bff9e;   /* 主色位（这里放绿） */
+  --my-cyber-magenta: #d4ff3d;   /* 次色位 */
+  --my-cyber-amber:   #ffd24a;
+  --my-cyber-text:    #e8fff2;
+  --my-cyber-dim:     #7fc9a2;
+  --my-cyber-grid:            rgb(59 255 158 / 0.07);
+  --my-cyber-border:          rgb(59 255 158 / 0.35);
+  --my-cyber-glow:            rgb(59 255 158 / 0.55);
+  --my-cyber-glow-strong:     rgb(59 255 158 / 0.85);
+  --my-cyber-magenta-glow:    rgb(212 255 61 / 0.60);
+  --my-cyber-amber-soft:      rgb(255 210 74 / 0.14);
+  --my-cyber-shadow:          rgb(59 255 158 / 0.10);
+  --my-cyber-line-soft:       rgb(59 255 158 / 0.34);
+}
+
+/* ② 紫粉 —— 合成波（synthwave）：紫罗兰 + 品红 */
+.my-mermaid-cyber-violet {
+  --my-cyber-bg:      #0a0714;
+  --my-cyber-panel:   #120c22;
+  --my-cyber-cyan:    #b083ff;
+  --my-cyber-magenta: #ff5fd2;
+  --my-cyber-amber:   #ffd36b;
+  --my-cyber-text:    #f4ecff;
+  --my-cyber-dim:     #b39ad6;
+  --my-cyber-grid:            rgb(176 131 255 / 0.08);
+  --my-cyber-border:          rgb(176 131 255 / 0.35);
+  --my-cyber-glow:            rgb(176 131 255 / 0.55);
+  --my-cyber-glow-strong:     rgb(176 131 255 / 0.85);
+  --my-cyber-magenta-glow:    rgb(255 95 210 / 0.60);
+  --my-cyber-amber-soft:      rgb(255 211 107 / 0.14);
+  --my-cyber-shadow:          rgb(176 131 255 / 0.12);
+  --my-cyber-line-soft:       rgb(176 131 255 / 0.34);
+}
+
+/* ③ 琥珀 —— 暖色终端：长时间看比青蓝柔和，适合夜间长文 */
+.my-mermaid-cyber-amber {
+  --my-cyber-bg:      #0d0906;
+  --my-cyber-panel:   #17100a;
+  --my-cyber-cyan:    #ffb04a;
+  --my-cyber-magenta: #ff7a5c;
+  --my-cyber-amber:   #ffe08a;
+  --my-cyber-text:    #fff2e2;
+  --my-cyber-dim:     #d3a77c;
+  --my-cyber-grid:            rgb(255 176 74 / 0.08);
+  --my-cyber-border:          rgb(255 176 74 / 0.35);
+  --my-cyber-glow:            rgb(255 176 74 / 0.55);
+  --my-cyber-glow-strong:     rgb(255 176 74 / 0.85);
+  --my-cyber-magenta-glow:    rgb(255 122 92 / 0.60);
+  --my-cyber-amber-soft:      rgb(255 224 138 / 0.14);
+  --my-cyber-shadow:          rgb(255 176 74 / 0.12);
+  --my-cyber-line-soft:       rgb(255 176 74 / 0.34);
+}

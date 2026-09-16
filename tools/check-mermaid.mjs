@@ -98,7 +98,11 @@ const DIAGRAMS = {
 /* 两套图表风格都要过检查：风格只该改变观感，不该改变可读性 */
 const STYLES = [
   { key: 'ink', cls: 'my-mermaid-ink', label: '墨韵' },
-  { key: 'cyber', cls: 'my-mermaid-cyber', label: '赛博霓虹' },
+  { key: 'cyber', cls: 'my-mermaid-cyber', label: '赛博·青蓝' },
+  { key: 'cyber-matrix', cls: 'my-mermaid-cyber-matrix', label: '赛博·矩阵翠绿' },
+  { key: 'cyber-violet', cls: 'my-mermaid-cyber-violet', label: '赛博·紫粉' },
+  { key: 'cyber-amber', cls: 'my-mermaid-cyber-amber', label: '赛博·琥珀' },
+  { key: 'line', cls: 'my-mermaid-line', label: '极简·黑白线框' },
 ];
 
 /* 对比度阈值：正文级 4.5（WCAG AA），次级信息 3.0 */
@@ -119,8 +123,8 @@ for (const mode of ['dark', 'light']) {
   const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, deviceScaleFactor: 2 });
   await page.goto(HARNESS, { waitUntil: 'load' });
   await page.addScriptTag({ path: MERMAID });
-  const rows = await page.evaluate(async ({ diagrams, mode, styleCls }) => {
-    document.body.classList.remove('theme-dark', 'theme-light', 'my-mermaid-ink', 'my-mermaid-cyber');
+  const rows = await page.evaluate(async ({ diagrams, mode, styleCls, styles }) => {
+    document.body.classList.remove('theme-dark', 'theme-light', ...styles.map((s) => s.cls));
     document.body.classList.add('theme-' + mode, styleCls);
     document.documentElement.dataset.theme = mode;
     await new Promise((r) => setTimeout(r, 80));
@@ -249,7 +253,7 @@ for (const mode of ['dark', 'light']) {
       }
     }
     return { rows: out, filters };
-  }, { diagrams: DIAGRAMS, mode, styleCls: style.cls });
+  }, { diagrams: DIAGRAMS, mode, styleCls: style.cls, styles: STYLES });
 
   /* —— 像素级校验：计算样式必须与屏幕像素一致 ——
    * 这一条是被「Obsidian 给深色 Mermaid SVG 加 invert 反相滤镜」坑出来的：
@@ -302,6 +306,10 @@ for (const mode of ['dark', 'light']) {
   for (const p of painted) {
     const want = parseRgb(p.fill);
     if (!want) continue;
+    /* 透明的填充无法预测像素：屏幕上看到的是它后面的东西。
+     * 「极简·黑白线框」风格刻意把节点填充设为 transparent，
+     * 若照旧对拍会得到「计算透明、屏幕是纸色」这种假失败。 */
+    if (want.length > 3 && want[3] < 1) continue;
     const diff = Math.max(Math.abs(want[0] - p.painted[0]), Math.abs(want[1] - p.painted[1]), Math.abs(want[2] - p.painted[2]));
     if (diff > 16) {
       failures.push({

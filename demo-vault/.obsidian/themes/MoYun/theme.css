@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /* ============================================================================
- * MoYun v1.0.9 —— 中文优先的 Obsidian 主题
+ * MoYun v1.1.0 —— 中文优先的 Obsidian 主题
  * 
  * 本文件由 build.mjs 自动生成，请勿直接编辑。
  * 源码位于 src/，修改后执行：node build.mjs
@@ -1584,15 +1584,23 @@ settings:
   -
     id: my-mermaid-style
     title: 图表风格
-    description: 墨韵＝与主题同源的纸面插图，文字与线带柔和辉光；赛博＝霓虹深色画布，线条与文字发出青蓝镭射光（画布恒定深色，不随明暗切换）。两种风格都保证文字对比度达标。
+    description: 墨韵＝与主题同源的纸面插图，描边与辉光取自「🎨 配色 → 主题色」，选朱砂图就变红、选竹青就变绿；赛博＝霓虹深色画布，线条与文字发光，另含四套配色（画布恒定深色，不随明暗切换）；极简＝纯黑白线框，适合打印与正式公文。所有风格都保证文字对比度达标。
     type: class-select
     allowEmpty: false
     default: my-mermaid-ink
     options:
       - value: my-mermaid-ink
-        label: 墨韵（纸面 + 柔和辉光）
+        label: 墨韵（跟随主题色 · 八韵通用）
       - value: my-mermaid-cyber
-        label: 赛博霓虹（深色画布 + 镭射光）
+        label: 赛博 · 青蓝（默认霓虹）
+      - value: my-mermaid-cyber-matrix
+        label: 赛博 · 矩阵翠绿
+      - value: my-mermaid-cyber-violet
+        label: 赛博 · 紫粉合成波
+      - value: my-mermaid-cyber-amber
+        label: 赛博 · 琥珀暖终端
+      - value: my-mermaid-line
+        label: 极简 · 黑白线框
   -
     id: my-rainbow-folders
     title: 彩虹文件夹
@@ -1906,6 +1914,8 @@ body.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-line:hover .cm-fo
   --my-cyber-amber-soft:  rgb(255 194 71 / 0.14);
   --my-cyber-shadow:      rgb(34 224 255 / 0.10);
   --my-cyber-line-soft:   rgb(34 224 255 / 0.34);   /* 生命线等「背景性的线」 */
+  /* 画布与网格也进令牌：换配色族时画布底色要一起换，否则辉光会「浮」起来 */
+  --my-cyber-bg-deep:     #070b12;
 }
 
 /* ==========================================================================
@@ -2261,6 +2271,73 @@ body.my-tone-songyan {
 .theme-dark.my-tone-yanzhi   { --my-accent: var(--my-accent-custom, var(--my-yanzhi-300));   --my-accent-hover: #eeb3c4; --my-accent-active: var(--my-yanzhi-400); }
 .theme-dark.my-tone-songyan  { --my-accent: var(--my-accent-custom, var(--my-songyan-300));  --my-accent-hover: #b5b5b2; --my-accent-active: var(--my-songyan-400); }
 .theme-dark.my-tone-qinghua  { --my-accent: var(--my-accent-custom, var(--my-qinghua-300));  --my-accent-hover: #a3c2e3; --my-accent-active: var(--my-qinghua-400); }
+
+/* ==========================================================================
+ * F. 图表 · 赛博霓虹的配色族
+ * --------------------------------------------------------------------------
+ * 与八大韵色同理：骨架（描边/发光/画布/网格/字号）只写一遍，配色做成可切换的
+ * 变量组。每一组只覆盖颜色，不动任何布局与几何 —— 这样「加一套配色」的成本
+ * 就是十来行变量，而不是复制一整层 CSS。
+ *
+ * 配色族都放在这里而不是各模块里：颜色值的唯一出处是令牌层。
+ * ======================================================================== */
+
+/* ① 矩阵翠绿 —— 终端荧光绿，最「黑客」的一套 */
+.my-mermaid-cyber-matrix {
+  --my-cyber-bg:      #050a08;
+  --my-cyber-panel:   #08130e;
+  --my-cyber-cyan:    #3bff9e;   /* 主色位（这里放绿） */
+  --my-cyber-magenta: #d4ff3d;   /* 次色位 */
+  --my-cyber-amber:   #ffd24a;
+  --my-cyber-text:    #e8fff2;
+  --my-cyber-dim:     #7fc9a2;
+  --my-cyber-grid:            rgb(59 255 158 / 0.07);
+  --my-cyber-border:          rgb(59 255 158 / 0.35);
+  --my-cyber-glow:            rgb(59 255 158 / 0.55);
+  --my-cyber-glow-strong:     rgb(59 255 158 / 0.85);
+  --my-cyber-magenta-glow:    rgb(212 255 61 / 0.60);
+  --my-cyber-amber-soft:      rgb(255 210 74 / 0.14);
+  --my-cyber-shadow:          rgb(59 255 158 / 0.10);
+  --my-cyber-line-soft:       rgb(59 255 158 / 0.34);
+}
+
+/* ② 紫粉 —— 合成波（synthwave）：紫罗兰 + 品红 */
+.my-mermaid-cyber-violet {
+  --my-cyber-bg:      #0a0714;
+  --my-cyber-panel:   #120c22;
+  --my-cyber-cyan:    #b083ff;
+  --my-cyber-magenta: #ff5fd2;
+  --my-cyber-amber:   #ffd36b;
+  --my-cyber-text:    #f4ecff;
+  --my-cyber-dim:     #b39ad6;
+  --my-cyber-grid:            rgb(176 131 255 / 0.08);
+  --my-cyber-border:          rgb(176 131 255 / 0.35);
+  --my-cyber-glow:            rgb(176 131 255 / 0.55);
+  --my-cyber-glow-strong:     rgb(176 131 255 / 0.85);
+  --my-cyber-magenta-glow:    rgb(255 95 210 / 0.60);
+  --my-cyber-amber-soft:      rgb(255 211 107 / 0.14);
+  --my-cyber-shadow:          rgb(176 131 255 / 0.12);
+  --my-cyber-line-soft:       rgb(176 131 255 / 0.34);
+}
+
+/* ③ 琥珀 —— 暖色终端：长时间看比青蓝柔和，适合夜间长文 */
+.my-mermaid-cyber-amber {
+  --my-cyber-bg:      #0d0906;
+  --my-cyber-panel:   #17100a;
+  --my-cyber-cyan:    #ffb04a;
+  --my-cyber-magenta: #ff7a5c;
+  --my-cyber-amber:   #ffe08a;
+  --my-cyber-text:    #fff2e2;
+  --my-cyber-dim:     #d3a77c;
+  --my-cyber-grid:            rgb(255 176 74 / 0.08);
+  --my-cyber-border:          rgb(255 176 74 / 0.35);
+  --my-cyber-glow:            rgb(255 176 74 / 0.55);
+  --my-cyber-glow-strong:     rgb(255 176 74 / 0.85);
+  --my-cyber-magenta-glow:    rgb(255 122 92 / 0.60);
+  --my-cyber-amber-soft:      rgb(255 224 138 / 0.14);
+  --my-cyber-shadow:          rgb(255 176 74 / 0.12);
+  --my-cyber-line-soft:       rgb(255 176 74 / 0.34);
+}
 
 /* ################ 模块：10-foundation/reset.css ################ */
 
@@ -10155,9 +10232,10 @@ body.theme-dark .excalidraw,
  * 「用 CSS 变量改配色」的入口。自我约束：只覆盖颜色 / 描边 / 字号，不碰几何布局。
  * ========================================================================== */
 
-/* @important-budget 130 — Mermaid 把配色与文字色内联进 SVG 内部的 ID 选择器样式，外部 CSS 只能靠 !important 覆盖；
- * 赛博风格另需整层覆盖（body.my-mermaid-cyber 前缀已提升选择器权重，但对手是 ID 选择器，仍需 !important） */
-
+/* @important-budget 190 — Mermaid 把配色与文字色内联进 SVG 内部的 ID 选择器样式，外部 CSS 只能靠 !important 覆盖。
+ * 墨韵风格只需覆盖颜色；赛博家族与极简线框需要「整层接管」——画布、网格、辉光、
+ * 打印回落都要显式改写，因此预算比墨韵高得多。选择器前缀已提升权重，
+ * 但对手是 ID 选择器，仍必须 !important。只覆盖颜色 / 描边 / 字号，不碰几何布局。 */
 /* --------------------------------------------------------------------------
  * 一、图形内文字：fill 与 color 必须一起覆盖（用户报告「文字看不清」的根因）
  * ----------------------------------------------------------------------------
@@ -10502,7 +10580,7 @@ body.theme-dark .excalidraw,
  *      会明显发虚，彩色只留给描边与次级信息，正文保持锐利。
  * 对比度由 tools/check-mermaid.mjs 逐元素实测把关（≥4.5:1）。
  * ------------------------------------------------------------------------ */
-body.my-mermaid-cyber .mermaid {
+body[class*="my-mermaid-cyber"] .mermaid {
   background: var(--my-cyber-bg);
   /* 网格底纹：赛博感的来源不是颜色多，而是「有结构的光」 */
   background-image:
@@ -10516,186 +10594,285 @@ body.my-mermaid-cyber .mermaid {
 }
 
 /* 文字：冷白 + 青蓝辉光。载体与基础层一致，一个都不能漏。 */
-body.my-mermaid-cyber .mermaid svg {
+body[class*="my-mermaid-cyber"] .mermaid svg {
   fill: var(--my-cyber-text) !important;
   color: var(--my-cyber-text) !important;
 }
 
-body.my-mermaid-cyber .mermaid svg text,
-body.my-mermaid-cyber .mermaid svg tspan,
-body.my-mermaid-cyber .mermaid svg span,
-body.my-mermaid-cyber .mermaid svg p,
-body.my-mermaid-cyber .mermaid svg div,
-body.my-mermaid-cyber .mermaid .nodeLabel,
-body.my-mermaid-cyber .mermaid .labelText {
+body[class*="my-mermaid-cyber"] .mermaid svg text,
+body[class*="my-mermaid-cyber"] .mermaid svg tspan,
+body[class*="my-mermaid-cyber"] .mermaid svg span,
+body[class*="my-mermaid-cyber"] .mermaid svg p,
+body[class*="my-mermaid-cyber"] .mermaid svg div,
+body[class*="my-mermaid-cyber"] .mermaid .nodeLabel,
+body[class*="my-mermaid-cyber"] .mermaid .labelText {
   fill: var(--my-cyber-text) !important;
   color: var(--my-cyber-text) !important;
 }
 
-body.my-mermaid-cyber .mermaid foreignObject div,
-body.my-mermaid-cyber .mermaid foreignObject span,
-body.my-mermaid-cyber .mermaid foreignObject p,
-body.my-mermaid-cyber .mermaid .nodeLabel {
+body[class*="my-mermaid-cyber"] .mermaid foreignObject div,
+body[class*="my-mermaid-cyber"] .mermaid foreignObject span,
+body[class*="my-mermaid-cyber"] .mermaid foreignObject p,
+body[class*="my-mermaid-cyber"] .mermaid .nodeLabel {
   text-shadow: 0 0 10px var(--my-cyber-glow-strong);
 }
 
-body.my-mermaid-cyber .mermaid svg text {
+body[class*="my-mermaid-cyber"] .mermaid svg text {
   filter: drop-shadow(0 0 6px var(--my-cyber-glow-strong));
 }
 
 /* 节点：不透明深色面板 + 青蓝描边 + 外发光（填充不透明才能遮住穿过的连线） */
-body.my-mermaid-cyber .mermaid .node rect,
-body.my-mermaid-cyber .mermaid .node circle,
-body.my-mermaid-cyber .mermaid .node ellipse,
-body.my-mermaid-cyber .mermaid .node polygon,
-body.my-mermaid-cyber .mermaid .node path,
-body.my-mermaid-cyber .mermaid .labelBox,
-body.my-mermaid-cyber .mermaid .actor,
-body.my-mermaid-cyber .mermaid .statediagram-state rect,
-body.my-mermaid-cyber .mermaid .classGroup rect {
+body[class*="my-mermaid-cyber"] .mermaid .node rect,
+body[class*="my-mermaid-cyber"] .mermaid .node circle,
+body[class*="my-mermaid-cyber"] .mermaid .node ellipse,
+body[class*="my-mermaid-cyber"] .mermaid .node polygon,
+body[class*="my-mermaid-cyber"] .mermaid .node path,
+body[class*="my-mermaid-cyber"] .mermaid .labelBox,
+body[class*="my-mermaid-cyber"] .mermaid .actor,
+body[class*="my-mermaid-cyber"] .mermaid .statediagram-state rect,
+body[class*="my-mermaid-cyber"] .mermaid .classGroup rect {
   fill: var(--my-cyber-panel) !important;
   stroke: var(--my-cyber-cyan) !important;
   filter: drop-shadow(0 0 5px var(--my-cyber-glow));
 }
 
 /* 连线与箭头：同色发光，让「数据在流动」这件事看得见 */
-body.my-mermaid-cyber .mermaid .edgePath .path,
-body.my-mermaid-cyber .mermaid .flowchart-link,
-body.my-mermaid-cyber .mermaid .relation,
-body.my-mermaid-cyber .mermaid .messageLine0,
-body.my-mermaid-cyber .mermaid .messageLine1,
-body.my-mermaid-cyber .mermaid .loopLine {
+body[class*="my-mermaid-cyber"] .mermaid .edgePath .path,
+body[class*="my-mermaid-cyber"] .mermaid .flowchart-link,
+body[class*="my-mermaid-cyber"] .mermaid .relation,
+body[class*="my-mermaid-cyber"] .mermaid .messageLine0,
+body[class*="my-mermaid-cyber"] .mermaid .messageLine1,
+body[class*="my-mermaid-cyber"] .mermaid .loopLine {
   stroke: var(--my-cyber-cyan) !important;
   filter: drop-shadow(0 0 4px var(--my-cyber-glow));
 }
 
-body.my-mermaid-cyber .mermaid marker path,
-body.my-mermaid-cyber .mermaid .marker,
-body.my-mermaid-cyber .mermaid .arrowheadPath {
+body[class*="my-mermaid-cyber"] .mermaid marker path,
+body[class*="my-mermaid-cyber"] .mermaid .marker,
+body[class*="my-mermaid-cyber"] .mermaid .arrowheadPath {
   fill: var(--my-cyber-cyan) !important;
   stroke: var(--my-cyber-cyan) !important;
 }
 
 /* 次级信息用品红：与青蓝形成互补色对，这是赛博配色的骨架 */
-body.my-mermaid-cyber .mermaid .edgeLabel,
-body.my-mermaid-cyber .mermaid .edgeLabel p,
-body.my-mermaid-cyber .mermaid .edgeLabel span,
-body.my-mermaid-cyber .mermaid .edgeLabel text {
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel p,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel span,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel text {
   color: var(--my-cyber-magenta) !important;
   fill: var(--my-cyber-magenta) !important;
   background: var(--my-cyber-bg) !important;
   text-shadow: 0 0 8px var(--my-cyber-magenta-glow);
 }
 
-body.my-mermaid-cyber .mermaid .edgeLabel rect,
-body.my-mermaid-cyber .mermaid .edgeLabel foreignObject > div,
-body.my-mermaid-cyber .mermaid .labelBkg {
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel rect,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel foreignObject > div,
+body[class*="my-mermaid-cyber"] .mermaid .labelBkg {
   fill: var(--my-cyber-bg) !important;
   background: var(--my-cyber-bg) !important;
   opacity: 1 !important;
 }
 
 /* 子图：品红虚线框，不铺底 */
-body.my-mermaid-cyber .mermaid .cluster rect {
+body[class*="my-mermaid-cyber"] .mermaid .cluster rect {
   fill: transparent !important;
   stroke: var(--my-cyber-magenta) !important;
   stroke-dasharray: 5 4;
 }
 
-body.my-mermaid-cyber .mermaid .cluster text,
-body.my-mermaid-cyber .mermaid .cluster-label,
-body.my-mermaid-cyber .mermaid .cluster-label text,
-body.my-mermaid-cyber .mermaid .cluster span,
-body.my-mermaid-cyber .mermaid .cluster p {
+body[class*="my-mermaid-cyber"] .mermaid .cluster text,
+body[class*="my-mermaid-cyber"] .mermaid .cluster-label,
+body[class*="my-mermaid-cyber"] .mermaid .cluster-label text,
+body[class*="my-mermaid-cyber"] .mermaid .cluster span,
+body[class*="my-mermaid-cyber"] .mermaid .cluster p {
   fill: var(--my-cyber-magenta) !important;
   color: var(--my-cyber-magenta) !important;
 }
 
 /* 时序图：生命线用暗青，便签用琥珀（唯一允许的暖色，用来打断冷色调） */
-body.my-mermaid-cyber .mermaid .actor-line {
+body[class*="my-mermaid-cyber"] .mermaid .actor-line {
   stroke: var(--my-cyber-line-soft) !important;
   filter: none;
 }
 
-body.my-mermaid-cyber .mermaid .note {
+body[class*="my-mermaid-cyber"] .mermaid .note {
   fill: var(--my-cyber-amber-soft) !important;
   stroke: var(--my-cyber-amber) !important;
 }
 
-body.my-mermaid-cyber .mermaid .noteText,
-body.my-mermaid-cyber .mermaid .noteText tspan {
+body[class*="my-mermaid-cyber"] .mermaid .noteText,
+body[class*="my-mermaid-cyber"] .mermaid .noteText tspan {
   fill: var(--my-cyber-amber) !important;
   color: var(--my-cyber-amber) !important;
 }
 
 /* 甘特 / 饼图 / 坐标轴 */
-body.my-mermaid-cyber .mermaid .task {
+body[class*="my-mermaid-cyber"] .mermaid .task {
   fill: var(--my-cyber-magenta) !important;
   stroke: var(--my-cyber-cyan) !important;
   opacity: 1;
   filter: drop-shadow(0 0 5px var(--my-cyber-magenta-glow));
 }
 
-body.my-mermaid-cyber .mermaid .grid .tick line,
-body.my-mermaid-cyber .mermaid .grid .tick text,
-body.my-mermaid-cyber .mermaid .section {
+body[class*="my-mermaid-cyber"] .mermaid .grid .tick line,
+body[class*="my-mermaid-cyber"] .mermaid .grid .tick text,
+body[class*="my-mermaid-cyber"] .mermaid .section {
   stroke: var(--my-cyber-dim) !important;
   fill: var(--my-cyber-dim) !important;
   color: var(--my-cyber-dim) !important;
 }
 
-body.my-mermaid-cyber .mermaid .pieCircle {
+body[class*="my-mermaid-cyber"] .mermaid .pieCircle {
   stroke: var(--my-cyber-bg) !important;
 }
 
-body.my-mermaid-cyber .mermaid .error-text,
-body.my-mermaid-cyber .mermaid .error-text tspan {
+body[class*="my-mermaid-cyber"] .mermaid .error-text,
+body[class*="my-mermaid-cyber"] .mermaid .error-text tspan {
   fill: var(--my-cyber-amber) !important;
   color: var(--my-cyber-amber) !important;
 }
 
 /* 打印：赛博是屏幕风格，纸面上既费墨又不清晰，一律回落成素色线框 */
 @media print {
-  body.my-mermaid-cyber .mermaid {
+  body[class*="my-mermaid-cyber"] .mermaid {
     background: transparent;
     background-image: none;
     border: none;
     box-shadow: none;
   }
 
-  body.my-mermaid-cyber .mermaid svg text,
-  body.my-mermaid-cyber .mermaid svg tspan,
-  body.my-mermaid-cyber .mermaid svg span,
-  body.my-mermaid-cyber .mermaid svg p,
-  body.my-mermaid-cyber .mermaid svg div,
-  body.my-mermaid-cyber .mermaid .nodeLabel {
+  body[class*="my-mermaid-cyber"] .mermaid svg text,
+  body[class*="my-mermaid-cyber"] .mermaid svg tspan,
+  body[class*="my-mermaid-cyber"] .mermaid svg span,
+  body[class*="my-mermaid-cyber"] .mermaid svg p,
+  body[class*="my-mermaid-cyber"] .mermaid svg div,
+  body[class*="my-mermaid-cyber"] .mermaid .nodeLabel {
     fill: var(--my-print-text) !important;
     color: var(--my-print-text) !important;
     text-shadow: none;
     filter: none;
   }
 
-  body.my-mermaid-cyber .mermaid .node rect,
-  body.my-mermaid-cyber .mermaid .node circle,
-  body.my-mermaid-cyber .mermaid .node ellipse,
-  body.my-mermaid-cyber .mermaid .node polygon,
-  body.my-mermaid-cyber .mermaid .node path,
-  body.my-mermaid-cyber .mermaid .actor {
+  body[class*="my-mermaid-cyber"] .mermaid .node rect,
+  body[class*="my-mermaid-cyber"] .mermaid .node circle,
+  body[class*="my-mermaid-cyber"] .mermaid .node ellipse,
+  body[class*="my-mermaid-cyber"] .mermaid .node polygon,
+  body[class*="my-mermaid-cyber"] .mermaid .node path,
+  body[class*="my-mermaid-cyber"] .mermaid .actor {
     fill: transparent !important;
     stroke: var(--my-print-text) !important;
     filter: none;
   }
 
-  body.my-mermaid-cyber .mermaid .edgePath .path,
-  body.my-mermaid-cyber .mermaid .flowchart-link,
-  body.my-mermaid-cyber .mermaid .relation,
-  body.my-mermaid-cyber .mermaid .messageLine0,
-  body.my-mermaid-cyber .mermaid .messageLine1 {
+  body[class*="my-mermaid-cyber"] .mermaid .edgePath .path,
+  body[class*="my-mermaid-cyber"] .mermaid .flowchart-link,
+  body[class*="my-mermaid-cyber"] .mermaid .relation,
+  body[class*="my-mermaid-cyber"] .mermaid .messageLine0,
+  body[class*="my-mermaid-cyber"] .mermaid .messageLine1 {
     stroke: var(--my-print-text-muted) !important;
     filter: none;
   }
 }
 /* --------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
+ * 八·二、极简线框（body.my-mermaid-line）
+ * ----------------------------------------------------------------------------
+ * 面向「要打印 / 要贴进文档 / 要绝对安静」的场景：只有黑白线条 ——
+ * 没有颜色、没有辉光、没有底纹。节点用透明填充 + 加粗实线，连线用次级文字色。
+ * 它和公文体相处得最自然：插图不该比正文更抢眼。
+ * 注意要把基础层的辉光显式关掉（filter / text-shadow），否则「极简」会漏光。
+ * ------------------------------------------------------------------------ */
+body.my-mermaid-line .mermaid {
+  background: transparent;
+  border: none;
+}
+
+body.my-mermaid-line .mermaid svg,
+body.my-mermaid-line .mermaid svg text,
+body.my-mermaid-line .mermaid svg tspan,
+body.my-mermaid-line .mermaid svg span,
+body.my-mermaid-line .mermaid svg p,
+body.my-mermaid-line .mermaid svg div,
+body.my-mermaid-line .mermaid .nodeLabel,
+body.my-mermaid-line .mermaid .labelText {
+  fill: var(--my-text-primary) !important;
+  color: var(--my-text-primary) !important;
+  filter: none;
+  text-shadow: none;
+}
+
+body.my-mermaid-line .mermaid .node rect,
+body.my-mermaid-line .mermaid .node circle,
+body.my-mermaid-line .mermaid .node ellipse,
+body.my-mermaid-line .mermaid .node polygon,
+body.my-mermaid-line .mermaid .node path,
+body.my-mermaid-line .mermaid .labelBox,
+body.my-mermaid-line .mermaid .actor,
+body.my-mermaid-line .mermaid .statediagram-state rect,
+body.my-mermaid-line .mermaid .classGroup rect {
+  fill: transparent !important;
+  stroke: var(--my-text-primary) !important;
+  stroke-width: 1.5px !important;
+  filter: none;
+}
+
+body.my-mermaid-line .mermaid .edgePath .path,
+body.my-mermaid-line .mermaid .flowchart-link,
+body.my-mermaid-line .mermaid .relation,
+body.my-mermaid-line .mermaid .messageLine0,
+body.my-mermaid-line .mermaid .messageLine1,
+body.my-mermaid-line .mermaid .loopLine,
+body.my-mermaid-line .mermaid .actor-line {
+  stroke: var(--my-text-secondary) !important;
+  filter: none;
+}
+
+body.my-mermaid-line .mermaid marker path,
+body.my-mermaid-line .mermaid .marker,
+body.my-mermaid-line .mermaid .arrowheadPath {
+  fill: var(--my-text-secondary) !important;
+  stroke: var(--my-text-secondary) !important;
+}
+
+body.my-mermaid-line .mermaid .cluster rect,
+body.my-mermaid-line .mermaid .statediagram-cluster rect {
+  fill: transparent !important;
+  stroke: var(--my-border-strong) !important;
+  stroke-dasharray: 4 3;
+}
+
+body.my-mermaid-line .mermaid .cluster text,
+body.my-mermaid-line .mermaid .cluster-label,
+body.my-mermaid-line .mermaid .cluster-label text,
+body.my-mermaid-line .mermaid .cluster span,
+body.my-mermaid-line .mermaid .cluster p,
+body.my-mermaid-line .mermaid .edgeLabel,
+body.my-mermaid-line .mermaid .edgeLabel span,
+body.my-mermaid-line .mermaid .edgeLabel p {
+  fill: var(--my-text-secondary) !important;
+  color: var(--my-text-secondary) !important;
+  background: var(--my-surface-primary) !important;
+  text-shadow: none;
+}
+
+body.my-mermaid-line .mermaid .edgeLabel rect,
+body.my-mermaid-line .mermaid .edgeLabel foreignObject > div,
+body.my-mermaid-line .mermaid .labelBkg {
+  fill: var(--my-surface-primary) !important;
+  background: var(--my-surface-primary) !important;
+  opacity: 1 !important;
+}
+
+body.my-mermaid-line .mermaid .note {
+  fill: transparent !important;
+  stroke: var(--my-border-strong) !important;
+}
+
+body.my-mermaid-line .mermaid .task {
+  fill: var(--my-text-secondary) !important;
+  stroke: var(--my-text-secondary) !important;
+  filter: none;
+}
  * 九、打印：图在纸面上不能缩成一团，也不能跨页被切开
  * ------------------------------------------------------------------------ */
 @media print {
