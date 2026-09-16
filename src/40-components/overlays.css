@@ -258,7 +258,7 @@ input.prompt-input:focus-visible {
   gap: var(--my-space-6);
 }
 .prompt-instruction-command {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.9em;
   color: var(--my-text-tertiary);
 }
@@ -292,7 +292,7 @@ input.prompt-input:focus-visible {
 /* 快捷键徽标：等宽字体 + 描边胶囊，与正文命令名区分开 */
 .suggestion-flair,
 .prompt-instruction .suggestion-flair {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   color: var(--my-text-faint);
   background-color: var(--my-surface-secondary);

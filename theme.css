@@ -1,11 +1,11 @@
 @charset "UTF-8";
 /* ============================================================================
- * MoYun v1.0.5 —— 中文优先的 Obsidian 主题
+ * MoYun v1.0.6 —— 中文优先的 Obsidian 主题
  * 
  * 本文件由 build.mjs 自动生成，请勿直接编辑。
  * 源码位于 src/，修改后执行：node build.mjs
  * 
- * 模块数：35
+ * 模块数：36
  * ========================================================================== */
 
 /* ################ 模块：00-tokens/obsidian-map.css ################ */
@@ -226,17 +226,49 @@ body {
   --font-text-theme: var(--my-font-text);
   --font-interface-theme: var(--my-font-ui);
   --font-monospace-theme: var(--my-font-mono);
-  --font-mermaid: var(--my-font-text);
-  --font-text: var(--my-font-text);
-  --font-interface: var(--my-font-ui);
-  --font-monospace: var(--my-font-mono);
-  --font-print: var(--my-font-text);
+  --font-mermaid: var(--font-text);
 
-  --font-text-size: var(--my-font-size-base);
-  --font-ui-smaller: calc(var(--my-font-size-base) * 0.72);
-  --font-ui-small: calc(var(--my-font-size-base) * 0.82);
-  --font-ui-medium: calc(var(--my-font-size-base) * 0.94);
-  --font-ui-large: calc(var(--my-font-size-base) * 1.12);
+  /* ⚠ 刻意【不写】--font-text / --font-interface / --font-monospace / --font-print。
+   * Obsidian 的原生链路是
+   *   --font-text: var(--font-text-override), var(--font-text-theme), var(--font-default)
+   * 用户在「设置 → 外观 → 字体」里选了字体时，Obsidian 写的是 *-override。
+   * 主题一旦直接覆盖 --font-text，就把用户的选择整条吞掉 —— 表现为「在 Obsidian
+   * 里改了字体完全没反应」。只提供 theme 层：用户没选就用墨韵的中文优先栈，
+   * 选了就无条件让位。这正是「第三方主题不该抢走宿主设置」的具体落实。 */
+
+  /* 主题自己的样式同样要跟着用户选择走，所以把 override 串进 effective 令牌。
+   * 顺序与 Obsidian 一致：用户选择 → 主题栈（'??' 是 Obsidian 的空值占位，
+   * 浏览器找不到名为 ?? 的字体，会自然跳到下一项）。 */
+  --my-font-text-effective: var(--font-text-override, '??'), var(--my-font-text);
+  --my-font-ui-effective: var(--font-interface-override, '??'), var(--my-font-ui);
+  --my-font-mono-effective: var(--font-monospace-override, '??'), var(--my-font-mono);
+
+  /* 标题字体必须在 body 作用域定义（要用到上面那几个 effective 令牌，
+   * 而它们在 :root 层拿不到 --font-*-override）。 */
+  --my-font-heading: var(--my-font-heading-choice, var(--my-font-text-effective));
+
+  /* 正文字号 = Obsidian 自带字号 + 分辨率增益。
+   * 刻意【不写】--font-text-size：它是 Obsidian「外观 → 字体大小」的原生出口，
+   * 主题一旦反向覆盖它，就等于把用户的设置吞掉（此前正是如此，表现为"调了没反应"）。
+   * 这里只读它、不写它；--my-font-auto-scale 由 Style Settings 在运行时提供，
+   * 未安装该插件时用 fallback 100（即默认开启自适应）。 */
+  --my-font-size-boost: clamp(
+    0px,
+    calc((100vw - var(--my-font-boost-start)) * var(--my-font-boost-rate)
+      * var(--my-font-auto-scale, 100) / 100),
+    calc(var(--my-font-boost-max) * var(--my-font-auto-scale, 100) / 100)
+  );
+  --my-font-size-base: calc(var(--font-text-size, 16px) + var(--my-font-size-boost));
+
+  /* 界面字号跟随正文，但夹在 15~19px：
+   * 宽 1440 时与原生 15px 基本一致；4K 宽时界面放大到约 17.9px
+   * （原生是死值 15px，在 163 PPI 的 27 寸 4K 屏上同样偏小）。
+   * 夹上限是为了防止用户把正文字号调到 24px 时整个界面失控。 */
+  --my-font-size-ui: clamp(15px, var(--my-font-size-base), 19px);
+  --font-ui-smaller: calc(var(--my-font-size-ui) * 0.72);
+  --font-ui-small: calc(var(--my-font-size-ui) * 0.82);
+  --font-ui-medium: calc(var(--my-font-size-ui) * 0.94);
+  --font-ui-large: calc(var(--my-font-size-ui) * 1.12);
   --font-smallest: 0.7em;
   --font-smaller: 0.8em;
   --font-small: 0.875em;
@@ -310,6 +342,13 @@ body {
  * 因此默认 46rem（约 34 个汉字），而不是英文主题常见的 700px。
  * ======================================================================== */
 body {
+  /* 版心折算：一行 N 个汉字 × 当前字号。
+   * 1440 宽 → 46 × 16.5 ≈ 759px；3840 宽 → 46 × 21.8 ≈ 1003px。
+   * 两种情况都是一行 46 字，读起来的节律完全一致 —— 这是「按分辨率适配」的
+   * 另一半：不只把字放大，还要让版心同步变宽，否则宽屏上会变成窄窄一条。
+   * 宽版心按 1.35 倍折算，与 62rem/46rem 的原始比例保持一致。 */
+  --my-content-width: calc(var(--my-content-chars, 46) * var(--my-font-size-base));
+  --my-content-width-wide: calc(var(--my-content-chars, 46) * 1.35 * var(--my-font-size-base));
   --file-line-width: var(--my-content-width);
   --file-margins: var(--my-editor-padding-y) var(--my-editor-padding-x);
   --file-margins-x: var(--my-editor-padding-x);
@@ -1429,16 +1468,17 @@ settings:
     description: 等宽字体，建议包含中文等宽回退（更纱等宽黑体 / Maple Mono）。
     type: variable-text
     default: '"Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Sarasa Mono SC", "更纱等宽黑体", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace'
+  # 字号基准交给 Obsidian 自带设置（设置 → 外观 → 字体大小），主题只负责
+  # 「按窗口宽度自动放大」这一层补偿，避免两个主人各写一个字号、互相打架。
   -
-    id: my-font-size-base
-    title: 正文字号
-    description: 中文正文推荐 16px 起步；长期阅读可调至 17–18px。
+    id: my-font-auto-scale
+    title: 分辨率自适应
+    description: 窗口越宽字号越大，避免 2K/4K 高分屏上文字过小。100% 为默认曲线，0 为关闭。基准字号请用「设置 → 外观 → 字体大小」调整。
     type: variable-number-slider
-    default: 16
-    min: 12
-    max: 24
-    step: 1
-    format: px
+    default: 100
+    min: 0
+    max: 200
+    step: 10
 
   # ==========================================================================
   # 四、行距与版心
@@ -1469,11 +1509,14 @@ settings:
     step: 0.05
     format: em
   -
-    id: my-content-width
+    id: my-content-chars
     title: 正文行宽
-    description: 中文一行 30～40 字最易阅读（约 46rem）。过宽会导致换行时找不到下一行开头。
-    type: variable-text
-    default: 46rem
+    description: 一行最多几个汉字。中文长文 45～50 字最舒适，窄栏 30～40 字更聚焦。版心会随字号自动等比放大，宽屏上不会变成窄窄一条。
+    type: variable-number-slider
+    default: 46
+    min: 28
+    max: 64
+    step: 2
   -
     id: my-letter-spacing-cjk
     title: 中文字距
@@ -1647,8 +1690,8 @@ body.my-emphasis-dot .markdown-rendered i {
 }
 
 /* —— 标题衬线开关 ——
- * 只改「选择位」，不改令牌定义本身：--my-font-heading 在 tokens.css 里已经写成
- * var(--my-font-heading-choice, var(--my-font-text))。 */
+ * 只改「选择位」，不改令牌定义本身：--my-font-heading 在 obsidian-map.css 里已经
+ * 写成 var(--my-font-heading-choice, var(--my-font-text-effective))。 */
 body.my-heading-serif-toggle {
   --my-font-heading-choice: var(--my-font-heading-serif);
 }
@@ -1768,18 +1811,32 @@ body.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-line:hover .cm-fo
   --my-shadow-l:  0 4px 8px hsl(35 20% 20% / 0.08), 0 12px 32px hsl(35 20% 20% / 0.10);
   --my-shadow-xl: 0 8px 16px hsl(35 20% 20% / 0.10), 0 24px 56px hsl(35 20% 20% / 0.14);
 
-  /* 内容行宽 —— 中文单行 30~40 字最舒适 */
-  --my-content-width: 46rem;
-  --my-content-width-wide: 62rem;
+  /* 内容行宽 —— 中文主题应当用「一行多少个汉字」来表达，而不是 rem：
+   * rem 在宽屏上会因字号放大而让一行塞进更多字，阅读节律被破坏。
+   * 真实宽度在 obsidian-map.css 的 body 作用域按当前字号折算，
+   * 于是 1440 宽与 3840 宽都稳定在 46 字/行。 */
+  --my-content-chars: 46;         /* 一行最多多少汉字（Style Settings 可调） */
+  --my-content-width: 46rem;      /* 兜底值，真实值在 body 作用域重算 */
+  --my-content-width-wide: 62rem; /* 宽版心：表格/代码等需要横向空间的场景 */
   --my-content-width-full: 100%;
 
   /* 编辑器内边距 */
   --my-editor-padding-x: clamp(1.5rem, 5vw, 4rem);
   --my-editor-padding-y: 2.5rem;
 
-  /* 字体大小（由 Style Settings 覆盖 --my-font-size-base） */
-  --my-font-size-base: 16px;
+  /* 字体大小 —— 为什么这里不再是一个写死的 px
+   * ① 分辨率自适应：同一段 16px 正文，在 1080p（1920×1080 / 24"）上字高约 4.4mm，
+   *    在 4K（3840×2160 / 27"）上只剩约 2.5mm —— 等于逼着眼睛看小字。
+   *    CSS 拿不到物理 PPI，但「窗口宽度」是可靠代理：分辨率越高，窗口越宽。
+   *    故按 vw 线性增益，下面四个参数决定这条曲线。
+   * ② 尊重 Obsidian 自带设置：基准值取自原生 --font-text-size（「设置 → 外观 →
+   *    字体大小」写入的变量），主题不再另立一个私有 px 值。
+   * ③ 增益强度由 Style Settings 的「分辨率自适应」控制，调到 0 即完全关闭。 */
+  --my-font-size-base: 16px;      /* 兜底值；真实值在 obsidian-map.css 的 body 作用域重算 */
   --my-font-size-scale: 1.2;
+  --my-font-boost-start: 1200px;  /* 窗口宽于该值才开始放大（笔记本 1200 以下不动） */
+  --my-font-boost-rate: 0.0022;   /* 斜率：窗口每宽 1px，字号增加 0.0022px */
+  --my-font-boost-max: 6px;       /* 放大上限：3840 宽时约 +5.8px（16 → 21.8px） */
 
   /* 行高 */
   --my-line-height-tight:  1.3;
@@ -1829,25 +1886,30 @@ body.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-line:hover .cm-fo
  * ======================================================================== */
 :root {
   /* 正文：优先可变中文黑体，回退经典系统字体 */
-  --my-font-text: "LXGW WenKai Screen", "霞鹜文楷屏幕阅读版", "HarmonyOS Sans SC",
+  /* 主题自带的字体栈（唯一出处）。用 stack- 前缀命名是刻意的：
+   * 它们是「墨韵的兜底选择」，不是最终生效值。 */
+  --my-font-stack-text: "LXGW WenKai Screen", "霞鹜文楷屏幕阅读版", "HarmonyOS Sans SC",
     "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei",
     "Source Han Sans SC", "Noto Sans CJK SC", "Sarasa Gothic SC", "更纱黑体 SC",
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-
   /* 界面：与正文同源，保证一致性 */
-  --my-font-ui: var(--my-font-text);
-
-  /* 标题字体：默认与正文同源。
-   * --my-font-heading-choice 是留给「标题改用衬线字体」这个用户开关的选择位：
-   * 开关只改选择位，令牌本身仍只有一处定义，避免出现两个主人。 */
-  --my-font-heading: var(--my-font-heading-choice, var(--my-font-text));
-  --my-font-heading-serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
-    "SimSun", "STSong", Georgia, serif;
-
+  --my-font-stack-ui: var(--my-font-stack-text);
   /* 代码：等宽优先，含中文等宽回退 */
-  --my-font-mono: "Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code",
+  --my-font-stack-mono: "Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code",
     "Sarasa Mono SC", "更纱等宽黑体", "SFMono-Regular", Consolas, "Liberation Mono",
     "Menlo", monospace;
+
+  /* 用户覆盖位：Style Settings 的「正文字体 / 界面字体 / 代码字体」会直接写这三个
+   * 令牌（插件按 setting id 写同名变量），所以它们必须留在这里。
+   * 但主题自己的样式【不直接消费】它们 —— 消费的是 obsidian-map.css 里的
+   * *-effective 版本，那一层把 Obsidian 原生的用户字体覆盖串在了最前面。 */
+  --my-font-text: var(--my-font-stack-text);
+  --my-font-ui: var(--my-font-stack-ui);
+  --my-font-mono: var(--my-font-stack-mono);
+
+  /* 标题用的衬线字体栈（「标题改用衬线字体」开关的选择位在 settings.css） */
+  --my-font-heading-serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
+    "SimSun", "STSong", Georgia, serif;
 
   /* 字阶（1.2 比例，中文标题不宜差距过大） */
   --my-font-size-xs:  0.786em;
@@ -2230,13 +2292,12 @@ body.my-hr-double .markdown-rendered hr {
 
 /* ==========================================================================
  * 一、字体族落地
- * 通过 --font-*-theme 让主题层生效；用户在「设置 → 外观」里手动指定字体时，
- * Obsidian 会写 --font-*-override，其优先级更高——这是预期行为，尊重用户选择。
- * ======================================================================== */
+ * 字体链路的落点在 00-tokens/obsidian-map.css（--font-*-theme + *-effective）。
+ * 这里曾经有四行把 --font-*-override 指向主题字体 —— 那是错的：override 是
+ * Obsidian 留给【用户选择】的槽位，主题去写它等于把用户的选择反过来盖掉
+ * （注释写的是「尊重用户选择」，代码做的却是相反的事）。
+ * 现在主题只写 theme 层，用户一选就自动让位。正文用 effective 令牌取字体。 */
 body {
-  --font-text-override: var(--my-font-text);
-  --font-interface-override: var(--my-font-ui);
-  --font-monospace-override: var(--my-font-mono);
   --font-print-override: var(--my-font-text);
 }
 
@@ -2249,7 +2310,7 @@ body {
 .markdown-source-view.mod-cm6 .cm-content,
 .markdown-source-view.mod-cm6 .cm-scroller,
 .markdown-reading-view {
-  font-family: var(--my-font-text);
+  font-family: var(--my-font-text-effective);
   font-size: var(--my-font-size-base);
   line-height: var(--my-line-height-relaxed);
   letter-spacing: var(--my-letter-spacing-cjk);
@@ -2550,7 +2611,7 @@ body.my-justify .markdown-rendered li {
 /* 内联代码：中文环境下必须留出足够内边距，并统一等宽字体 */
 .markdown-rendered code,
 .markdown-source-view.mod-cm6 .cm-inline-code {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--code-size);
   letter-spacing: var(--my-letter-spacing-code);
   background-color: var(--my-code-surface);
@@ -2563,7 +2624,7 @@ body.my-justify .markdown-rendered li {
 
 /* 键盘按键（kbd）：做成"实体按键"观感 */
 .markdown-rendered kbd {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.82em;
   padding: 0.14em 0.42em;
   border: 1px solid var(--my-border-strong);
@@ -2808,8 +2869,13 @@ body.my-gov-style {
  * ======================================================================== */
 body.my-gov-style .markdown-rendered,
 body.my-gov-style .markdown-source-view.mod-cm6 .cm-content {
-  /* 西文用 Times，中文回退到仿宋 —— 字体族顺序即可实现按字符分流 */
-  font-family: var(--my-gov-font-latin), var(--my-gov-font-body);
+  /* 西文用 Times，中文回退到仿宋 —— 字体族顺序即可实现按字符分流。
+   * 但用户在「设置 → 外观 → 字体」里显式选过字体时，让他的选择排在最前：
+   * 公文体负责的是【版式规范】（首行缩进、两端对齐、全框线表格、标题字体层级），
+   * 字体只是一项默认值 —— 用户明确表态了就听用户的，否则会再犯一次
+   * 「在 Obsidian 里改了字体没反应」。
+   * 标题刻意不跟随： 「靠字体区分层级」本身就是公文的特征（见下方 h1/h2/h3）。 */
+  font-family: var(--font-text-override, '??'), var(--my-gov-font-latin), var(--my-gov-font-body);
   /* 公文行距：规范为每页 22 行，换算后约 1.75 倍字号；
    * 屏幕阅读再放宽一点到 1.8，与主题通用排版保持一致，避免切换时跳动。 */
   line-height: var(--my-line-height-relaxed);
@@ -2962,6 +3028,7 @@ body.my-gov-style .markdown-rendered table {
   border-radius: 0;
   border-collapse: collapse;
   font-size: 0.95em;
+  line-height: 1.6;
   line-height: 1.5;
   text-align: left;
   margin-block: 0.8em 1.2em;
@@ -2969,11 +3036,21 @@ body.my-gov-style .markdown-rendered table {
 
 body.my-gov-style .markdown-rendered :is(td, th) {
   border: 1px solid currentColor;
-  /* 公文表格内边距紧凑，追求信息密度而非"呼吸感" */
-  padding: 0.35em 0.6em;
+  /* 内边距 0.5em/0.85em ≈ 8px/13.6px（16px 字号下）。
+   * 初版设的 0.35em/0.6em（5.6px/9.6px）偏紧：中文表格的单元格需要足够
+   * 呼吸空间，否则多行内容会糊在一起。这个值参考了 Readmdvue 的 8px/16px ——
+   * 用户拿它作对比，说明那个密度是被认可的。 */
+  padding: 0.5em 0.85em;
   min-width: 4em;
   text-indent: 0;
-  vertical-align: middle;
+  /* top 而非 middle：同一行里有的单元格一行、有的三行时，middle 会让短内容
+   * 垂直居中、长内容顶格，视觉上参差不齐；top 让所有内容从同一基线开始。 */
+  vertical-align: top;
+  /* 长英文 / URL / 数字串的换行保护，避免撑破表格宽度 */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.6;
 }
 
 /* 表头：黑体、居中、无底色（公文表格表头通常不加底色） */
@@ -3015,7 +3092,7 @@ body.my-gov-style .markdown-rendered blockquote {
 
 /* 代码：公文里出现代码/等宽内容时用宋体等宽，保持严肃 */
 body.my-gov-style .markdown-rendered code {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.92em;
   background: transparent;
   border: none;
@@ -3266,7 +3343,7 @@ body.my-gov-style .markdown-rendered .my-gov-redline {
 }
 
 .setting-item-description code {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.92em;
   background-color: var(--my-code-surface);
   border-radius: var(--my-radius-xs);
@@ -3341,7 +3418,7 @@ body.my-gov-style .markdown-rendered .my-gov-redline {
 /* 滑块的值显示（字号、行高等数值）用等宽数字，拖动时不会左右跳动 */
 .style-settings-container .slider-value,
 .style-settings-container input[type='number'] {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-variant-numeric: tabular-nums;
 }
 
@@ -4542,7 +4619,7 @@ body.is-frameless.is-hidden-frameless .titlebar {
   border-radius: 0;
   padding: 0;
   color: var(--code-normal);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--code-size);
   letter-spacing: var(--my-letter-spacing-code);
   white-space: inherit;
@@ -4655,7 +4732,7 @@ body.is-frameless.is-hidden-frameless .titlebar {
   border-radius: var(--my-radius-s);
   background-color: var(--my-surface-elevated);
   color: var(--my-text-secondary);
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--my-font-size-xs);
   line-height: 1.7;
   box-shadow: var(--my-shadow-xs);
@@ -4700,7 +4777,7 @@ body.is-frameless.is-hidden-frameless .titlebar {
   border-radius: var(--my-radius-full);
   background-color: var(--my-surface-elevated);
   color: var(--my-text-tertiary);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   line-height: 1.7;
   letter-spacing: 0.02em;
@@ -4723,7 +4800,7 @@ body.is-frameless.is-hidden-frameless .titlebar {
   padding: var(--my-space-1) var(--my-space-5);
   border-radius: var(--my-radius-full);
   color: var(--my-text-faintest);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   line-height: 1.7;
   pointer-events: none;
@@ -4758,7 +4835,7 @@ body.is-frameless.is-hidden-frameless .titlebar {
 .markdown-source-view.mod-cm6 .cm-lineNumbers .cm-gutterElement {
   padding-inline: var(--my-space-4) var(--my-space-6);
   color: var(--my-text-faintest);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   font-variant-numeric: tabular-nums;
   text-align: end;
@@ -4793,7 +4870,7 @@ body.is-frameless.is-hidden-frameless .titlebar {
  * 避免浏览器把它丢给比例字体造成"半角错位"。 */
 .markdown-rendered pre code,
 .markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   text-autospace: none;
 }
 
@@ -6806,7 +6883,7 @@ input.task-list-item-checkbox[data-task]:not([data-task=" "], [data-task=""], [d
 
 button,
 .btn {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-weight: var(--my-font-weight-medium);
   letter-spacing: 0;
   border-radius: var(--button-radius);
@@ -6905,7 +6982,7 @@ input[type='number'],
 input[type='date'],
 input[type='datetime-local'],
 textarea {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--font-ui-small);
   letter-spacing: 0;
   background-color: var(--input-text-bg-color);
@@ -6955,7 +7032,7 @@ textarea {
 
 select,
 .dropdown {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--font-ui-small);
   background-color: var(--dropdown-background);
   color: var(--my-text-primary);
@@ -7362,7 +7439,7 @@ input.prompt-input:focus-visible {
   gap: var(--my-space-6);
 }
 .prompt-instruction-command {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.9em;
   color: var(--my-text-tertiary);
 }
@@ -7396,7 +7473,7 @@ input.prompt-input:focus-visible {
 /* 快捷键徽标：等宽字体 + 描边胶囊，与正文命令名区分开 */
 .suggestion-flair,
 .prompt-instruction .suggestion-flair {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   color: var(--my-text-faint);
   background-color: var(--my-surface-secondary);
@@ -9240,7 +9317,7 @@ body.theme-dark .markdown-rendered kbd {
 /* 实时预览里的 kbd（源码模式下的行内代码块会渲染为 cm-inline-code，
  * 但用户手写的 <kbd> 会作为 HTML 嵌入渲染，这里给同样的内边距） */
 .markdown-source-view.mod-cm6 kbd {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.82em;
   padding: 0.14em 0.42em;
   border: var(--my-border-width) solid var(--my-border-strong);
@@ -9390,7 +9467,7 @@ body.theme-dark .markdown-rendered kbd {
 }
 
 .dataview.inline-field-key {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.86em;
   color: var(--my-text-tertiary);
 }
@@ -9464,7 +9541,7 @@ body.theme-dark .markdown-rendered kbd {
 }
 
 .dataview-error-message {
-  font-family: var(--my-font-mono); /* 错误信息里常含查询语句，等宽更易比对 */
+  font-family: var(--my-font-mono-effective); /* 错误信息里常含查询语句，等宽更易比对 */
   overflow-wrap: anywhere;
 }
 
@@ -9560,7 +9637,7 @@ body.theme-dark .markdown-rendered kbd {
   --color-surface-highest: var(--my-surface-elevated);
   --color-on-surface: var(--text-normal);
 
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   letter-spacing: var(--my-letter-spacing-cjk);
 }
 
@@ -9781,7 +9858,7 @@ body.theme-dark .excalidraw,
 .kanban {
   --kanban-card-radius: var(--my-radius-m);
   --kanban-card-gap: var(--my-space-5);
-  font-family: var(--my-font-text);
+  font-family: var(--my-font-text-effective);
   letter-spacing: var(--my-letter-spacing-cjk);
 }
 
@@ -10002,6 +10079,250 @@ body.theme-dark .excalidraw,
   }
 }
 
+/* ################ 模块：60-plugins/mermaid.css ################ */
+
+/* ============================================================================
+ * 墨韵 MoYun · Mermaid 图表
+ * ----------------------------------------------------------------------------
+ * 本模块解决三个问题：
+ *   ① 配色不可读：Mermaid 自带调色板（淡紫底 #ECECFF + 紫边 #9370DB）在深色
+ *      模式下几乎看不见，观感也和主题完全脱节；
+ *   ② 不随主题变化：图里的字号、圆角、边框都是 Mermaid 自己的死值，屏幕越大
+ *      图里的字越小（与大屏自适应字号的目标正好相反）；
+ *   ③ 宽屏溢出：图比版心宽时右侧被裁掉，看不到完整流程。
+ *
+ * 为什么非用 !important 不可（因此本文件头申请了预算）：
+ * Mermaid 渲染时把配色内联进 SVG【内部】的 <style>，形如
+ *     <style>#mermaid-1699 .node rect{fill:#ECECFF;stroke:#9370DB}</style>
+ * 那是 ID 选择器，优先级高于本站任何外部选择器；而 Mermaid 没有开放
+ * 「用 CSS 变量改配色」的入口，所以在 CSS 层改配色只剩 !important 一条路。
+ * 自我约束：只覆盖颜色 / 描边 / 字号，不碰几何布局（节点位置由 Mermaid 计算）。
+ *
+ * 设计原则：配色全部走主题语义令牌，所以深色模式不需要另写一份 —— 明暗自动成立。
+ * 这也正是从旧 snippet 里唯一值得吸收的做法（它用 Obsidian 变量而非写死颜色）。
+ * ========================================================================== */
+
+/* @important-budget 46 — Mermaid 把配色内联进 SVG 内部的 ID 选择器样式，外部 CSS 只能靠 !important 覆盖 */
+
+/* --------------------------------------------------------------------------
+ * 一、容器
+ * 居中 + 底色 + 圆角；超出时横向滚动而不是被裁切。
+ * ------------------------------------------------------------------------ */
+.markdown-rendered .mermaid,
+.markdown-preview-view .mermaid,
+.markdown-source-view.mod-cm6 .mermaid {
+  display: block;
+  margin-block: var(--my-space-4);
+  padding: var(--my-space-4) var(--my-space-5);
+  background: var(--my-surface-secondary);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-m);
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* SVG 自带宽度属性，容器变窄时按比例缩，不溢出、不裁切 */
+.markdown-rendered .mermaid svg,
+.markdown-preview-view .mermaid svg,
+.markdown-source-view.mod-cm6 .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 图内文字必须归零正文样式：正文的 1.8 行高、2em 首行缩进、段后距会通过
+ * foreignObject 里的 HTML 标签漏进图中（Mermaid 用 foreignObject 渲染带
+ * 换行的标签），把节点撑变形。SVG 的 <text> 不受影响，但两者要一起交代。 */
+.markdown-rendered .mermaid foreignObject div,
+.markdown-rendered .mermaid .nodeLabel,
+.markdown-rendered .mermaid .edgeLabel {
+  text-indent: 0;
+  margin: 0;
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+ * 二、流程图节点
+ * 底用抬升层、边框用强调色：与主题的卡片语言一致，明暗两种模式都成立。
+ * ------------------------------------------------------------------------ */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon,
+.mermaid .node path,
+.mermaid .labelBox {
+  fill: var(--my-surface-elevated) !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .node .label,
+.mermaid .node text,
+.mermaid .nodeLabel,
+.mermaid .labelText {
+  fill: var(--my-text-primary) !important;
+  font-size: calc(var(--my-font-size-base) * 0.875) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 三、连线 / 箭头 / 边标签
+ * 连线用中性描边：它是结构线不是重点，抢了节点的视觉主角就本末倒置。
+ * ------------------------------------------------------------------------ */
+.mermaid .edgePath .path,
+.mermaid .flowchart-link,
+.mermaid .relation,
+.mermaid .messageLine0,
+.mermaid .messageLine1 {
+  stroke: var(--my-border-strong) !important;
+}
+
+.mermaid marker path,
+.mermaid .marker {
+  fill: var(--my-border-strong) !important;
+  stroke: var(--my-border-strong) !important;
+}
+
+.mermaid .edgeLabel,
+.mermaid .edgeLabel p,
+.mermaid .edgeLabel span {
+  color: var(--my-text-secondary) !important;
+  font-size: calc(var(--my-font-size-base) * 0.786) !important;
+}
+
+.mermaid .edgeLabel rect,
+.mermaid .edgeLabel foreignObject > div {
+  fill: var(--my-surface-primary) !important;
+  background: var(--my-surface-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 四、子图（subgraph / cluster）
+ * 下沉层 + 弱边框：分组是背景信息，视觉层级必须低于节点。
+ * ------------------------------------------------------------------------ */
+.mermaid .cluster rect {
+  fill: var(--my-surface-sunken) !important;
+  stroke: var(--my-border-subtle) !important;
+}
+
+.mermaid .cluster text,
+.mermaid .cluster-label,
+.mermaid .cluster-label text,
+.mermaid .cluster span {
+  fill: var(--my-text-secondary) !important;
+  color: var(--my-text-secondary) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 五、时序图（sequenceDiagram）
+ * ------------------------------------------------------------------------ */
+.mermaid .actor {
+  fill: var(--my-surface-elevated) !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .actor text,
+.mermaid .actorText,
+.mermaid .actor-line + text {
+  fill: var(--my-text-primary) !important;
+}
+
+.mermaid .actor-line {
+  stroke: var(--my-border-subtle) !important;
+}
+
+.mermaid .messageText,
+.mermaid .loopText,
+.mermaid .loopText > tspan,
+.mermaid .noteText,
+.mermaid .noteText > tspan {
+  fill: var(--my-text-primary) !important;
+  font-size: calc(var(--my-font-size-base) * 0.8) !important;
+}
+
+/* 便签用警告色的低透明度底：既能一眼识别，又不会在深色模式下刺眼 */
+.mermaid .note {
+  fill: rgb(var(--my-warning-rgb) / 0.14) !important;
+  stroke: var(--my-warning) !important;
+}
+
+.mermaid .labelBox,
+.mermaid .loopLine {
+  stroke: var(--my-border-subtle) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 六、状态图 / 类图 / 饼图 / 甘特图
+ * 这几类图的元素名不统一，统一用「底-边-字」三件套兜住，避免逐图写死。
+ * ------------------------------------------------------------------------ */
+.mermaid .statediagram-state rect,
+.mermaid .stateGroup rect,
+.mermaid .classGroup rect,
+.mermaid .entityBox {
+  fill: var(--my-surface-elevated) !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .statediagram-cluster rect,
+.mermaid .statediagram-cluster-alt rect {
+  fill: var(--my-surface-sunken) !important;
+  stroke: var(--my-border-subtle) !important;
+}
+
+.mermaid .pieCircle {
+  stroke: var(--my-surface-primary) !important;
+}
+
+.mermaid .sectionTitle,
+.mermaid .titleText,
+.mermaid .taskText,
+.mermaid .taskTextOutsideRight,
+.mermaid .taskTextOutsideLeft {
+  fill: var(--my-text-primary) !important;
+}
+
+.mermaid .grid .tick line,
+.mermaid .grid .tick text,
+.mermaid .section {
+  stroke: var(--my-border-subtle) !important;
+  fill: var(--my-text-faint) !important;
+}
+
+.mermaid .task {
+  fill: var(--my-accent) !important;
+  stroke: var(--my-accent) !important;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+ * 七、打印：图在纸面上不能缩成一团，也不能跨页被切开
+ * ------------------------------------------------------------------------ */
+@media print {
+  .markdown-rendered .mermaid,
+  .markdown-preview-view .mermaid {
+    background: transparent;
+    border-color: var(--my-print-text-muted);
+    break-inside: avoid;
+    overflow: visible;
+  }
+
+  .markdown-rendered .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * 八、动效兜底
+ * Mermaid 的连线过渡动画对前庭敏感用户不友好；同时本模块没有自己的过渡效果，
+ * 这里统一按系统偏好关闭。
+ * ------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .mermaid *,
+  .markdown-rendered .mermaid * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 /* ################ 模块：60-plugins/misc-plugins.css ################ */
 
 /* ============================================================================
@@ -10053,7 +10374,7 @@ body.theme-dark .excalidraw,
   border-radius: var(--my-radius-s);
   background-color: var(--interactive-normal);
   color: var(--text-normal);
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--my-font-size-s);
   transition: background-color var(--my-duration-fast) var(--my-ease-out);
 }
@@ -10083,7 +10404,7 @@ body.theme-dark .excalidraw,
 
   padding: var(--my-space-3);
   border-radius: var(--my-radius-m);
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--my-font-size-s);
 }
 
@@ -10161,7 +10482,7 @@ body.theme-dark .excalidraw,
   border-inline-start: var(--my-border-width-accent) solid var(--admonition-color, var(--my-accent));
   border-radius: var(--my-radius-m);
   background-color: color-mix(in srgb, var(--admonition-color, var(--my-accent)) 8%, transparent);
-  font-family: var(--my-font-text);
+  font-family: var(--my-font-text-effective);
   line-height: var(--my-line-height-normal);
 }
 
@@ -10247,7 +10568,7 @@ body.theme-dark .excalidraw,
 
 /* —— Full Calendar：.fc 及其后代是 FullCalendar 的公开 API，跨版本稳定 —— */
 .fc {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   color: var(--text-normal);
 }
 
@@ -10333,7 +10654,7 @@ body.theme-dark .excalidraw,
   max-width: var(--my-content-width-wide);
   margin-inline: auto;
   padding: var(--my-space-6) var(--my-space-7) var(--my-space-10);
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--my-font-size-base);
   line-height: var(--my-line-height-normal);
   letter-spacing: var(--my-letter-spacing-cjk);
@@ -10481,7 +10802,7 @@ body.theme-dark .excalidraw,
 /* 数值用等宽字体 + 等宽数字：拖动时数字宽度不变，滑块不会左右抖动 */
 .style-settings-container .slider-value {
   min-width: 3.6em;
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-variant-numeric: tabular-nums;
   font-weight: var(--my-font-weight-normal);
   color: var(--text-muted);
@@ -10594,7 +10915,7 @@ body.theme-dark .excalidraw,
   border-radius: var(--my-radius-s);
   background-color: var(--background-secondary);
   color: var(--text-muted);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-s);
   line-height: var(--my-line-height-snug);
   white-space: pre-wrap;

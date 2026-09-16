@@ -172,6 +172,67 @@ const CHECKS = [
   ['文件树激活项有强调反馈', '.nav-file-title.is-active', 'color', (v) => v !== 'rgba(0, 0, 0, 0)'],
   ['状态栏字号小于正文', '.status-bar', 'fontSize',
     (v, el) => parseFloat(v) < 16],
+  // —— 字体归属：用户选择必须优先（主题只提供兜底）——
+  /* 这三条守的是「第三方主题不该抢走宿主设置」。此前主题直接覆盖 --font-text
+   * 并把 --font-text-override 指向自己的字体栈，导致用户在 Obsidian「外观 → 字体」
+   * 里的选择完全失效。断言直接模拟 Obsidian 写入 override，看主题是否让位。 */
+  ['用户字体选择优先：override 会接管正文与原生链路', '.markdown-rendered', 'fontFamily',
+    () => {
+      const el = document.querySelector('.markdown-rendered');
+      document.body.style.setProperty('--font-text-override', 'MoYunUserFontProbe');
+      const got = getComputedStyle(el).fontFamily;
+      const native = getComputedStyle(document.body).getPropertyValue('--font-text');
+      document.body.style.removeProperty('--font-text-override');
+      return /MoYunUserFontProbe/.test(got) && /MoYunUserFontProbe/.test(native);
+    }],
+  ['用户未选字体时回落到主题/公文体字体栈', '.markdown-rendered', 'fontFamily',
+    (v) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      return gov
+        ? /仿宋|FangSong/.test(v)
+        : /LXGW|霞鹜|HarmonyOS|MiSans|PingFang|Source Han Sans|Noto Sans CJK|Sarasa/.test(v);
+    }],
+  ['公文体：用户字体只接管正文，标题仍按公文层级', '.markdown-rendered h1', 'fontFamily',
+    () => {
+      const el = document.querySelector('.markdown-rendered h1');
+      document.body.style.setProperty('--font-text-override', 'MoYunUserFontProbe');
+      const got = getComputedStyle(el).fontFamily;
+      document.body.style.removeProperty('--font-text-override');
+      const gov = document.body.classList.contains('my-gov-style');
+      // 公文体：标题必须保持小标宋/黑体，不被用户字体顶掉；通用模式：标题跟随用户
+      return gov ? !/MoYunUserFontProbe/.test(got) : /MoYunUserFontProbe/.test(got);
+    }],
+
+  // —— Mermaid 图表 ——
+  /* 这几条是本模块存在的理由：Mermaid 把配色内联进 SVG【内部】的 ID 选择器样式，
+   * 主题必须用 !important 才压得住。断言拿「主题令牌的计算值」与「SVG 元素上的
+   * 计算值」比对，而不是比对写死的颜色 —— 以后换配色不会产生假告警，而一旦
+   * !important 被谁删掉，比对立刻失败。 */
+  ['Mermaid 节点底色改用主题令牌（压过 SVG 内联 ID 样式）', '.mermaid .node rect', 'fill',
+    (v) => {
+      const p = document.createElement('div');
+      p.style.background = 'var(--my-surface-elevated)';
+      document.body.appendChild(p);
+      const want = getComputedStyle(p).backgroundColor;
+      p.remove();
+      return v === want && v !== 'rgb(236, 236, 255)';
+    }],
+  ['Mermaid 节点文字用主题正文色（非 Mermaid 默认 #333）', '.mermaid .node .label', 'fill',
+    (v) => {
+      const p = document.createElement('div');
+      p.style.color = 'var(--my-text-primary)';
+      document.body.appendChild(p);
+      const want = getComputedStyle(p).color;
+      p.remove();
+      return v === want;
+    }],
+  ['Mermaid 连线用主题描边色（非 Mermaid 默认 #333）', '.mermaid .edgePath .path', 'stroke',
+    (v) => v !== 'rgb(51, 51, 51)' && v !== 'none'],
+  ['Mermaid 子图底色非 Mermaid 默认米黄', '.mermaid .cluster rect', 'fill',
+    (v) => v !== 'rgb(255, 255, 222)'],
+  ['Mermaid 容器有主题底色（不是透明）', '.mermaid', 'backgroundColor',
+    (v) => v !== 'rgba(0, 0, 0, 0)'],
+  ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
 ];
 
 /* 对比度计算（WCAG 相对亮度法） */
@@ -296,6 +357,51 @@ for (const mode of ['dark', 'light']) {
     }
     results.push({ mode, label, ok, detail });
   }
+
+  /* —— 分辨率自适应字号：必须实测，不能只读 CSS ——
+   * 三条断言要一起成立，缺一条都会得到半吊子结果：
+   *   ① 宽屏字号确实变大（这条保证「高分屏不再逼着眼睛看小字」）；
+   *   ② 版心同步变宽（否则字大了版心没变，宽屏上会变成窄窄一条）；
+   *   ③ 一行始终约 46 个汉字（①②各自都对但比例失调时，这条会拦住）。
+   * 版心宽度不读元素的 offsetWidth —— 验证台没有 Obsidian 的 .markdown-preview-sizer，
+   * 段落宽度跟的是视口。这里直接量 --my-content-width 令牌解析出的长度。 */
+  const probeFont = async (w) => {
+    await page.setViewportSize({ width: w, height: 1000 });
+    await page.waitForTimeout(150);
+    return page.evaluate(() => {
+      const el = document.querySelector('.markdown-rendered');
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      const d = document.createElement('div');
+      d.style.cssText = 'position:absolute;visibility:hidden;width:var(--my-content-width)';
+      document.body.appendChild(d);
+      const line = parseFloat(getComputedStyle(d).width);
+      d.remove();
+      return { fs, line, chars: line / fs };
+    });
+  };
+  const narrow = await probeFont(1280);
+  const wide = await probeFont(3840);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.waitForTimeout(150);
+
+  results.push({
+    mode,
+    label: '分辨率自适应：3840 宽的字号明显大于 1280 宽',
+    ok: wide.fs > narrow.fs + 2,
+    detail: '1280 → ' + narrow.fs + 'px，3840 → ' + wide.fs + 'px',
+  });
+  results.push({
+    mode,
+    label: '分辨率自适应：版心随字号同步变宽',
+    ok: wide.line > narrow.line * 1.15,
+    detail: '1280 → ' + narrow.line + 'px，3840 → ' + wide.line + 'px',
+  });
+  results.push({
+    mode,
+    label: '分辨率自适应：两种宽度都保持一行约 46 字',
+    ok: narrow.chars >= 42 && narrow.chars <= 50 && wide.chars >= 42 && wide.chars <= 50,
+    detail: '1280 → ' + narrow.chars.toFixed(1) + ' 字/行，3840 → ' + wide.chars.toFixed(1) + ' 字/行',
+  });
 
   // —— 对比度 ——
   for (const [name, sel] of [['正文', '.markdown-rendered p'], ['标题', '.markdown-rendered h1'], ['次要文字', '.status-bar']]) {

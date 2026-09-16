@@ -56,18 +56,32 @@
   --my-shadow-l:  0 4px 8px hsl(35 20% 20% / 0.08), 0 12px 32px hsl(35 20% 20% / 0.10);
   --my-shadow-xl: 0 8px 16px hsl(35 20% 20% / 0.10), 0 24px 56px hsl(35 20% 20% / 0.14);
 
-  /* 内容行宽 —— 中文单行 30~40 字最舒适 */
-  --my-content-width: 46rem;
-  --my-content-width-wide: 62rem;
+  /* 内容行宽 —— 中文主题应当用「一行多少个汉字」来表达，而不是 rem：
+   * rem 在宽屏上会因字号放大而让一行塞进更多字，阅读节律被破坏。
+   * 真实宽度在 obsidian-map.css 的 body 作用域按当前字号折算，
+   * 于是 1440 宽与 3840 宽都稳定在 46 字/行。 */
+  --my-content-chars: 46;         /* 一行最多多少汉字（Style Settings 可调） */
+  --my-content-width: 46rem;      /* 兜底值，真实值在 body 作用域重算 */
+  --my-content-width-wide: 62rem; /* 宽版心：表格/代码等需要横向空间的场景 */
   --my-content-width-full: 100%;
 
   /* 编辑器内边距 */
   --my-editor-padding-x: clamp(1.5rem, 5vw, 4rem);
   --my-editor-padding-y: 2.5rem;
 
-  /* 字体大小（由 Style Settings 覆盖 --my-font-size-base） */
-  --my-font-size-base: 16px;
+  /* 字体大小 —— 为什么这里不再是一个写死的 px
+   * ① 分辨率自适应：同一段 16px 正文，在 1080p（1920×1080 / 24"）上字高约 4.4mm，
+   *    在 4K（3840×2160 / 27"）上只剩约 2.5mm —— 等于逼着眼睛看小字。
+   *    CSS 拿不到物理 PPI，但「窗口宽度」是可靠代理：分辨率越高，窗口越宽。
+   *    故按 vw 线性增益，下面四个参数决定这条曲线。
+   * ② 尊重 Obsidian 自带设置：基准值取自原生 --font-text-size（「设置 → 外观 →
+   *    字体大小」写入的变量），主题不再另立一个私有 px 值。
+   * ③ 增益强度由 Style Settings 的「分辨率自适应」控制，调到 0 即完全关闭。 */
+  --my-font-size-base: 16px;      /* 兜底值；真实值在 obsidian-map.css 的 body 作用域重算 */
   --my-font-size-scale: 1.2;
+  --my-font-boost-start: 1200px;  /* 窗口宽于该值才开始放大（笔记本 1200 以下不动） */
+  --my-font-boost-rate: 0.0022;   /* 斜率：窗口每宽 1px，字号增加 0.0022px */
+  --my-font-boost-max: 6px;       /* 放大上限：3840 宽时约 +5.8px（16 → 21.8px） */
 
   /* 行高 */
   --my-line-height-tight:  1.3;
@@ -117,25 +131,30 @@
  * ======================================================================== */
 :root {
   /* 正文：优先可变中文黑体，回退经典系统字体 */
-  --my-font-text: "LXGW WenKai Screen", "霞鹜文楷屏幕阅读版", "HarmonyOS Sans SC",
+  /* 主题自带的字体栈（唯一出处）。用 stack- 前缀命名是刻意的：
+   * 它们是「墨韵的兜底选择」，不是最终生效值。 */
+  --my-font-stack-text: "LXGW WenKai Screen", "霞鹜文楷屏幕阅读版", "HarmonyOS Sans SC",
     "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei",
     "Source Han Sans SC", "Noto Sans CJK SC", "Sarasa Gothic SC", "更纱黑体 SC",
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-
   /* 界面：与正文同源，保证一致性 */
-  --my-font-ui: var(--my-font-text);
-
-  /* 标题字体：默认与正文同源。
-   * --my-font-heading-choice 是留给「标题改用衬线字体」这个用户开关的选择位：
-   * 开关只改选择位，令牌本身仍只有一处定义，避免出现两个主人。 */
-  --my-font-heading: var(--my-font-heading-choice, var(--my-font-text));
-  --my-font-heading-serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
-    "SimSun", "STSong", Georgia, serif;
-
+  --my-font-stack-ui: var(--my-font-stack-text);
   /* 代码：等宽优先，含中文等宽回退 */
-  --my-font-mono: "Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code",
+  --my-font-stack-mono: "Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code",
     "Sarasa Mono SC", "更纱等宽黑体", "SFMono-Regular", Consolas, "Liberation Mono",
     "Menlo", monospace;
+
+  /* 用户覆盖位：Style Settings 的「正文字体 / 界面字体 / 代码字体」会直接写这三个
+   * 令牌（插件按 setting id 写同名变量），所以它们必须留在这里。
+   * 但主题自己的样式【不直接消费】它们 —— 消费的是 obsidian-map.css 里的
+   * *-effective 版本，那一层把 Obsidian 原生的用户字体覆盖串在了最前面。 */
+  --my-font-text: var(--my-font-stack-text);
+  --my-font-ui: var(--my-font-stack-ui);
+  --my-font-mono: var(--my-font-stack-mono);
+
+  /* 标题用的衬线字体栈（「标题改用衬线字体」开关的选择位在 settings.css） */
+  --my-font-heading-serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
+    "SimSun", "STSong", Georgia, serif;
 
   /* 字阶（1.2 比例，中文标题不宜差距过大） */
   --my-font-size-xs:  0.786em;

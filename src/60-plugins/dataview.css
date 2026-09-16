@@ -124,7 +124,7 @@
 }
 
 .dataview.inline-field-key {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.86em;
   color: var(--my-text-tertiary);
 }
@@ -198,7 +198,7 @@
 }
 
 .dataview-error-message {
-  font-family: var(--my-font-mono); /* 错误信息里常含查询语句，等宽更易比对 */
+  font-family: var(--my-font-mono-effective); /* 错误信息里常含查询语句，等宽更易比对 */
   overflow-wrap: anywhere;
 }
 

@@ -227,6 +227,23 @@
                     <div class="markdown-embed-content markdown-rendered"><p>这是被嵌入的笔记内容，用于验证内嵌块的内边距、左边框与底色。</p></div>
                   </div>
 
+                  <h2>九、Mermaid 图表</h2>
+                  <!-- Mermaid 夹具：忠实复刻 Mermaid 的真实输出结构。
+                       要点是 SVG【内部】那段 ID 选择器的 <style> —— Mermaid 正是
+                       这样把默认配色（淡紫 #ECECFF / 紫边 #9370DB）注入进来的。
+                       之所以要在验证台里放一份真的 ID 选择器样式，是因为「主题的
+                       !important 到底能不能压过它」只能实测，读代码推断不算数。 -->
+                  <div class="mermaid" id="mermaid-fixture">
+                    <svg viewBox="0 0 240 120" width="240" height="120" style="max-width: 240px;" role="graphics-document">
+                      <style>#mermaid-fixture .node rect{fill:#ECECFF;stroke:#9370DB;stroke-width:1px}#mermaid-fixture .node .label{fill:#333333}#mermaid-fixture .edgePath .path{stroke:#333333;stroke-width:2px}#mermaid-fixture .cluster rect{fill:#FFFFDE;stroke:#AAAA33}#mermaid-fixture .actor{fill:#ECECFF;stroke:#9370DB}</style>
+                      <g class="cluster"><rect x="4" y="4" width="232" height="112" rx="4"></rect><text x="12" y="20">分组</text></g>
+                      <g class="node"><rect x="20" y="34" width="80" height="32" rx="4"></rect><text class="label" x="40" y="55">起点</text></g>
+                      <g class="node"><rect x="140" y="34" width="80" height="32" rx="4"></rect><text class="label" x="160" y="55">终点</text></g>
+                      <g class="edgePath"><path class="path" d="M100 50 L140 50" fill="none"></path></g>
+                      <g class="actor"><rect x="20" y="80" width="80" height="24"></rect><text x="30" y="96">参与者</text></g>
+                    </svg>
+                  </div>
+
                 </div>
               </div>
             </div>

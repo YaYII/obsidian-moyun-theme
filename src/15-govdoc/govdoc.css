@@ -56,8 +56,13 @@ body.my-gov-style {
  * ======================================================================== */
 body.my-gov-style .markdown-rendered,
 body.my-gov-style .markdown-source-view.mod-cm6 .cm-content {
-  /* 西文用 Times，中文回退到仿宋 —— 字体族顺序即可实现按字符分流 */
-  font-family: var(--my-gov-font-latin), var(--my-gov-font-body);
+  /* 西文用 Times，中文回退到仿宋 —— 字体族顺序即可实现按字符分流。
+   * 但用户在「设置 → 外观 → 字体」里显式选过字体时，让他的选择排在最前：
+   * 公文体负责的是【版式规范】（首行缩进、两端对齐、全框线表格、标题字体层级），
+   * 字体只是一项默认值 —— 用户明确表态了就听用户的，否则会再犯一次
+   * 「在 Obsidian 里改了字体没反应」。
+   * 标题刻意不跟随： 「靠字体区分层级」本身就是公文的特征（见下方 h1/h2/h3）。 */
+  font-family: var(--font-text-override, '??'), var(--my-gov-font-latin), var(--my-gov-font-body);
   /* 公文行距：规范为每页 22 行，换算后约 1.75 倍字号；
    * 屏幕阅读再放宽一点到 1.8，与主题通用排版保持一致，避免切换时跳动。 */
   line-height: var(--my-line-height-relaxed);
@@ -210,6 +215,7 @@ body.my-gov-style .markdown-rendered table {
   border-radius: 0;
   border-collapse: collapse;
   font-size: 0.95em;
+  line-height: 1.6;
   line-height: 1.5;
   text-align: left;
   margin-block: 0.8em 1.2em;
@@ -217,11 +223,21 @@ body.my-gov-style .markdown-rendered table {
 
 body.my-gov-style .markdown-rendered :is(td, th) {
   border: 1px solid currentColor;
-  /* 公文表格内边距紧凑，追求信息密度而非"呼吸感" */
-  padding: 0.35em 0.6em;
+  /* 内边距 0.5em/0.85em ≈ 8px/13.6px（16px 字号下）。
+   * 初版设的 0.35em/0.6em（5.6px/9.6px）偏紧：中文表格的单元格需要足够
+   * 呼吸空间，否则多行内容会糊在一起。这个值参考了 Readmdvue 的 8px/16px ——
+   * 用户拿它作对比，说明那个密度是被认可的。 */
+  padding: 0.5em 0.85em;
   min-width: 4em;
   text-indent: 0;
-  vertical-align: middle;
+  /* top 而非 middle：同一行里有的单元格一行、有的三行时，middle 会让短内容
+   * 垂直居中、长内容顶格，视觉上参差不齐；top 让所有内容从同一基线开始。 */
+  vertical-align: top;
+  /* 长英文 / URL / 数字串的换行保护，避免撑破表格宽度 */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.6;
 }
 
 /* 表头：黑体、居中、无底色（公文表格表头通常不加底色） */
@@ -263,7 +279,7 @@ body.my-gov-style .markdown-rendered blockquote {
 
 /* 代码：公文里出现代码/等宽内容时用宋体等宽，保持严肃 */
 body.my-gov-style .markdown-rendered code {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.92em;
   background: transparent;
   border: none;

@@ -301,7 +301,7 @@ body.theme-dark .markdown-rendered kbd {
 /* 实时预览里的 kbd（源码模式下的行内代码块会渲染为 cm-inline-code，
  * 但用户手写的 <kbd> 会作为 HTML 嵌入渲染，这里给同样的内边距） */
 .markdown-source-view.mod-cm6 kbd {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.82em;
   padding: 0.14em 0.42em;
   border: var(--my-border-width) solid var(--my-border-strong);

@@ -79,7 +79,7 @@
   --color-surface-highest: var(--my-surface-elevated);
   --color-on-surface: var(--text-normal);
 
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   letter-spacing: var(--my-letter-spacing-cjk);
 }
 

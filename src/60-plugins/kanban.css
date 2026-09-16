@@ -27,7 +27,7 @@
 .kanban {
   --kanban-card-radius: var(--my-radius-m);
   --kanban-card-gap: var(--my-space-5);
-  font-family: var(--my-font-text);
+  font-family: var(--my-font-text-effective);
   letter-spacing: var(--my-letter-spacing-cjk);
 }
 

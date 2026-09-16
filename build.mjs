@@ -203,9 +203,23 @@ function validate(files, contents) {
       contractWarns.push('[' + rel + '] ' + m[0] + ' 对汉字无效');
     }
 
-    // 6.5 !important 用量异常：超过 3 处通常意味着在硬对抗原生样式，值得复核
+    /* 6.5 !important 用量：默认 3 处以内。
+     * 个别模块面对的是【第三方注入到 DOM 内部的 ID 选择器样式】（典型是 Mermaid
+     * 把配色写进 SVG 内部的 <style>#mermaid-1 .node rect{...}</style>），外部选择器
+     * 无论怎么写都赢不了，!important 是唯一手段。这类模块可以在文件头用一行 CSS
+     * 注释申请预算，写法是 @important-budget 后面跟数字，破折号后写理由（不少于
+     * 10 个字）。申请了预算就按预算判定；写了标记但理由不完整则直接报错 ——
+     * 不允许无理由开口子。 */
     const bang = (src.match(/!important/g) || []).length;
-    if (bang > 3) {
+    const budgetDecl = raw.match(/@important-budget\s+(\d+)\s*[—–-]\s*([^\n*]{10,})/);
+    if (/@important-budget/.test(raw) && !budgetDecl) {
+      contractErrors.push('[' + rel + '] @important-budget 声明不完整，应为「@important-budget 数字 — 理由」');
+    } else if (budgetDecl) {
+      const limit = Number(budgetDecl[1]);
+      if (bang > limit) {
+        contractWarns.push('[' + rel + '] 使用了 ' + bang + ' 处 !important，超出已声明预算 ' + limit + ' 处');
+      }
+    } else if (bang > 3) {
       contractWarns.push('[' + rel + '] 使用了 ' + bang + ' 处 !important，请确认无法用更具体的选择器替代');
     }
   }

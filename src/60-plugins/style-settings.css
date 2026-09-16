@@ -25,7 +25,7 @@
   max-width: var(--my-content-width-wide);
   margin-inline: auto;
   padding: var(--my-space-6) var(--my-space-7) var(--my-space-10);
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--my-font-size-base);
   line-height: var(--my-line-height-normal);
   letter-spacing: var(--my-letter-spacing-cjk);
@@ -173,7 +173,7 @@
 /* 数值用等宽字体 + 等宽数字：拖动时数字宽度不变，滑块不会左右抖动 */
 .style-settings-container .slider-value {
   min-width: 3.6em;
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-variant-numeric: tabular-nums;
   font-weight: var(--my-font-weight-normal);
   color: var(--text-muted);

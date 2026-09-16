@@ -15,7 +15,7 @@
 
 button,
 .btn {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-weight: var(--my-font-weight-medium);
   letter-spacing: 0;
   border-radius: var(--button-radius);
@@ -114,7 +114,7 @@ input[type='number'],
 input[type='date'],
 input[type='datetime-local'],
 textarea {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--font-ui-small);
   letter-spacing: 0;
   background-color: var(--input-text-bg-color);
@@ -164,7 +164,7 @@ textarea {
 
 select,
 .dropdown {
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--font-ui-small);
   background-color: var(--dropdown-background);
   color: var(--my-text-primary);

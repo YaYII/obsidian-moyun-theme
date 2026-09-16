@@ -1,0 +1,241 @@
+/* ============================================================================
+ * 墨韵 MoYun · Mermaid 图表
+ * ----------------------------------------------------------------------------
+ * 本模块解决三个问题：
+ *   ① 配色不可读：Mermaid 自带调色板（淡紫底 #ECECFF + 紫边 #9370DB）在深色
+ *      模式下几乎看不见，观感也和主题完全脱节；
+ *   ② 不随主题变化：图里的字号、圆角、边框都是 Mermaid 自己的死值，屏幕越大
+ *      图里的字越小（与大屏自适应字号的目标正好相反）；
+ *   ③ 宽屏溢出：图比版心宽时右侧被裁掉，看不到完整流程。
+ *
+ * 为什么非用 !important 不可（因此本文件头申请了预算）：
+ * Mermaid 渲染时把配色内联进 SVG【内部】的 <style>，形如
+ *     <style>#mermaid-1699 .node rect{fill:#ECECFF;stroke:#9370DB}</style>
+ * 那是 ID 选择器，优先级高于本站任何外部选择器；而 Mermaid 没有开放
+ * 「用 CSS 变量改配色」的入口，所以在 CSS 层改配色只剩 !important 一条路。
+ * 自我约束：只覆盖颜色 / 描边 / 字号，不碰几何布局（节点位置由 Mermaid 计算）。
+ *
+ * 设计原则：配色全部走主题语义令牌，所以深色模式不需要另写一份 —— 明暗自动成立。
+ * 这也正是从旧 snippet 里唯一值得吸收的做法（它用 Obsidian 变量而非写死颜色）。
+ * ========================================================================== */
+
+/* @important-budget 46 — Mermaid 把配色内联进 SVG 内部的 ID 选择器样式，外部 CSS 只能靠 !important 覆盖 */
+
+/* --------------------------------------------------------------------------
+ * 一、容器
+ * 居中 + 底色 + 圆角；超出时横向滚动而不是被裁切。
+ * ------------------------------------------------------------------------ */
+.markdown-rendered .mermaid,
+.markdown-preview-view .mermaid,
+.markdown-source-view.mod-cm6 .mermaid {
+  display: block;
+  margin-block: var(--my-space-4);
+  padding: var(--my-space-4) var(--my-space-5);
+  background: var(--my-surface-secondary);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-m);
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* SVG 自带宽度属性，容器变窄时按比例缩，不溢出、不裁切 */
+.markdown-rendered .mermaid svg,
+.markdown-preview-view .mermaid svg,
+.markdown-source-view.mod-cm6 .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 图内文字必须归零正文样式：正文的 1.8 行高、2em 首行缩进、段后距会通过
+ * foreignObject 里的 HTML 标签漏进图中（Mermaid 用 foreignObject 渲染带
+ * 换行的标签），把节点撑变形。SVG 的 <text> 不受影响，但两者要一起交代。 */
+.markdown-rendered .mermaid foreignObject div,
+.markdown-rendered .mermaid .nodeLabel,
+.markdown-rendered .mermaid .edgeLabel {
+  text-indent: 0;
+  margin: 0;
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+ * 二、流程图节点
+ * 底用抬升层、边框用强调色：与主题的卡片语言一致，明暗两种模式都成立。
+ * ------------------------------------------------------------------------ */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon,
+.mermaid .node path,
+.mermaid .labelBox {
+  fill: var(--my-surface-elevated) !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .node .label,
+.mermaid .node text,
+.mermaid .nodeLabel,
+.mermaid .labelText {
+  fill: var(--my-text-primary) !important;
+  font-size: calc(var(--my-font-size-base) * 0.875) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 三、连线 / 箭头 / 边标签
+ * 连线用中性描边：它是结构线不是重点，抢了节点的视觉主角就本末倒置。
+ * ------------------------------------------------------------------------ */
+.mermaid .edgePath .path,
+.mermaid .flowchart-link,
+.mermaid .relation,
+.mermaid .messageLine0,
+.mermaid .messageLine1 {
+  stroke: var(--my-border-strong) !important;
+}
+
+.mermaid marker path,
+.mermaid .marker {
+  fill: var(--my-border-strong) !important;
+  stroke: var(--my-border-strong) !important;
+}
+
+.mermaid .edgeLabel,
+.mermaid .edgeLabel p,
+.mermaid .edgeLabel span {
+  color: var(--my-text-secondary) !important;
+  font-size: calc(var(--my-font-size-base) * 0.786) !important;
+}
+
+.mermaid .edgeLabel rect,
+.mermaid .edgeLabel foreignObject > div {
+  fill: var(--my-surface-primary) !important;
+  background: var(--my-surface-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 四、子图（subgraph / cluster）
+ * 下沉层 + 弱边框：分组是背景信息，视觉层级必须低于节点。
+ * ------------------------------------------------------------------------ */
+.mermaid .cluster rect {
+  fill: var(--my-surface-sunken) !important;
+  stroke: var(--my-border-subtle) !important;
+}
+
+.mermaid .cluster text,
+.mermaid .cluster-label,
+.mermaid .cluster-label text,
+.mermaid .cluster span {
+  fill: var(--my-text-secondary) !important;
+  color: var(--my-text-secondary) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 五、时序图（sequenceDiagram）
+ * ------------------------------------------------------------------------ */
+.mermaid .actor {
+  fill: var(--my-surface-elevated) !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .actor text,
+.mermaid .actorText,
+.mermaid .actor-line + text {
+  fill: var(--my-text-primary) !important;
+}
+
+.mermaid .actor-line {
+  stroke: var(--my-border-subtle) !important;
+}
+
+.mermaid .messageText,
+.mermaid .loopText,
+.mermaid .loopText > tspan,
+.mermaid .noteText,
+.mermaid .noteText > tspan {
+  fill: var(--my-text-primary) !important;
+  font-size: calc(var(--my-font-size-base) * 0.8) !important;
+}
+
+/* 便签用警告色的低透明度底：既能一眼识别，又不会在深色模式下刺眼 */
+.mermaid .note {
+  fill: rgb(var(--my-warning-rgb) / 0.14) !important;
+  stroke: var(--my-warning) !important;
+}
+
+.mermaid .labelBox,
+.mermaid .loopLine {
+  stroke: var(--my-border-subtle) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 六、状态图 / 类图 / 饼图 / 甘特图
+ * 这几类图的元素名不统一，统一用「底-边-字」三件套兜住，避免逐图写死。
+ * ------------------------------------------------------------------------ */
+.mermaid .statediagram-state rect,
+.mermaid .stateGroup rect,
+.mermaid .classGroup rect,
+.mermaid .entityBox {
+  fill: var(--my-surface-elevated) !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .statediagram-cluster rect,
+.mermaid .statediagram-cluster-alt rect {
+  fill: var(--my-surface-sunken) !important;
+  stroke: var(--my-border-subtle) !important;
+}
+
+.mermaid .pieCircle {
+  stroke: var(--my-surface-primary) !important;
+}
+
+.mermaid .sectionTitle,
+.mermaid .titleText,
+.mermaid .taskText,
+.mermaid .taskTextOutsideRight,
+.mermaid .taskTextOutsideLeft {
+  fill: var(--my-text-primary) !important;
+}
+
+.mermaid .grid .tick line,
+.mermaid .grid .tick text,
+.mermaid .section {
+  stroke: var(--my-border-subtle) !important;
+  fill: var(--my-text-faint) !important;
+}
+
+.mermaid .task {
+  fill: var(--my-accent) !important;
+  stroke: var(--my-accent) !important;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+ * 七、打印：图在纸面上不能缩成一团，也不能跨页被切开
+ * ------------------------------------------------------------------------ */
+@media print {
+  .markdown-rendered .mermaid,
+  .markdown-preview-view .mermaid {
+    background: transparent;
+    border-color: var(--my-print-text-muted);
+    break-inside: avoid;
+    overflow: visible;
+  }
+
+  .markdown-rendered .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * 八、动效兜底
+ * Mermaid 的连线过渡动画对前庭敏感用户不友好；同时本模块没有自己的过渡效果，
+ * 这里统一按系统偏好关闭。
+ * ------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .mermaid *,
+  .markdown-rendered .mermaid * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

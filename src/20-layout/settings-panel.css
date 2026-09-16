@@ -105,7 +105,7 @@
 }
 
 .setting-item-description code {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.92em;
   background-color: var(--my-code-surface);
   border-radius: var(--my-radius-xs);
@@ -180,7 +180,7 @@
 /* 滑块的值显示（字号、行高等数值）用等宽数字，拖动时不会左右跳动 */
 .style-settings-container .slider-value,
 .style-settings-container input[type='number'] {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-variant-numeric: tabular-nums;
 }
 

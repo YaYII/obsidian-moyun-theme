@@ -125,16 +125,17 @@ settings:
     description: 等宽字体，建议包含中文等宽回退（更纱等宽黑体 / Maple Mono）。
     type: variable-text
     default: '"Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Sarasa Mono SC", "更纱等宽黑体", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace'
+  # 字号基准交给 Obsidian 自带设置（设置 → 外观 → 字体大小），主题只负责
+  # 「按窗口宽度自动放大」这一层补偿，避免两个主人各写一个字号、互相打架。
   -
-    id: my-font-size-base
-    title: 正文字号
-    description: 中文正文推荐 16px 起步；长期阅读可调至 17–18px。
+    id: my-font-auto-scale
+    title: 分辨率自适应
+    description: 窗口越宽字号越大，避免 2K/4K 高分屏上文字过小。100% 为默认曲线，0 为关闭。基准字号请用「设置 → 外观 → 字体大小」调整。
     type: variable-number-slider
-    default: 16
-    min: 12
-    max: 24
-    step: 1
-    format: px
+    default: 100
+    min: 0
+    max: 200
+    step: 10
 
   # ==========================================================================
   # 四、行距与版心
@@ -165,11 +166,14 @@ settings:
     step: 0.05
     format: em
   -
-    id: my-content-width
+    id: my-content-chars
     title: 正文行宽
-    description: 中文一行 30～40 字最易阅读（约 46rem）。过宽会导致换行时找不到下一行开头。
-    type: variable-text
-    default: 46rem
+    description: 一行最多几个汉字。中文长文 45～50 字最舒适，窄栏 30～40 字更聚焦。版心会随字号自动等比放大，宽屏上不会变成窄窄一条。
+    type: variable-number-slider
+    default: 46
+    min: 28
+    max: 64
+    step: 2
   -
     id: my-letter-spacing-cjk
     title: 中文字距
@@ -343,8 +347,8 @@ body.my-emphasis-dot .markdown-rendered i {
 }
 
 /* —— 标题衬线开关 ——
- * 只改「选择位」，不改令牌定义本身：--my-font-heading 在 tokens.css 里已经写成
- * var(--my-font-heading-choice, var(--my-font-text))。 */
+ * 只改「选择位」，不改令牌定义本身：--my-font-heading 在 obsidian-map.css 里已经
+ * 写成 var(--my-font-heading-choice, var(--my-font-text-effective))。 */
 body.my-heading-serif-toggle {
   --my-font-heading-choice: var(--my-font-heading-serif);
 }

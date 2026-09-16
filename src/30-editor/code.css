@@ -65,7 +65,7 @@
   border-radius: 0;
   padding: 0;
   color: var(--code-normal);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--code-size);
   letter-spacing: var(--my-letter-spacing-code);
   white-space: inherit;
@@ -178,7 +178,7 @@
   border-radius: var(--my-radius-s);
   background-color: var(--my-surface-elevated);
   color: var(--my-text-secondary);
-  font-family: var(--my-font-ui);
+  font-family: var(--my-font-ui-effective);
   font-size: var(--my-font-size-xs);
   line-height: 1.7;
   box-shadow: var(--my-shadow-xs);
@@ -223,7 +223,7 @@
   border-radius: var(--my-radius-full);
   background-color: var(--my-surface-elevated);
   color: var(--my-text-tertiary);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   line-height: 1.7;
   letter-spacing: 0.02em;
@@ -246,7 +246,7 @@
   padding: var(--my-space-1) var(--my-space-5);
   border-radius: var(--my-radius-full);
   color: var(--my-text-faintest);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   line-height: 1.7;
   pointer-events: none;
@@ -281,7 +281,7 @@
 .markdown-source-view.mod-cm6 .cm-lineNumbers .cm-gutterElement {
   padding-inline: var(--my-space-4) var(--my-space-6);
   color: var(--my-text-faintest);
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--my-font-size-xs);
   font-variant-numeric: tabular-nums;
   text-align: end;
@@ -316,7 +316,7 @@
  * 避免浏览器把它丢给比例字体造成"半角错位"。 */
 .markdown-rendered pre code,
 .markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   text-autospace: none;
 }
 

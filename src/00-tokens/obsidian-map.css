@@ -214,17 +214,49 @@ body {
   --font-text-theme: var(--my-font-text);
   --font-interface-theme: var(--my-font-ui);
   --font-monospace-theme: var(--my-font-mono);
-  --font-mermaid: var(--my-font-text);
-  --font-text: var(--my-font-text);
-  --font-interface: var(--my-font-ui);
-  --font-monospace: var(--my-font-mono);
-  --font-print: var(--my-font-text);
+  --font-mermaid: var(--font-text);
 
-  --font-text-size: var(--my-font-size-base);
-  --font-ui-smaller: calc(var(--my-font-size-base) * 0.72);
-  --font-ui-small: calc(var(--my-font-size-base) * 0.82);
-  --font-ui-medium: calc(var(--my-font-size-base) * 0.94);
-  --font-ui-large: calc(var(--my-font-size-base) * 1.12);
+  /* ⚠ 刻意【不写】--font-text / --font-interface / --font-monospace / --font-print。
+   * Obsidian 的原生链路是
+   *   --font-text: var(--font-text-override), var(--font-text-theme), var(--font-default)
+   * 用户在「设置 → 外观 → 字体」里选了字体时，Obsidian 写的是 *-override。
+   * 主题一旦直接覆盖 --font-text，就把用户的选择整条吞掉 —— 表现为「在 Obsidian
+   * 里改了字体完全没反应」。只提供 theme 层：用户没选就用墨韵的中文优先栈，
+   * 选了就无条件让位。这正是「第三方主题不该抢走宿主设置」的具体落实。 */
+
+  /* 主题自己的样式同样要跟着用户选择走，所以把 override 串进 effective 令牌。
+   * 顺序与 Obsidian 一致：用户选择 → 主题栈（'??' 是 Obsidian 的空值占位，
+   * 浏览器找不到名为 ?? 的字体，会自然跳到下一项）。 */
+  --my-font-text-effective: var(--font-text-override, '??'), var(--my-font-text);
+  --my-font-ui-effective: var(--font-interface-override, '??'), var(--my-font-ui);
+  --my-font-mono-effective: var(--font-monospace-override, '??'), var(--my-font-mono);
+
+  /* 标题字体必须在 body 作用域定义（要用到上面那几个 effective 令牌，
+   * 而它们在 :root 层拿不到 --font-*-override）。 */
+  --my-font-heading: var(--my-font-heading-choice, var(--my-font-text-effective));
+
+  /* 正文字号 = Obsidian 自带字号 + 分辨率增益。
+   * 刻意【不写】--font-text-size：它是 Obsidian「外观 → 字体大小」的原生出口，
+   * 主题一旦反向覆盖它，就等于把用户的设置吞掉（此前正是如此，表现为"调了没反应"）。
+   * 这里只读它、不写它；--my-font-auto-scale 由 Style Settings 在运行时提供，
+   * 未安装该插件时用 fallback 100（即默认开启自适应）。 */
+  --my-font-size-boost: clamp(
+    0px,
+    calc((100vw - var(--my-font-boost-start)) * var(--my-font-boost-rate)
+      * var(--my-font-auto-scale, 100) / 100),
+    calc(var(--my-font-boost-max) * var(--my-font-auto-scale, 100) / 100)
+  );
+  --my-font-size-base: calc(var(--font-text-size, 16px) + var(--my-font-size-boost));
+
+  /* 界面字号跟随正文，但夹在 15~19px：
+   * 宽 1440 时与原生 15px 基本一致；4K 宽时界面放大到约 17.9px
+   * （原生是死值 15px，在 163 PPI 的 27 寸 4K 屏上同样偏小）。
+   * 夹上限是为了防止用户把正文字号调到 24px 时整个界面失控。 */
+  --my-font-size-ui: clamp(15px, var(--my-font-size-base), 19px);
+  --font-ui-smaller: calc(var(--my-font-size-ui) * 0.72);
+  --font-ui-small: calc(var(--my-font-size-ui) * 0.82);
+  --font-ui-medium: calc(var(--my-font-size-ui) * 0.94);
+  --font-ui-large: calc(var(--my-font-size-ui) * 1.12);
   --font-smallest: 0.7em;
   --font-smaller: 0.8em;
   --font-small: 0.875em;
@@ -298,6 +330,13 @@ body {
  * 因此默认 46rem（约 34 个汉字），而不是英文主题常见的 700px。
  * ======================================================================== */
 body {
+  /* 版心折算：一行 N 个汉字 × 当前字号。
+   * 1440 宽 → 46 × 16.5 ≈ 759px；3840 宽 → 46 × 21.8 ≈ 1003px。
+   * 两种情况都是一行 46 字，读起来的节律完全一致 —— 这是「按分辨率适配」的
+   * 另一半：不只把字放大，还要让版心同步变宽，否则宽屏上会变成窄窄一条。
+   * 宽版心按 1.35 倍折算，与 62rem/46rem 的原始比例保持一致。 */
+  --my-content-width: calc(var(--my-content-chars, 46) * var(--my-font-size-base));
+  --my-content-width-wide: calc(var(--my-content-chars, 46) * 1.35 * var(--my-font-size-base));
   --file-line-width: var(--my-content-width);
   --file-margins: var(--my-editor-padding-y) var(--my-editor-padding-x);
   --file-margins-x: var(--my-editor-padding-x);

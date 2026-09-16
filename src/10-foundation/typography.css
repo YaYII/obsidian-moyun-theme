@@ -14,13 +14,12 @@
 
 /* ==========================================================================
  * 一、字体族落地
- * 通过 --font-*-theme 让主题层生效；用户在「设置 → 外观」里手动指定字体时，
- * Obsidian 会写 --font-*-override，其优先级更高——这是预期行为，尊重用户选择。
- * ======================================================================== */
+ * 字体链路的落点在 00-tokens/obsidian-map.css（--font-*-theme + *-effective）。
+ * 这里曾经有四行把 --font-*-override 指向主题字体 —— 那是错的：override 是
+ * Obsidian 留给【用户选择】的槽位，主题去写它等于把用户的选择反过来盖掉
+ * （注释写的是「尊重用户选择」，代码做的却是相反的事）。
+ * 现在主题只写 theme 层，用户一选就自动让位。正文用 effective 令牌取字体。 */
 body {
-  --font-text-override: var(--my-font-text);
-  --font-interface-override: var(--my-font-ui);
-  --font-monospace-override: var(--my-font-mono);
   --font-print-override: var(--my-font-text);
 }
 
@@ -33,7 +32,7 @@ body {
 .markdown-source-view.mod-cm6 .cm-content,
 .markdown-source-view.mod-cm6 .cm-scroller,
 .markdown-reading-view {
-  font-family: var(--my-font-text);
+  font-family: var(--my-font-text-effective);
   font-size: var(--my-font-size-base);
   line-height: var(--my-line-height-relaxed);
   letter-spacing: var(--my-letter-spacing-cjk);
@@ -334,7 +333,7 @@ body.my-justify .markdown-rendered li {
 /* 内联代码：中文环境下必须留出足够内边距，并统一等宽字体 */
 .markdown-rendered code,
 .markdown-source-view.mod-cm6 .cm-inline-code {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: var(--code-size);
   letter-spacing: var(--my-letter-spacing-code);
   background-color: var(--my-code-surface);
@@ -347,7 +346,7 @@ body.my-justify .markdown-rendered li {
 
 /* 键盘按键（kbd）：做成"实体按键"观感 */
 .markdown-rendered kbd {
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono-effective);
   font-size: 0.82em;
   padding: 0.14em 0.42em;
   border: 1px solid var(--my-border-strong);
