@@ -72,6 +72,32 @@ const CHECKS = [
   ['标注标题可见', '.callout-title-inner', 'display', (v) => v !== 'none'],
   /* Obsidian 把表头底色加在 thead 的 tr 上，而不是 th 上（见 app.css:13835） */
   ['表格表头有独立底色', '.markdown-rendered thead tr', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],
+  /* —— 表格宽度（回归防线）——
+   * 这两条是本主题真实踩过的坑：曾用 display:block + overflow-x:auto 实现横向滚动，
+   * 结果 <table> 变块级容器后，内部匿名表格盒子仍按内容宽度排版，出现
+   * 「边框撑满版心、单元格挤在左边一小条」的缺陷（实测 4 列只占版心 28%）。
+   * 第一条查表格元素本身，第二条才是真正能抓住该缺陷的检查。 */
+  ['表格撑满版心（≥ 内容区的 95%）', '.markdown-rendered table', 'width',
+    (v, el) => {
+      const c = el.closest('.markdown-rendered') || el.parentElement;
+      const cs = getComputedStyle(c);
+      /* 基准必须是【内容区】宽度：版心有 64px 左右的左右内边距，
+       * 用外框宽度当基准会把"已经撑满"误判为没撑满（本主题实际踩过这个坑）。 */
+      const content = c.getBoundingClientRect().width
+        - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      return el.getBoundingClientRect().width >= content * 0.95;
+    }],
+  ['表格列宽总和撑满（防止「边框撑满、内容挤在左边」）', '.markdown-rendered table', 'width',
+    (v, el) => {
+      const c = el.closest('.markdown-rendered') || el.parentElement;
+      const cs = getComputedStyle(c);
+      const content = c.getBoundingClientRect().width
+        - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const cols = [...el.querySelectorAll('thead th')];
+      if (!cols.length) return false;
+      const sum = cols.reduce((s, x) => s + x.getBoundingClientRect().width, 0);
+      return sum >= content * 0.95;
+    }],
   ['代码块有底色', '.markdown-rendered pre', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],
   ['行内代码有内边距', '.markdown-rendered p code', 'paddingLeft', (v) => parseFloat(v) > 0],
   ['标签有底色', '.tag', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],

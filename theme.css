@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /* ============================================================================
- * MoYun v1.0.3 —— 中文优先的 Obsidian 主题
+ * MoYun v1.0.4 —— 中文优先的 Obsidian 主题
  * 
  * 本文件由 build.mjs 自动生成，请勿直接编辑。
  * 源码位于 src/，修改后执行：node build.mjs
@@ -496,7 +496,10 @@ body {
   --table-column-last-border-width: 0;
   --table-row-last-border-width: 0;
   --table-column-min-width: 6ch;
-  --table-column-max-width: 46ch;
+  /* 与 Obsidian 原生保持一致：none 表示列宽无上限。
+   * 曾误设为 46ch（约 23 个汉字），直接把每列卡死，表格远窄于版心 ——
+   * 表格能否撑满应由 width 决定，不该靠 max-width 去限制列。 */
+  --table-column-max-width: none;
   --table-selection: var(--my-surface-selected);
   --table-selection-border-color: var(--my-accent);
   --table-selection-border-width: 2px;
@@ -5405,16 +5408,28 @@ body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt]::b
  * ========================================================================== */
 
 /* ==========================================================================
- * 一、表格容器与横向滚动
- * 难点：阅读视图里表格没有包裹元素（实时预览才有 .table-wrapper），
- * 而 <table> 自身默认不是滚动容器，列一多就会撑破版心、正文被迫横向滚动。
- * 做法：让 table 变成块级滚动容器。border-collapse 是可继承属性，
- * 内部的匿名表格盒子会继承它，所以单元格边框仍然是合并的，观感不变。
+ * 一、表格容器：撑满版心，宽表格退化为横向滚动
+ * ----------------------------------------------------------------------------
+ * 这是本模块最容易做错的一处，把踩过的坑记在这里：
+ *
+ *   社区常见做法是给 table 一句 display:block + overflow-x:auto 来解决
+ *   「列多时撑破版心」。但它有隐藏代价 —— <table> 变成块级容器后，浏览器会为它
+ *   生成一个【匿名表格盒子】来排列单元格，而那个盒子的宽度仍由内容决定。结果是
+ *   边框与底色撑满了版心，单元格却挤在左边一小条。实测 4 列表格每列只有 83.6px
+ *   （正好等于 min-width），整张表只占版心 28%，看上去「又长又空」。
+ *
+ *   正确做法是让表格保持表格布局并显式撑满：display:table + width:100%。
+ *   此时浏览器把版心宽度按各列内容比例分配，列宽总和恰好 100%。
+ *
+ * 例外是列数很多时：强行撑满会把每列压到两三个字、读不成句。故用 :has()
+ * 检测列数，≥6 列时退回「按内容宽度 + 可横向滚动」的模式。
  * ======================================================================== */
 .markdown-rendered table {
-  display: block;
-  overflow-x: auto;
-  max-width: 100%;
+  display: table;
+  /* 撑满版心。列宽由浏览器按内容比例分配（table-layout:auto 是默认值，
+   * 显式写出以表明意图） */
+  width: 100%;
+  table-layout: auto;
   margin-block: var(--p-spacing) calc(var(--p-spacing) * 1.25);
   border: var(--table-border-width) solid var(--table-border-color);
   border-radius: var(--my-radius-m);
@@ -5422,6 +5437,18 @@ body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt]::b
   /* 表格里的数字必须等宽：中文说明列里的 1 与 10 若宽度不同，整列看上去是歪的 */
   font-variant-numeric: tabular-nums;
   -webkit-overflow-scrolling: touch;
+}
+
+/* 宽表格（≥6 列）改回滚动模式。
+ * width: max-content 让内容按自身需要展开，min-width: 100% 保证内容不多时仍撑满，
+ * 两者取大值 —— 于是「内容少就撑满、内容多就滚动」，不会把列压到读不成句。
+ * 用 :has() 按列数分流，是本主题能用上现代 CSS 的一个典型场景。 */
+.markdown-rendered table:has(> thead > tr > th:nth-child(6)) {
+  display: block;
+  overflow-x: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: 100%;
 }
 
 /* 表格内滚动条的滚动留白，避免最后一列贴住滚动条 */
@@ -5478,8 +5505,9 @@ body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt]::b
   /* 最小列宽用 em 而不是 ch：ch 按数字 0 的宽度算，
    * 一个汉字约等于 2ch，用 ch 会让中文列窄到只剩两三个字。 */
   min-width: 5.5em;
-  /* 最大行宽：约 24 个汉字换行，超过就需要来回找行首 */
-  max-width: 24em;
+  /* 刻意不设 max-width：表格已由 width:100% 撑满版心，列宽交给浏览器按内容比例
+   * 分配。此前设过 max-width:24em，在一次 4 列表格里直接把列卡到 83.6px，
+   * 整张表只占版心 28% —— 限制列宽应当用布局手段，而不是给单元格加硬上限。 */
   vertical-align: var(--table-cell-vertical-alignment);
   line-height: var(--table-line-height);
   /* 单元格里的中文同样要避头尾与智能断词 */

@@ -484,7 +484,10 @@ body {
   --table-column-last-border-width: 0;
   --table-row-last-border-width: 0;
   --table-column-min-width: 6ch;
-  --table-column-max-width: 46ch;
+  /* 与 Obsidian 原生保持一致：none 表示列宽无上限。
+   * 曾误设为 46ch（约 23 个汉字），直接把每列卡死，表格远窄于版心 ——
+   * 表格能否撑满应由 width 决定，不该靠 max-width 去限制列。 */
+  --table-column-max-width: none;
   --table-selection: var(--my-surface-selected);
   --table-selection-border-color: var(--my-accent);
   --table-selection-border-width: 2px;
