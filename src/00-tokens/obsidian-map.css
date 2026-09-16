@@ -378,7 +378,9 @@ body {
  * 八种语义色各配一色，保证在双模式下都可读。
  * ======================================================================== */
 body {
-  --callout-color:  var(--my-accent-rgb);
+  /* 注意：这是个【颜色值】而不是 RGB 三元组 —— app.css 把它用于
+   * color 与 color-mix()，写成三元组会让整套标注配色失效。 */
+  --callout-color:  var(--my-accent);
   --callout-default: var(--my-tone-info-500);
   --callout-info:    var(--my-tone-info-500);
   --callout-todo:    var(--my-tone-info-500);
@@ -463,7 +465,7 @@ body {
   --table-background: transparent;
   --table-border-color: var(--my-border);
   --table-border-width: 1px;
-  --table-header-background: var(--my-surface-secondary);
+  --table-header-background: var(--my-table-head-bg);
   --table-header-background-hover: var(--my-surface-hover);
   --table-header-border-color: var(--my-border-strong);
   --table-header-color: var(--my-text-primary);

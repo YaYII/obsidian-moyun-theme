@@ -1,0 +1,406 @@
+/* ============================================================================
+ * MoYun · 公文风格（Government Document Style）
+ * ----------------------------------------------------------------------------
+ * 依据：GB/T 9704-2012《党政机关公文格式》。
+ *
+ * 为什么单独成模块、并放在基础排版之后：公文规范是对普通排版的【整体替换】，
+ * 涉及字体、字号、行距、缩进、标题层级、表格样式，与通用中文排版是两套体系。
+ * 目录名用 15- 前缀是为了让它排在 10-foundation 之后 —— 否则会被通用排版覆盖。
+ *
+ * 开关：body.my-gov-style（设置面板里默认开启）
+ *       关闭后回到通用中文排版。
+ *
+ * 规范要点与 Web 换算（96dpi 下 1pt ≈ 1.333px）：
+ *   版心       A4 156mm × 225mm，上 37 / 下 35 / 左 28 / 右 26 mm
+ *   正文       三号仿宋_GB2312（16pt）
+ *   一级标题   三号黑体            「一、」
+ *   二级标题   三号楷体_GB2312      「（一）」
+ *   三级标题   三号仿宋加粗        「1.」
+ *   四级标题   三号仿宋            「（1）」
+ *   文件标题   二号方正小标宋简体（22pt）
+ *   行距       每页 22 行 → 约 28.5pt
+ *   首行缩进   2 字符
+ *
+ * 两处刻意的偏离规范（屏幕阅读优先，并在注释中说明）：
+ *   ① 正文字号不强制 16pt：屏幕 DPI 与纸张不同，16pt 在显示器上约 21px，
+ *      正文会显得过大、每屏容纳的行数太少。改为沿用用户设置的字号（默认 16px），
+ *      但字体、层级、行距、缩进严格照规范。
+ *   ② 版心宽度不固定为 156mm：屏幕宽度差异大，改为沿用主题的可调行宽，
+ *      并对齐公文的「每行 28 字」视觉密度。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、字体族：公文专用字体栈
+ * 规范字体多为 Windows 专有（仿宋_GB2312 / 楷体_GB2312 / 方正小标宋），
+ * 因此每一项都要给出开源替代与系统回退，否则 Linux / macOS 上会退化成默认衬线。
+ * ======================================================================== */
+body.my-gov-style {
+  /* 正文：仿宋体系 */
+  --my-gov-font-body: "FangSong_GB2312", "仿宋_GB2312", "FangSong", "仿宋",
+    "STFangsong", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", serif;
+  /* 一级标题：黑体体系 */
+  --my-gov-font-h1: "SimHei", "黑体", "Source Han Sans SC", "Noto Sans CJK SC",
+    "Sarasa Gothic SC", sans-serif;
+  /* 二级标题：楷体体系 */
+  --my-gov-font-h2: "KaiTi_GB2312", "楷体_GB2312", "KaiTi", "楷体", "STKaiti",
+    "AR PL UKai CN", "Source Han Serif SC", serif;
+  /* 文件标题：小标宋（开源替代用思源宋体加粗） */
+  --my-gov-font-title: "方正小标宋简体", "FZXiaoBiaoSong-B05S", "Source Han Serif SC",
+    "Noto Serif CJK SC", "STSong", "SimSun", serif;
+  /* 数字与西文：公文要求用 Times New Roman */
+  --my-gov-font-latin: "Times New Roman", "Liberation Serif", "Nimbus Roman", serif;
+}
+
+/* ==========================================================================
+ * 二、正文
+ * ======================================================================== */
+body.my-gov-style .markdown-rendered,
+body.my-gov-style .markdown-source-view.mod-cm6 .cm-content {
+  /* 西文用 Times，中文回退到仿宋 —— 字体族顺序即可实现按字符分流 */
+  font-family: var(--my-gov-font-latin), var(--my-gov-font-body);
+  /* 公文行距：规范为每页 22 行，换算后约 1.75 倍字号；
+   * 屏幕阅读再放宽一点到 1.8，与主题通用排版保持一致，避免切换时跳动。 */
+  line-height: var(--my-line-height-relaxed);
+  letter-spacing: 0;
+  /* 公文正文一律两端对齐（均等割付），这是纸质公文的硬要求 */
+  text-align: justify;
+  text-justify: inter-character;
+  text-autospace: normal;
+}
+
+/* 段落：首行缩进 2 字符，段间不留空行（公文是"空两格"而不是"空一行"） */
+body.my-gov-style .markdown-rendered p {
+  text-indent: 2em;
+  margin-block-end: 0;
+}
+
+/* 公文正文不用彩色、不用斜体、不用删除线 */
+body.my-gov-style .markdown-rendered em,
+body.my-gov-style .markdown-rendered i {
+  font-style: normal;
+  color: inherit;
+  font-weight: inherit;
+}
+
+/* 加粗：公文用「仿宋加粗」表示强调，不加底色 */
+body.my-gov-style .markdown-rendered strong,
+body.my-gov-style .markdown-rendered b {
+  font-weight: 700;
+  color: inherit;
+}
+
+/* 高亮：公文不用荧光笔，去掉底色，改为加着重号（规范允许的强调方式） */
+body.my-gov-style .markdown-rendered mark {
+  background: none;
+  color: inherit;
+  padding: 0;
+  text-emphasis: dot;
+  text-emphasis-position: under right;
+  -webkit-text-emphasis: dot;
+}
+
+/* 链接：公文里链接保留文字与下划线，不用强调色 */
+body.my-gov-style .markdown-rendered a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ==========================================================================
+ * 三、标题层级
+ * 公文的层级靠【字体切换】而非字号大小建立，这一点与网页排版的习惯相反：
+ * 一级黑体、二级楷体、三级仿宋加粗、四级仿宋 —— 四种同字号字体轮转。
+ * ======================================================================== */
+
+/* 文件标题（H1）：二号小标宋，居中 */
+body.my-gov-style .markdown-rendered h1,
+body.my-gov-style .markdown-rendered .inline-title {
+  font-family: var(--my-gov-font-title);
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  letter-spacing: 0.01em;
+  margin-block: 0.4em 1.4em;
+  text-indent: 0;
+}
+
+/* 一级标题（一、）：三号黑体 */
+body.my-gov-style .markdown-rendered h2 {
+  font-family: var(--my-gov-font-h1);
+  font-size: 1em;
+  font-weight: 400;
+  line-height: var(--my-line-height-relaxed);
+  letter-spacing: 0;
+  margin-block: 0 0;
+  text-indent: 2em;
+}
+
+/* 二级标题（（一））：三号楷体 */
+body.my-gov-style .markdown-rendered h3 {
+  font-family: var(--my-gov-font-h2);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: var(--my-line-height-relaxed);
+  margin-block: 0 0;
+  text-indent: 2em;
+}
+
+/* 三级标题（1.）：三号仿宋加粗 */
+body.my-gov-style .markdown-rendered h4 {
+  font-family: var(--my-gov-font-body);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: var(--my-line-height-relaxed);
+  margin-block: 0 0;
+  text-indent: 2em;
+}
+
+/* 四级标题（（1））：三号仿宋 */
+body.my-gov-style .markdown-rendered h5,
+body.my-gov-style .markdown-rendered h6 {
+  font-family: var(--my-gov-font-body);
+  font-size: 1em;
+  font-weight: 400;
+  line-height: var(--my-line-height-relaxed);
+  letter-spacing: 0;
+  color: inherit;
+  margin-block: 0 0;
+  text-indent: 2em;
+}
+
+/* ==========================================================================
+ * 四、列表
+ * 公文的列举多用「一、（一）1.（1）」的中文序号，而非圆点项目符号。
+ * 这里把无序列表的项目符号改为中文顿号式，有序列表用中文数字。
+ * ======================================================================== */
+body.my-gov-style .markdown-rendered ul > li {
+  /* 公文极少用圆点，改为一字线（破折号式的短横） */
+  list-style-type: "— ";
+  text-indent: 0;
+}
+
+body.my-gov-style .markdown-rendered ul > li::marker {
+  color: inherit;
+  font-size: 1em;
+}
+
+/* 有序列表用中文数字（一、二、三…） */
+body.my-gov-style .markdown-rendered ol {
+  list-style-type: cjk-ideographic;
+}
+
+body.my-gov-style .markdown-rendered li {
+  line-height: var(--my-line-height-relaxed);
+  margin-block: 0;
+}
+
+body.my-gov-style .markdown-rendered li > p {
+  text-indent: 0;
+}
+
+/* ==========================================================================
+ * 五、表格：公文的「严肃表」
+ * 特征：全框线（不能只有横线）、无圆角、无斑马纹、表头黑体居中、字号比正文小一档。
+ * 公文表格是要装订归档的，圆角与浅色斑马纹都属于"网页味"，必须去掉。
+ * ======================================================================== */
+body.my-gov-style .markdown-rendered table {
+  /* 全框线是与通用排版最明显的区别：公文表格每一格都要有线 */
+  border: 1px solid currentColor;
+  border-radius: 0;
+  border-collapse: collapse;
+  font-size: 0.95em;
+  line-height: 1.5;
+  text-align: left;
+  margin-block: 0.8em 1.2em;
+}
+
+body.my-gov-style .markdown-rendered :is(td, th) {
+  border: 1px solid currentColor;
+  /* 公文表格内边距紧凑，追求信息密度而非"呼吸感" */
+  padding: 0.35em 0.6em;
+  min-width: 4em;
+  text-indent: 0;
+  vertical-align: middle;
+}
+
+/* 表头：黑体、居中、无底色（公文表格表头通常不加底色） */
+body.my-gov-style .markdown-rendered thead > tr > th {
+  font-family: var(--my-gov-font-h1);
+  font-weight: 400;
+  font-size: 1em;
+  letter-spacing: 0;
+  text-align: center;
+  background-color: transparent;
+  border-block-end: 1px solid currentColor;
+}
+
+/* 去掉通用排版里的斑马纹与悬停高亮 */
+body.my-gov-style .markdown-rendered tbody tr:nth-child(even),
+body.my-gov-style .markdown-rendered tbody tr:hover {
+  background-color: transparent;
+}
+
+/* 表头圆角取消（通用排版为呼应表格圆角给表头加了圆角） */
+body.my-gov-style .markdown-rendered thead > tr > th:first-child,
+body.my-gov-style .markdown-rendered thead > tr > th:last-child {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+
+/* ==========================================================================
+ * 六、引用、代码、分隔线
+ * ======================================================================== */
+/* 引用：公文引用文件用「引号 + 书名号」，不用竖线色条，改为缩进块 */
+body.my-gov-style .markdown-rendered blockquote {
+  font-family: var(--my-gov-font-body);
+  border-inline-start: none;
+  background: transparent;
+  padding-inline-start: 2em;
+  color: inherit;
+  font-style: normal;
+}
+
+/* 代码：公文里出现代码/等宽内容时用宋体等宽，保持严肃 */
+body.my-gov-style .markdown-rendered code {
+  font-family: var(--my-font-mono);
+  font-size: 0.92em;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 0;
+}
+
+body.my-gov-style .markdown-rendered pre {
+  background: transparent;
+  border: 1px solid var(--my-border-strong);
+  border-radius: 0;
+  padding: 0.8em 1em;
+}
+
+/* 分隔线：公文的「页间分隔」是一条实线，不用渐变或双线 */
+body.my-gov-style .markdown-rendered hr {
+  border: none;
+  border-block-start: 1px solid currentColor;
+  opacity: 0.5;
+  margin-block: 1.2em;
+}
+
+/* 标注：公文体下改为「直角 + 无底纹 + 左侧语义色条」。
+ *
+ * 这里有一个必须避开的坑：我曾把 --callout-color 直接设为 currentColor，
+ * 想追求「公文不用彩色」，结果六种标注（note / tip / warning / danger /
+ * success / quote）在深色模式下全部变成纯黑框，warning 与 danger 无法区分 ——
+ * 颜色是标注的核心语义载体，去掉它等于毁掉这个功能。
+ *
+ * 正确的「严肃化」是去掉装饰（圆角、底纹），而不是去掉语义。 */
+body.my-gov-style .markdown-rendered .callout {
+  border: 1px solid var(--my-border-strong);
+  /* --callout-color 是【普通颜色值】（app.css 里形如 #086ddd），直接使用即可。
+   * 曾误写成 rgb(var(--callout-color)) —— 对 hex 值套 rgb() 完全无效，
+   * 导致六种标注全部失去颜色，在深色下变成一模一样的黑框。 */
+  border-inline-start: 3px solid var(--callout-color);
+  border-radius: 0;
+  background: transparent;
+}
+
+body.my-gov-style .markdown-rendered .callout-title {
+  font-family: var(--my-gov-font-h1);
+  font-weight: 400;
+  /* 标题保留语义色，保证一眼可辨类型 */
+  color: var(--callout-color);
+}
+
+/* ==========================================================================
+ * 七、公文的落款、日期、附件说明（用 cssclass 调用）
+ * 这些是公文特有的版式要素，通用 Markdown 没有对应语法，
+ * 因此用行内元素 + 类的组合来表达：
+ *   <p class="my-gov-sign">XX市人民政府</p>
+ *   <p class="my-gov-date">2026年9月16日</p>
+ * ======================================================================== */
+body.my-gov-style .markdown-rendered .my-gov-sign {
+  text-align: right;
+  text-indent: 0;
+  /* 落款与正文之间留出盖章空间 */
+  margin-block-start: 2em;
+  padding-inline-end: 4em;
+}
+
+body.my-gov-style .markdown-rendered .my-gov-date {
+  text-align: right;
+  text-indent: 0;
+  padding-inline-end: 2em;
+}
+
+/* 附件说明：「附件：1.xxx」顶格写 */
+body.my-gov-style .markdown-rendered .my-gov-attach {
+  text-indent: 0;
+  margin-block-start: 1.5em;
+}
+
+/* 发文字号与标题之间的红色分隔线（公文特有） */
+body.my-gov-style .markdown-rendered .my-gov-redline {
+  text-indent: 0;
+  border: none;
+  border-block-start: 2px solid var(--my-gov-redline);
+  margin-block: 0.8em 1.6em;
+}
+
+/* ==========================================================================
+ * 八、深色模式：保留公文排版，只把「纸」换成深墨、「墨」换成暖白
+ * 公文规范只规定纸质格式，屏幕深色模式没有对应标准。这里的取舍是：
+ * 【排版规范一条不改】（字体、层级、行距、缩进、全框线表格全部保留），
+ * 仅替换颜色，这样夜间阅读时依然是"公文"而不是变成另一种风格。
+ * ======================================================================== */
+.theme-dark.my-gov-style {
+  /* 表格与代码的框线在深色下用暖白，保证与底色有足够对比 */
+  --my-gov-line-color: var(--my-text-secondary);
+}
+
+.theme-dark.my-gov-style .markdown-rendered table,
+.theme-dark.my-gov-style .markdown-rendered :is(td, th) {
+  color: var(--my-text-primary);
+}
+
+.theme-dark.my-gov-style .markdown-rendered hr {
+  opacity: 0.35;
+}
+
+/* ==========================================================================
+ * 九、打印：公文的真正用武之地
+ * 屏幕上偏离规范的两处（字号、版心）在打印时全部回归规范。
+ * ======================================================================== */
+@media print {
+  body.my-gov-style .markdown-rendered {
+    font-family: var(--my-gov-font-latin), var(--my-gov-font-body);
+    /* 三号字 = 16pt，行距固定值 28.5pt ≈ 1.78 倍 */
+    font-size: 16pt;
+    line-height: 1.78;
+    color: var(--my-print-text);
+  }
+
+  body.my-gov-style .markdown-rendered h1,
+  body.my-gov-style .markdown-rendered .inline-title {
+    font-size: 22pt;
+  }
+
+  body.my-gov-style .markdown-rendered h2,
+  body.my-gov-style .markdown-rendered h3,
+  body.my-gov-style .markdown-rendered h4,
+  body.my-gov-style .markdown-rendered h5,
+  body.my-gov-style .markdown-rendered h6,
+  body.my-gov-style .markdown-rendered p,
+  body.my-gov-style .markdown-rendered li {
+    font-size: 16pt;
+  }
+
+  body.my-gov-style .markdown-rendered table {
+    font-size: 14pt;
+  }
+
+  /* 公文版心：156mm × 225mm，对应 A4 的 37/35/28/26mm 页边距 */
+  @page {
+    size: A4;
+    margin: 37mm 26mm 35mm 28mm;
+  }
+}

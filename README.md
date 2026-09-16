@@ -14,7 +14,7 @@
 ![版本](https://img.shields.io/badge/版本-1.0.1-3a6ea5)
 ![Obsidian](https://img.shields.io/badge/Obsidian-1.6.0%2B-477a5b)
 ![许可](https://img.shields.io/badge/许可-MIT-8a8170)
-![源码](https://img.shields.io/badge/源码-34%20模块-7159a3)
+![源码](https://img.shields.io/badge/源码-35%20模块-7159a3)
 
 </div>
 
@@ -163,6 +163,7 @@ obsRead/
 ├── src/                      模块化源码（34 个模块）
 │   ├── 00-tokens/            设计令牌：色板 / 语义 / 设置面板 / Obsidian 映射
 │   ├── 10-foundation/        基础：重置、中文排版核心
+│   ├── 15-govdoc/            公文风格（GB/T 9704-2012，默认开启）
 │   ├── 20-layout/            布局：工作区、侧栏、标签页、状态栏、设置界面
 │   ├── 30-editor/            编辑器内容：标题、列表、表格、代码、引用、媒体
 │   ├── 40-components/        组件：标注、复选框、标签、浮层、表单

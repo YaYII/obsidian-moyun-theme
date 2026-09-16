@@ -85,6 +85,11 @@
   /* 中文首行缩进宽度：2 个汉字 = 2em */
   --my-indent-cjk: 2em;
 
+  /* 公文专用色：GB/T 9704-2012 规定发文字号下方有一条红色分隔线。
+   * 这是规范里唯一允许出现的彩色，因此单独建令牌而不是复用语义色 ——
+   * 它是「公文红」，与警告色/危险色的语义无关。 */
+  --my-gov-redline: #c0392b;
+
   /* 打印专用颜色：纸面输出必须用纯黑。
    * 主题的正文墨色（--my-text-primary）带暖调，屏幕上舒服，但打到纸上会偏灰，
    * 且激光打印机的灰阶表现不可控，因此打印媒体单独使用纯黑。
@@ -169,6 +174,10 @@
   --my-surface-elevated:   var(--my-ink-0);     /* 浮层：弹窗、菜单 */
   --my-surface-sunken:     var(--my-ink-200);   /* 凹陷区：输入框底、代码块底 */
   --my-surface-hover:      hsl(35 25% 45% / 0.07);
+  /* 表格表头底色：需要与纸面形成【明确但不刺眼】的层次。
+   * 浅色用实色阶，深色用叠加色 —— 深色下用实色阶很难拉开差距
+   * （实测表头 #1b1916 与纸面 #171512 只差 4 个色阶，肉眼几乎无感）。 */
+  --my-table-head-bg:      var(--my-ink-100);
   --my-surface-active:     hsl(35 25% 45% / 0.12);
   --my-surface-selected:   rgb(var(--my-accent-rgb) / 0.12);
 
@@ -248,6 +257,7 @@
   --my-surface-elevated:   var(--my-ink-800);
   --my-surface-sunken:     var(--my-ink-950);
   --my-surface-hover:      hsl(40 20% 80% / 0.06);
+  --my-table-head-bg:      hsl(40 16% 74% / 0.11);
   --my-surface-active:     hsl(40 20% 80% / 0.11);
   --my-surface-selected:   rgb(var(--my-accent-rgb) / 0.20);
 
@@ -261,11 +271,16 @@
   --my-text-on-accent: #ffffff;
   --my-text-inverse:   var(--my-ink-900);
 
-  /* —— 描边与分隔 —— */
-  --my-border:        hsl(40 12% 70% / 0.14);
-  --my-border-strong: hsl(40 12% 70% / 0.24);
-  --my-border-subtle: hsl(40 12% 70% / 0.08);
-  --my-divider:       hsl(40 12% 70% / 0.11);
+  /* —— 描边与分隔 ——
+   * 关键：深色模式需要【明显高于浅色模式】的 alpha 才能达到等效的视觉对比。
+   * 这是深浅双模式最容易出错的地方 —— 若两套用同样的 alpha，浅色下 8% 的黑
+   * 是清晰的浅灰，深色下 8% 的白却几乎不可见。
+   * 实测教训：表格行分隔线原用 --my-border-subtle（8%），在深色底上完全看不出，
+   * 整张数据表糊成一片色块。 */
+  --my-border:        hsl(40 14% 72% / 0.22);
+  --my-border-strong: hsl(40 14% 72% / 0.36);
+  --my-border-subtle: hsl(40 14% 72% / 0.13);
+  --my-divider:       hsl(40 14% 72% / 0.18);
 
   /* —— 强调色（夜间提亮一档，保证暗底可读） —— */
   --my-accent:        var(--my-accent-custom, var(--my-qinghua-400));
@@ -295,7 +310,9 @@
   --my-code-keyword: #c39ae0;
   --my-code-string:  #9ec98d;
   --my-code-number:  #e0b47f;
-  --my-code-comment: #6e685e;
+  /* 代码注释在深色下原为 #6e685e，对深底对比度约 3.5:1，低于 AA 的 4.5:1。
+   * 中文注释本来就比英文长、更依赖可读性，故提亮。 */
+  --my-code-comment: #8a8478;
   --my-code-function:#85b3dd;
   --my-code-tag:     #e0938a;
   --my-code-property:#8fc6c0;

@@ -108,7 +108,11 @@
  * ======================================================================== */
 .markdown-rendered :is(td, th) {
   border: 0;
-  border-block-end: 1px solid var(--my-border-subtle);
+  /* 行分隔线用 --my-border 而非 --my-border-subtle。
+   * 数据密集的表格（评审意见、日志清单）靠这条线分行，subtle 级在深色下
+   * 会完全看不见 —— 实测 8% 白在深色底上的对比度约等于零。
+   * 阅读视图与实时预览必须一致，否则同一切换会「跳」一下。 */
+  border-block-end: 1px solid var(--my-border);
   /* 中文字面框需要呼吸空间：10px 纵向 / 16px 横向 */
   padding: var(--my-space-5) var(--my-space-7);
   /* 最小列宽用 em 而不是 ch：ch 按数字 0 的宽度算，
@@ -236,7 +240,11 @@
 .markdown-source-view.mod-cm6 .cm-table-widget :is(th, td) {
   padding: var(--my-space-5) var(--my-space-7);
   min-width: 5.5em;
-  border-block-end: 1px solid var(--my-border-subtle);
+  /* 行分隔线用 --my-border 而非 --my-border-subtle。
+   * 数据密集的表格（评审意见、日志清单）靠这条线分行，subtle 级在深色下
+   * 会完全看不见 —— 实测 8% 白在深色底上的对比度约等于零。
+   * 阅读视图与实时预览必须一致，否则同一切换会「跳」一下。 */
+  border-block-end: 1px solid var(--my-border);
   font-variant-numeric: tabular-nums;
   line-break: strict;
 }

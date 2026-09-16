@@ -68,8 +68,13 @@ describe('一、构建产物完整性', () => {
     expect(n, '应恰好有一个 @settings 块').toBe(1);
   });
 
-  it('theme.css 包含全部 34 个模块', () => {
-    expect(MODULES.length, '模块数不一致').toBe(34);
+  it('theme.css 包含 src/ 下的全部模块', () => {
+    /* 刻意不硬编码模块数量：数量会随开发变化，写死只会制造无意义的失败。
+     * 真正需要守住的是「src/ 里每个模块都出现在产物中」——
+     * 这能抓住「新增了文件但没被构建脚本收集」这类真实问题。 */
+    const missing = MODULES.filter((m) => !THEME.includes('模块：' + m.rel));
+    expect(missing.map((m) => m.rel), '以下模块未进入构建产物').toEqual([]);
+    expect(MODULES.length, '模块数不应为 0').toBeGreaterThan(0);
   });
 
   it('每个模块都带有中文说明注释', () => {

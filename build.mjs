@@ -236,6 +236,22 @@ function validate(files, contents) {
       errors.push('[' + rel + '] 存在自我引用：' + m[0] + '，该变量会在计算值阶段失效');
     }
   }
+
+  // 9. 颜色值变量不得被 rgb()/hsl() 包裹（硬错误）
+  //    规则来源：本项目先后踩过两次同类坑 ——
+  //      ① hsl(var(--my-accent-rgb) / α)：三元组误用于 hsl()，15 处声明失效；
+  //      ② rgb(var(--callout-color))：颜色值误套 rgb()，六种标注全部失去颜色。
+  //    判定：以 -rgb 结尾的是三元组（合法）；以 -hsl 结尾的是 Obsidian 原生的
+  //    HSL 三元组（合法）；其余颜色变量都是完整颜色值，套 rgb()/hsl() 会静默失效。
+  for (const f of files) {
+    const rel = relPath(f);
+    const src = contents.get(f).replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const m of src.matchAll(/(?:rgb|hsl|rgba|hsla)\(\s*var\((--[a-z0-9-]+)/g)) {
+      const v = m[1];
+      if (v.endsWith('-rgb') || v.endsWith('-hsl')) continue;
+      errors.push('[' + rel + '] ' + v + ' 是颜色值而非三元组，不能被 rgb()/hsl() 包裹（会导致声明静默失效）');
+    }
+  }
   errors.push(...contractErrors);
   warnings.push(...contractWarns);
   return { errors, warnings };

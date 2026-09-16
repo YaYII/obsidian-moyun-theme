@@ -55,8 +55,14 @@ const CHECKS = [
   ['中文段落使用自动短语断行', '.markdown-rendered p', 'wordBreak', (v) => v === 'auto-phrase' || v === 'normal'],
 
   // —— 标题 ——
-  ['标题字重不过粗（≤680，避免汉字笔画粘连）', '.markdown-rendered h1', 'fontWeight',
-    (v) => parseInt(v, 10) <= 680],
+  /* 公文体刻意使用真加粗（700）：公文的「加粗」就是要看起来真的粗，
+   * 与通用模式「汉字 700 会糊」的取舍相反。断言按风格分流。 */
+  ['标题字重符合当前风格（通用 ≤680 / 公文 =700）', '.markdown-rendered h1', 'fontWeight',
+    (v) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      const w = parseInt(v, 10);
+      return gov ? w >= 700 : w <= 680;
+    }],
   ['H1 字号大于正文', '.markdown-rendered h1', 'fontSize',
     (v, el) => parseFloat(v) > parseFloat(getComputedStyle(el.closest('.markdown-rendered')).fontSize)],
 
@@ -68,7 +74,12 @@ const CHECKS = [
     (v) => !/^rgb\(255,\s*255,\s*255\)$/.test(v)],
 
   // —— 组件 ——
-  ['标注容器有圆角', '.callout', 'borderRadius', (v) => parseFloat(v) > 0],
+  /* 公文体刻意去掉圆角（公文不用圆角）；通用模式保留圆角。 */
+  ['标注容器圆角符合风格（通用有圆角 / 公文无圆角）', '.callout', 'borderRadius',
+    (v) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      return gov ? parseFloat(v) === 0 : parseFloat(v) > 0;
+    }],
   ['标注标题可见', '.callout-title-inner', 'display', (v) => v !== 'none'],
   /* Obsidian 把表头底色加在 thead 的 tr 上，而不是 th 上（见 app.css:13835） */
   ['表格表头有独立底色', '.markdown-rendered thead tr', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],
@@ -98,16 +109,62 @@ const CHECKS = [
       const sum = cols.reduce((s, x) => s + x.getBoundingClientRect().width, 0);
       return sum >= content * 0.95;
     }],
-  ['代码块有底色', '.markdown-rendered pre', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],
-  ['行内代码有内边距', '.markdown-rendered p code', 'paddingLeft', (v) => parseFloat(v) > 0],
+  /* 公文体下代码块改用边框而非底色（公文不用色块），行内代码去掉内边距与底色 */
+  ['代码块有视觉边界（通用=底色 / 公文=边框）', '.markdown-rendered pre', 'backgroundColor',
+    (v, el) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      if (!gov) return v !== 'rgba(0, 0, 0, 0)';
+      return parseFloat(getComputedStyle(el).borderTopWidth) > 0;
+    }],
+  ['行内代码内边距符合风格（通用有 / 公文无）', '.markdown-rendered p code', 'paddingLeft',
+    (v) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      return gov ? parseFloat(v) === 0 : parseFloat(v) > 0;
+    }],
   ['标签有底色', '.tag', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],
-  ['引用块左侧有色条', '.markdown-rendered blockquote', 'borderInlineStartWidth',
-    (v) => parseFloat(v) >= 2],
+  /* 公文体用缩进块代替色条（公文引用不用装饰线） */
+  ['引用块样式符合风格（通用=左侧色条 / 公文=缩进块）', '.markdown-rendered blockquote', 'borderInlineStartWidth',
+    (v, el) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      if (!gov) return parseFloat(v) >= 2;
+      return parseFloat(v) === 0 && parseFloat(getComputedStyle(el).paddingInlineStart) > 0;
+    }],
   ['任务复选框尺寸合理（≥14px）', '.task-list-item-checkbox', 'width', (v) => parseFloat(v) >= 14],
   /* Obsidian 原生只给 .internal-embed img 加圆角，正文裸图默认无圆角，
    * 本主题在媒体模块中补齐——这条断言正是检验该补齐是否生效。 */
   ['图片有圆角', '.markdown-rendered img', 'borderRadius', (v) => parseFloat(v) > 0],
   ['嵌入笔记有左侧边框', '.markdown-embed', 'borderInlineStartWidth', (v) => parseFloat(v) >= 0],
+
+  // —— 公文规范（公文体开启时生效；关闭时这些断言应全部为「不适用」）——
+  /* 这几条守住 GB/T 9704-2012 的核心特征：字体分层、首行缩进、两端对齐、
+   * 全框线表格。公文体的价值就在这里，一旦被后续改动破坏必须能立刻发现。 */
+  ['公文体：正文用仿宋体系', '.markdown-rendered p', 'fontFamily',
+    (v) => {
+      if (!document.body.classList.contains('my-gov-style')) return true;
+      return /FangSong|仿宋|Source Han Serif|Noto Serif|Songti/i.test(v);
+    }],
+  ['公文体：段落首行缩进两字', '.markdown-rendered p', 'textIndent',
+    (v) => {
+      if (!document.body.classList.contains('my-gov-style')) return true;
+      return parseFloat(v) > 0;
+    }],
+  ['公文体：正文两端对齐', '.markdown-rendered', 'textAlign',
+    (v) => {
+      if (!document.body.classList.contains('my-gov-style')) return true;
+      return v === 'justify';
+    }],
+  ['公文体：表格为全框线（单元格四边都有线）', '.markdown-rendered tbody td', 'borderTopWidth',
+    (v) => {
+      const gov = document.body.classList.contains('my-gov-style');
+      if (!gov) return true;
+      return parseFloat(v) > 0;
+    }],
+  ['公文体：标题层级靠字体区分（H2 黑体与 H3 楷体不同）', '.markdown-rendered h2', 'fontFamily',
+    (v, el) => {
+      if (!document.body.classList.contains('my-gov-style')) return true;
+      const h3 = document.querySelector('.markdown-rendered h3');
+      return h3 ? v !== getComputedStyle(h3).fontFamily : true;
+    }],
 
   // —— 布局外壳 ——
   ['侧栏有独立底色', '.workspace-split.mod-left-split', 'backgroundColor', (v) => v !== 'rgba(0, 0, 0, 0)'],
