@@ -22,6 +22,15 @@ jobs:
       - name: 模块冲突检查
         run: node tools/check-conflicts.mjs --strict
 
+      - name: 主题名合规自查
+        run: node tools/check-name.mjs
+
+      # 检查 release.yml 里的 shell 语法。
+      # 为什么需要：那些 shell 只在打 tag 时于 GitHub 上执行，本地不校验就会
+      # 出现「推了 tag 才发现语法错、发布失败」的情况 —— 本项目刚因此失败过一次。
+      - name: 工作流 shell 语法检查
+        run: node tools/check-workflow.mjs
+
       # 视觉验证需要下载 Chromium（约 150MB），故默认关闭。
       # 需要开启时去掉注释，并在前面补一步 npx playwright install --with-deps chromium
       # - name: 视觉与计算样式验证

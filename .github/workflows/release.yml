@@ -32,19 +32,29 @@ jobs:
       - name: 模块冲突检查（严格模式）
         run: node tools/check-conflicts.mjs --strict
 
+      - name: 主题名合规自查
+        run: node tools/check-name.mjs
+
       - name: 校对 manifest 与 tag 版本一致
         run: |
           TAG=${GITHUB_REF_NAME#v}
-          PKG=$(node -p "require('./manifest.json').version")
+          PKG=$(node -p 'require("./manifest.json").version')
           echo "tag=$TAG  manifest=$PKG"
           if [ "$TAG" != "$PKG" ]; then
             echo "::error::tag $TAG 与 manifest.json 的版本 $PKG 不一致，请先同步版本号"
             exit 1
           fi
 
+      # 坑位说明：这里必须用【单引号】包住 node -p 的表达式。
+      # 曾写成 echo "theme_name=$(node -p \"require('./manifest.json').name\")"，
+      # 在 YAML 里转义后内层双引号会提前结束 shell 字符串，报
+      #   bash: syntax error near unexpected token `('  → 整个发布流程失败。
+      # 多行块 + 单引号才是安全写法。
       - name: 读取主题名（避免在 workflow 里硬编码，改名后自动同步）
         id: meta
-        run: echo "theme_name=$(node -p \"require('./manifest.json').name\")" >> "$GITHUB_OUTPUT"
+        run: |
+          THEME_NAME=$(node -p 'require("./manifest.json").name')
+          echo "theme_name=$THEME_NAME" >> "$GITHUB_OUTPUT"
 
       - name: 创建 Release 并上传主题资产
         uses: softprops/action-gh-release@v2
