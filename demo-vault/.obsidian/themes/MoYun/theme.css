@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /* ============================================================================
- * MoYun v1.0.8 —— 中文优先的 Obsidian 主题
+ * MoYun v1.0.9 —— 中文优先的 Obsidian 主题
  * 
  * 本文件由 build.mjs 自动生成，请勿直接编辑。
  * 源码位于 src/，修改后执行：node build.mjs
@@ -1577,6 +1577,10 @@ settings:
   -
     id: group-enhance
     title: "✨ 内容增强"
+    description: 以下均为可选特性，按需开启。
+    type: heading
+    level: 1
+    collapsed: true
   -
     id: my-mermaid-style
     title: 图表风格
@@ -1589,10 +1593,6 @@ settings:
         label: 墨韵（纸面 + 柔和辉光）
       - value: my-mermaid-cyber
         label: 赛博霓虹（深色画布 + 镭射光）
-    description: 以下均为可选特性，按需开启。
-    type: heading
-    level: 1
-    collapsed: true
   -
     id: my-rainbow-folders
     title: 彩虹文件夹

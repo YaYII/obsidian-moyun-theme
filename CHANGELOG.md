@@ -2,6 +2,45 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.9] - 2026-09-16
+
+### 修复：Style Settings 打不开，报 YAMLException（用户报告）
+
+用户点开 Style Settings 面板时看到：
+
+```
+Error: MoYun（墨韵）
+YAMLException: duplicated mapping key in "MoYun（墨韵）" (247:5)
+No style settings found
+```
+
+**根因**：1.0.8 新增「图表风格」时，插入点选错了 —— 落在「✨ 内容增强」分组头
+与它的后续键之间，于是分组头的 `description` / `type` / `level` / `collapsed`
+被挂到了新设置项上，同一个映射里出现两个 `description`、两个 `type`。
+YAML 不允许重复键，插件解析直接抛异常，**整个设置面板失效（36 个设置项全部消失）**。
+
+**更该被批评的是**：当时的构建检查全绿放行。它对 `@settings` 块只查了
+「块存在」「有 name」「有 id」——粒度完全跟不上手脚。
+
+### 新增：Style Settings 配置块结构校验（零依赖）
+
+新建 `tools/lib/settings-parse.mjs`，把这个配置块按 YAML 的映射规则扫一遍：
+
+| 级别 | 抓什么 |
+|---|---|
+| 错误 | 同一映射内重复键、缺 id / 缺 type、type 不在已知取值内、id 重复、`class-select` 缺 `options`、数值型 default 缺失/非数字/越出 min–max |
+| 提示 | 无法解析的行、未知字段名（拼写错误）、设置项缺 title |
+
+两个刻意的设计：
+
+1. **不引入 js-yaml**。主题的构建与静态校验保持零依赖，任何机器 `node build.mjs`
+   就能跑；同时按缩进分层记录键，遇到新的列表项先清掉更深的层级，
+   因此嵌套 `options` 里重复出现的 `- value` 不会被误判。
+2. **构建期即失败**。这次是「配置错了但构建通过」，所以校验必须挂在构建上，
+   而不是靠人记得单独跑一次检查。
+
+回归测试从 24 项增至 28 项，把这次的翻车写法原样固化成用例；
+另用真实 `js-yaml` 独立验证过一遍：36 项、类型分布正常、赛博选项结构完整。
 ## [1.0.8] - 2026-09-16
 
 ### 新增：Mermaid 双风格 —— 墨韵（纸面辉光） / 赛博霓虹

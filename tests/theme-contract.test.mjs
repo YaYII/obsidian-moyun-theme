@@ -5,11 +5,12 @@
  * 颜色函数类型 / 自我引用」这类静态校验，挡不住「中文排版关键属性被删」「明暗模式
  * 只改了一边」「组件层写死颜色」这类回归 —— 而它们恰恰是中文主题最容易退化的地方。
  *
- * 本文件把《开发契约》里可机检的条款固化成断言，共 24 项，分四组：
+ * 本文件把《开发契约》里可机检的条款固化成断言，共 28 项，分五组：
  *   一、构建产物完整性 —— theme.css 是否真的包含各部分
  *   二、清单一致性     —— manifest 与 package.json、演示库副本是否同步
  *   三、中文排版防线   —— 关键属性与豁免规则是否还在（本主题的核心价值）
  *   四、设计令牌纪律   —— 令牌引用、无效写法、明暗对称、动效降级
+ *   五、设置面板结构   —— 配置块 YAML 重复键/未知类型等（曾经整块失效过）
  *
  * 运行：npm test          （需要先 npm install，仅测试需要依赖）
  * 说明：构建与两类静态校验（build.mjs / check-conflicts.mjs）刻意保持【零依赖】，
@@ -17,6 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { validateSettings } from '../tools/lib/settings-parse.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -270,5 +272,74 @@ describe('四、设计令牌纪律', () => {
       }
     }
     expect(offenders, '组件层出现写死颜色').toEqual([]);
+  });
+});
+
+describe('五、设置面板 YAML 结构（一次真实事故的回归防线）', () => {
+  /* 事故回顾：给「内容增强」分组插新设置项时，插入点落在分组头与它的后续键之间，
+   * 于是分组头的 description/type/level/collapsed 被挂到了新项上 —— 同一映射里
+   * 出现重复键。Style Settings 抛 YAMLException，整个设置面板变成
+   * 「No style settings found」，主题 36 个设置项全部失效。
+   * 当时构建全绿，因为它只查了「块存在 + 有 name/id」。 */
+  const BROKEN = [
+    '/* @settings',
+    'name: 墨韵（MoYun）',
+    'id: moyun',
+    'settings:',
+    '  -',
+    '    id: group-enhance',
+    '    title: "内容增强"',
+    '  -',
+    '    id: my-mermaid-style',
+    '    title: 图表风格',
+    '    description: 新加的说明',
+    '    type: class-select',
+    '    default: my-mermaid-ink',
+    '    options:',
+    '      - value: my-mermaid-ink',
+    '        label: 墨韵',
+    '      - value: my-mermaid-cyber',
+    '        label: 赛博',
+    '    description: 以下均为可选特性，按需开启。',
+    '    type: heading',
+    '    level: 1',
+    '    collapsed: true',
+    '*/',
+  ].join('\n');
+
+  it('真实主题的 @settings 块结构合法（无重复键、无未知类型）', () => {
+    const r = validateSettings(THEME);
+    expect(r.errors).toEqual([]);
+    expect(r.count).toBeGreaterThan(30);
+  });
+
+  it('能抓出「切断分组头」造成的重复键（本条若失效，事故会重演）', () => {
+    const r = validateSettings(BROKEN);
+    expect(r.errors.length).toBeGreaterThan(0);
+    expect(r.errors.join('\n')).toMatch(/键 description 重复/);
+    expect(r.errors.join('\n')).toMatch(/键 type 重复/);
+  });
+
+  it('不会把嵌套 options 里重复出现的 - value 误判为重复键', () => {
+    const nested = [
+      '/* @settings',
+      'name: x', 'id: y', 'settings:', '  -', '    id: a', '    title: A',
+      '    type: class-select', '    default: a1', '    options:',
+      '      - value: a1', '        label: 一',
+      '      - value: a2', '        label: 二',
+      '      - value: a3', '        label: 三',
+      '*/',
+    ].join('\n');
+    expect(validateSettings(nested).errors).toEqual([]);
+  });
+
+  it('能抓出 default 落在 min/max 之外这类静默失效', () => {
+    const bad = [
+      '/* @settings', 'name: x', 'id: y', 'settings:', '  -',
+      '    id: a', '    title: A', '    type: variable-number-slider',
+      '    default: 99', '    min: 0', '    max: 10',
+      '*/',
+    ].join('\n');
+    expect(validateSettings(bad).errors.join('\n')).toMatch(/大于 max/);
   });
 });

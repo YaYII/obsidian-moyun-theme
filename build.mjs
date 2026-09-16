@@ -14,6 +14,8 @@
  */
 
 import fs from 'node:fs';
+/* 零依赖的 Style Settings 配置块校验器（构建与测试共用同一份实现） */
+import { validateSettings } from './tools/lib/settings-parse.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -145,6 +147,13 @@ function validate(files, contents) {
     const block = all.slice(all.indexOf('/* @settings'), all.indexOf('*/', all.indexOf('/* @settings')));
     if (!/^\s*name:/m.test(block)) errors.push('@settings 块缺少 name 字段');
     if (!/^\s*id:/m.test(block)) errors.push('@settings 块缺少 id 字段');
+    /* 结构校验：重复键会让 Style Settings 抛 YAMLException，整个设置面板失效。
+     * 这是真发生过的事故 —— 插新设置项时切断了分组头，它的后续键被挂到新项上，
+     * 同一映射里出现两个 description / 两个 type。当时只查「块存在 + 有 name/id」，
+     * 粒度太粗，全绿放行。详见 tools/lib/settings-parse.mjs 的说明。 */
+    const report = validateSettings(all);
+    errors.push(...report.errors);
+    warnings.push(...report.warnings);
   }
 
   // 5. 中文主题不应出现会破坏 CJK 排版的禁用写法

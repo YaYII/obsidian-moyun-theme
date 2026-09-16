@@ -234,6 +234,10 @@ settings:
   -
     id: group-enhance
     title: "✨ 内容增强"
+    description: 以下均为可选特性，按需开启。
+    type: heading
+    level: 1
+    collapsed: true
   -
     id: my-mermaid-style
     title: 图表风格
@@ -246,10 +250,6 @@ settings:
         label: 墨韵（纸面 + 柔和辉光）
       - value: my-mermaid-cyber
         label: 赛博霓虹（深色画布 + 镭射光）
-    description: 以下均为可选特性，按需开启。
-    type: heading
-    level: 1
-    collapsed: true
   -
     id: my-rainbow-folders
     title: 彩虹文件夹
