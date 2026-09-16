@@ -2,6 +2,24 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.2] - 2026-09-16
+
+### 为提交官方社区目录做准备
+
+- **主题商店封面图**：新增 `screenshot.png`（夜间）与 `screenshot-light.png`（日间），
+  均为官方向导推荐的 512×288 的 2 倍图。官方要求提交时仓库根目录必须有展示截图。
+  配套新增 `tools/preview/cover.html` 与 `tools/make-screenshot.mjs`，主题改版后可一键重出。
+- **manifest 精简**：移除值为空字符串的 `fundingUrl`。
+  官方目录里已收录的 758 个主题无一把该字段留空 —— 省略优于空值。
+- README 顶部接入封面图，徽章版本号同步。
+
+### 兼容性说明（本次核查结论）
+
+- 主题未使用 CSS 嵌套语法，全部现代特性均为优雅降级：
+  `:has()`、`color-mix()` 在 Obsidian 1.6（Chromium 120）即可用；
+  仅 `text-autospace`（中西文自动间距）需要 Obsidian 1.13+，低版本会静默忽略该属性，
+  其余排版特性不受影响。故 `minAppVersion` 保持 `1.6.0`。
+
 ## [1.0.1] - 2026-09-16
 
 ### 元数据修正
