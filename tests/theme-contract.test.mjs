@@ -113,7 +113,7 @@ describe('二、清单一致性', () => {
   });
 
   it('演示库中的主题副本与构建产物一致', () => {
-    const p = path.join(ROOT, 'demo-vault', '.obsidian', 'themes', '墨韵 MoYun', 'theme.css');
+    const p = path.join(ROOT, 'demo-vault', '.obsidian', 'themes', MANIFEST.name, 'theme.css');
     if (!fs.existsSync(p)) return; // 演示库未生成时跳过
     expect(fs.readFileSync(p, 'utf8'), '演示库副本过期，请重新运行 node build.mjs')
       .toBe(THEME);

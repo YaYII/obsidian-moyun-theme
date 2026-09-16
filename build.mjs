@@ -264,7 +264,7 @@ function build({ silent = false } = {}) {
    *   ① 构建不可复现，无法用 sha256 校验 Release 资产与本地是否一致；
    *   ② 每次构建都在 git 里产生无意义的 diff。
    * 可追溯性由 git tag 与 manifest.json 的版本号提供，不需要时间戳。 */
-  const header = `@charset "UTF-8";\n/* ============================================================================\n * 墨韵 MoYun v${manifest.version} —— 中文优先的 Obsidian 主题\n * \n * 本文件由 build.mjs 自动生成，请勿直接编辑。\n * 源码位于 src/，修改后执行：node build.mjs\n * \n * 模块数：${files.length}\n * ========================================================================== */\n\n`;
+  const header = `@charset "UTF-8";\n/* ============================================================================\n * ${manifest.name} v${manifest.version} —— 中文优先的 Obsidian 主题\n * \n * 本文件由 build.mjs 自动生成，请勿直接编辑。\n * 源码位于 src/，修改后执行：node build.mjs\n * \n * 模块数：${files.length}\n * ========================================================================== */\n\n`;
 
   const body = files
     .map((f) => {
@@ -280,17 +280,29 @@ function build({ silent = false } = {}) {
   // 「改了源码、重建了产物、忘了同步演示库」是很自然会发生的事，而它带来的困惑
   // （演示库看到的还是旧样式）非常难自查。放进构建就让它不可能发生。
   if (!CHECK_ONLY) {
-    const demoThemeDir = path.join(ROOT, 'demo-vault', '.obsidian', 'themes', '墨韵 MoYun');
+    const demoThemeDir = path.join(ROOT, 'demo-vault', '.obsidian', 'themes', manifest.name);
     if (fs.existsSync(path.dirname(demoThemeDir))) {
       fs.mkdirSync(demoThemeDir, { recursive: true });
       fs.copyFileSync(OUT, path.join(demoThemeDir, 'theme.css'));
       fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(demoThemeDir, 'manifest.json'));
+
+      /* 同时校正演示库的 cssTheme。它必须与 manifest.name 完全一致，否则 Obsidian
+       * 打开演示库时会认为该主题不存在，直接回退到默认外观 —— 而主题改名是很自然
+       * 会发生的事，放进构建就让它不可能漏掉。 */
+      const appearancePath = path.join(ROOT, 'demo-vault', '.obsidian', 'appearance.json');
+      if (fs.existsSync(appearancePath)) {
+        const appearance = JSON.parse(fs.readFileSync(appearancePath, 'utf8'));
+        if (appearance.cssTheme !== manifest.name) {
+          appearance.cssTheme = manifest.name;
+          fs.writeFileSync(appearancePath, JSON.stringify(appearance, null, 2) + String.fromCharCode(10));
+        }
+      }
     }
   }
 
   if (!silent) {
     const kb = (Buffer.byteLength(output, 'utf8') / 1024).toFixed(1);
-    console.log(`\n墨韵 MoYun 构建${CHECK_ONLY ? '校验' : '完成'}`);
+    console.log(`\n${manifest.name} 构建${CHECK_ONLY ? '校验' : '完成'}`);
     console.log('─'.repeat(58));
     for (const f of files) {
       const rel = relPath(f).padEnd(38);

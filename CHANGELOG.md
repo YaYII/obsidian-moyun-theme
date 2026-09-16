@@ -2,6 +2,37 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.3] - 2026-09-16
+
+### 主题改名（为符合官方目录的命名规范）
+
+提交到 Obsidian 社区目录时被拒：`This name is not allowed in the directory.`
+查官方 manifest 规范后确认原因 —— 规范原文要求：
+
+> - Prefer English names and use **Basic Latin** characters only. No punctuation
+>   (except hyphens, plus sign, and parenthesis), emoji, or special characters are allowed.
+> - **Theme names cannot be changed once the theme has been submitted** to the community directory.
+
+原名称「墨韵 MoYun」含中文字符，不合规。现改为 **MoYun**（拼音，保留品牌发音；
+「墨韵」作为中文名保留在 README 与文档中）。
+
+> 这一条不可逆：官方规定主题一旦提交到目录就不能再改名，所以名称必须一次选对。
+
+### 工程改进：主题名收敛为单一事实源
+
+改名过程中发现主题名被硬编码在 4 个地方（构建产物头部、演示库目录名、
+`cssTheme` 配置、脚本与测试里的路径），漏掉任何一处都会导致主题失联。现已全部改为
+从 `manifest.json` 读取：
+
+- `build.mjs` 的产物头部与日志输出读 `manifest.name`
+- 演示库的主题目录名与 `appearance.json` 的 `cssTheme` 由构建同步（新增，此前会漏）
+- `tools/make-demo-vault.mjs` 与 `tests/` 不再硬编码路径
+- `make-demo-vault.mjs` 的路径改为基于脚本位置推导，不再依赖当前工作目录
+
+### 数据
+
+- 官方目录 758 个主题中名称含中文的为 **0 个**，本主题原先会是唯一一个（现已改为拼音）。
+
 ## [1.0.2] - 2026-09-16
 
 ### 为提交官方社区目录做准备
