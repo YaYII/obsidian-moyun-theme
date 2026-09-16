@@ -42,10 +42,14 @@ jobs:
             exit 1
           fi
 
+      - name: 读取主题名（避免在 workflow 里硬编码，改名后自动同步）
+        id: meta
+        run: echo "theme_name=$(node -p \"require('./manifest.json').name\")" >> "$GITHUB_OUTPUT"
+
       - name: 创建 Release 并上传主题资产
         uses: softprops/action-gh-release@v2
         with:
-          name: 墨韵 MoYun ${{ github.ref_name }}
+          name: ${{ steps.meta.outputs.theme_name }} ${{ github.ref_name }}
           draft: false
           generate_release_notes: true
           files: |
