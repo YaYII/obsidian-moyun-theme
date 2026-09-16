@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<!--
+  主题商店封面图的内容模板
+  ---------------------------------------------------------------------------
+  用途：生成提交到 Obsidian 社区目录所需的主题截图（官方推荐 512×288）。
+  为什么会有一个【独立】的封面临时页、而不是直接用验证台：
+    验证台是 1440 宽的完整工作区（含侧栏），缩到 512 宽放不下侧栏，
+    正文会被挤成两三行、看不出排版特征。封面页只保留「标签栏 + 正文」，
+    让 512×288 的画布里能装下足够的正文，一眼看出中文排版的效果。
+  本文件只用于出图，不打进主题包。
+-->
+<link rel="stylesheet" href="../../docs/reference/obsidian-app.css" />
+<link rel="stylesheet" href="../../theme.css" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  /* 封面页冻结在 512×288 的画布上，内部元素按此尺寸设计 */
+  body { width: 512px; height: 288px; overflow: hidden; }
+  .cover-tabs {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px; height: 30px;
+    background-color: var(--background-secondary);
+    border-bottom: 1px solid var(--background-modifier-border);
+  }
+  .cover-tab {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 5px 5px 0 0;
+    font-size: 11px; color: var(--text-muted);
+    background-color: transparent;
+  }
+  .cover-tab.is-active {
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+  }
+  .cover-body {
+    padding: 4px 20px 0;
+    background-color: var(--background-primary);
+    height: calc(288px - 30px);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  /* 封面里把正文字号收小一档，让 512 宽能容纳 26~28 个汉字/行 */
+  .cover-body .markdown-rendered {
+    font-size: 13px; line-height: 1.7;
+    padding: 0; margin: 0;
+  }
+  /* 顶部留白收到最小：封面是要在小尺寸下展示气质，不需要编辑器的呼吸空间 */
+  .cover-body .markdown-rendered > :first-child { margin-block-start: 0; }
+  .cover-body .markdown-rendered h1 { font-size: 1.45em; margin: 0 0 0.45em; }
+  .cover-body .markdown-rendered p { margin-block-end: 0.5em; }
+  .cover-body .markdown-rendered .callout {
+    margin-block: 0.55em 0; padding: 7px 12px;
+  }
+  .cover-body .markdown-rendered .callout-content p { margin-block-end: 0; }
+  .cover-body .markdown-rendered h3 { font-size: 1.12em; margin: 0.45em 0 0.3em; }
+  /* 末行不留底边距，避免在固定高度的画布里被裁掉半个字 */
+  .cover-body .markdown-rendered > p:last-child { margin-block-end: 0; }
+  .cover-body .markdown-rendered code { font-size: 0.85em; padding: 0.05em 0.3em; }
+</style>
+</head>
+<body class="theme-dark">
+
+<div class="cover-tabs">
+  <div class="cover-tab is-active">中文排版样张</div>
+  <div class="cover-tab">读书笔记</div>
+</div>
+
+<div class="cover-body">
+  <div class="markdown-preview-view markdown-rendered">
+    <h1>墨韵 MoYun</h1>
+    <p>为汉字的阅读与写作重新设计排版。中西文之间自动留出间隙，行高 1.8，标题字重 650 以免笔画粘连。</p>
+    <p>中文段落支持<strong>首行缩进</strong>，英文 words 与数字 12345 自动分流间距。</p>
+    <div class="callout" data-callout="tip">
+      <div class="callout-title">
+        <div class="callout-icon"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/></svg></div>
+        <div class="callout-title-inner">八种传统色可切换</div>
+      </div>
+      <div class="callout-content"><p>青花 · 朱砂 · 竹青 · 藤紫 · 秋香 · 黛青 · 胭脂 · 松烟</p></div>
+    </div>
+    <h3>为什么需要中文优先的主题</h3>
+    <p>九个主流英文主题里，<code>text-autospace</code> 的使用数是 0。</p>
+  </div>
+</div>
+
+</body>
+</html>

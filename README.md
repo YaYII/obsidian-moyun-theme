@@ -6,7 +6,9 @@
 
 为汉字的阅读与写作重新设计排版、配色与交互
 
-![版本](https://img.shields.io/badge/版本-1.0.0-3a6ea5)
+![墨韵 MoYun 主题预览](./screenshot.png)
+
+![版本](https://img.shields.io/badge/版本-1.0.1-3a6ea5)
 ![Obsidian](https://img.shields.io/badge/Obsidian-1.6.0%2B-477a5b)
 ![许可](https://img.shields.io/badge/许可-MIT-8a8170)
 ![源码](https://img.shields.io/badge/源码-34%20模块-7159a3)
@@ -110,6 +112,8 @@ Obsidian 上优秀的主题很多，但几乎都是为英文写作设计的。�
 ## 界面预览
 
 ### 日间「宣纸」
+
+![日间主题预览](./screenshot-light.png)
 
 ![日间正文](docs/images/日间-正文.png)
 
