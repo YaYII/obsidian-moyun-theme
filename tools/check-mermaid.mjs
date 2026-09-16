@@ -95,6 +95,12 @@ const DIAGRAMS = {
   gantt: ['gantt', '    title 投產計畫', '    dateFormat YYYY-MM-DD', '    section 前置', '    確認清單 :a1, 2026-01-01, 3d', '    section 上線', '    灰度 :a2, after a1, 5d'].join('\n'),
 };
 
+/* 两套图表风格都要过检查：风格只该改变观感，不该改变可读性 */
+const STYLES = [
+  { key: 'ink', cls: 'my-mermaid-ink', label: '墨韵' },
+  { key: 'cyber', cls: 'my-mermaid-cyber', label: '赛博霓虹' },
+];
+
 /* 对比度阈值：正文级 4.5（WCAG AA），次级信息 3.0 */
 const AA_NORMAL = 4.5;
 const AA_SMALL = 3.0;
@@ -108,13 +114,14 @@ console.log('使用 Mermaid：' + MERMAID);
 const failures = [];
 const summary = [];
 
+for (const style of STYLES) {
 for (const mode of ['dark', 'light']) {
   const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, deviceScaleFactor: 2 });
   await page.goto(HARNESS, { waitUntil: 'load' });
   await page.addScriptTag({ path: MERMAID });
-  const rows = await page.evaluate(async ({ diagrams, mode }) => {
-    document.body.classList.remove('theme-dark', 'theme-light');
-    document.body.classList.add('theme-' + mode);
+  const rows = await page.evaluate(async ({ diagrams, mode, styleCls }) => {
+    document.body.classList.remove('theme-dark', 'theme-light', 'my-mermaid-ink', 'my-mermaid-cyber');
+    document.body.classList.add('theme-' + mode, styleCls);
     document.documentElement.dataset.theme = mode;
     await new Promise((r) => setTimeout(r, 80));
 
@@ -242,7 +249,7 @@ for (const mode of ['dark', 'light']) {
       }
     }
     return { rows: out, filters };
-  }, { diagrams: DIAGRAMS, mode });
+  }, { diagrams: DIAGRAMS, mode, styleCls: style.cls });
 
   /* —— 像素级校验：计算样式必须与屏幕像素一致 ——
    * 这一条是被「Obsidian 给深色 Mermaid SVG 加 invert 反相滤镜」坑出来的：
@@ -298,7 +305,7 @@ for (const mode of ['dark', 'light']) {
     const diff = Math.max(Math.abs(want[0] - p.painted[0]), Math.abs(want[1] - p.painted[1]), Math.abs(want[2] - p.painted[2]));
     if (diff > 16) {
       failures.push({
-        mode, diagram: p.diagram, tag: 'g.node 形状', text: '计算样式与屏幕像素不一致',
+        style: style.key, styleLabel: style.label, mode, diagram: p.diagram, tag: 'g.node 形状', text: '计算样式与屏幕像素不一致',
         fg: '-', bg: '-', contrast: 0,
         reason: '计算 fill=rgb(' + want.join(',') + ') 但屏幕像素=rgb(' + p.painted.join(',') + ')，差值 ' + diff + ' —— 元素被滤镜/混合模式改写了像素',
       });
@@ -311,25 +318,26 @@ for (const mode of ['dark', 'light']) {
     const handle = await page.$('.mermaid[data-diagram="' + name + '"]');
     if (!handle) continue;
     await handle.scrollIntoViewIfNeeded();
-    await handle.screenshot({ path: path.join(OUT, 'mermaid-' + mode + '-' + name + '.png') });
+    await handle.screenshot({ path: path.join(OUT, 'mermaid-' + style.key + '-' + mode + '-' + name + '.png') });
   }
   const list = rows.rows;
   const bad = list.filter((r) => r.contrast !== null && r.contrast < AA_NORMAL);
   const worst = list.slice().sort((a, b) => a.contrast - b.contrast).slice(0, 3);
-  summary.push({ mode, total: list.length, bad: bad.length, worst, filters: rows.filters });
-  for (const r of bad) failures.push(r);
+  summary.push({ style: style.key, styleLabel: style.label, mode, total: list.length, bad: bad.length, worst, filters: rows.filters });
+  for (const r of bad) failures.push({ ...r, style: style.key, styleLabel: style.label });
   /* 反相滤镜会让「计算样式」与「屏幕像素」相反，必须单独拦下 */
   for (const f of rows.filters) {
-    failures.push({ mode, diagram: f.diagram, tag: 'svg', text: '反相滤镜未关闭', fg: '-', bg: '-', contrast: 0,
+    failures.push({ style: style.key, styleLabel: style.label, mode, diagram: f.diagram, tag: 'svg', text: '反相滤镜未关闭', fg: '-', bg: '-', contrast: 0,
       reason: 'SVG 上仍有 filter: ' + f.filter + '（Obsidian 原生为深色模式加的 invert 反相），计算样式与屏幕像素会相反' });
   }
   await page.close();
+}
 }
 
 await browser.close();
 
 for (const s of summary) {
-  console.log('\n【' + (s.mode === 'dark' ? '夜间 墨夜' : '日间 宣纸') + '】检查文字元素 ' + s.total + ' 个，低于 ' + AA_NORMAL + ':1 的有 ' + s.bad + ' 个；反相滤镜 ' + (s.filters.length ? '仍存在（' + s.filters.length + ' 处）' : '已关闭'));
+  console.log('\n【' + s.styleLabel + ' · ' + (s.mode === 'dark' ? '夜间 墨夜' : '日间 宣纸') + '】检查文字元素 ' + s.total + ' 个，低于 ' + AA_NORMAL + ':1 的有 ' + s.bad + ' 个；反相滤镜 ' + (s.filters.length ? '仍存在（' + s.filters.length + ' 处）' : '已关闭'));
   for (const r of s.worst) {
     console.log('   最低 ' + String(r.contrast).padStart(6) + '  ' + r.diagram.padEnd(9) + r.tag.padEnd(24) + ' 文字=' + r.fg.padEnd(18) + ' 背景=' + r.bg.padEnd(18) + '（取 ' + r.via + '）"' + r.text + '"');
   }
@@ -338,7 +346,7 @@ for (const s of summary) {
 if (failures.length) {
   console.log('\n✗ 有 ' + failures.length + ' 处文字对比度不足 ' + AA_NORMAL + ':1：');
   for (const r of failures.slice(0, 12)) {
-    console.log('   ' + r.mode + ' / ' + r.diagram + ' / ' + r.tag + (r.reason ? ' → ' + r.reason : ' 对比度 ' + r.contrast + ' 文字=' + r.fg + ' 背景=' + r.bg + ' "' + r.text + '"'));
+    console.log('   ' + (r.styleLabel || '') + ' ' + r.mode + ' / ' + r.diagram + ' / ' + r.tag + (r.reason ? ' → ' + r.reason : ' 对比度 ' + r.contrast + ' 文字=' + r.fg + ' 背景=' + r.bg + ' "' + r.text + '"'));
   }
   console.log('\n截图：tools/preview/out/mermaid-dark.png / mermaid-light.png');
   process.exitCode = 1;

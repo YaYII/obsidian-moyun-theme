@@ -234,6 +234,18 @@ settings:
   -
     id: group-enhance
     title: "✨ 内容增强"
+  -
+    id: my-mermaid-style
+    title: 图表风格
+    description: 墨韵＝与主题同源的纸面插图，文字与线带柔和辉光；赛博＝霓虹深色画布，线条与文字发出青蓝镭射光（画布恒定深色，不随明暗切换）。两种风格都保证文字对比度达标。
+    type: class-select
+    allowEmpty: false
+    default: my-mermaid-ink
+    options:
+      - value: my-mermaid-ink
+        label: 墨韵（纸面 + 柔和辉光）
+      - value: my-mermaid-cyber
+        label: 赛博霓虹（深色画布 + 镭射光）
     description: 以下均为可选特性，按需开启。
     type: heading
     level: 1

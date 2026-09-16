@@ -118,6 +118,27 @@
   --my-duration-fast:   120ms;
   --my-duration-normal: 200ms;
   --my-duration-slow:   320ms;
+
+  /* ---- 图表（Mermaid）· 赛博霓虹配色 ----
+   * 这套颜色【跨明暗恒定】：赛博风格自带深色画布（霓虹在浅底上根本亮不起来），
+   * 所以它不放在 .theme-* 里，应用切到浅色模式时它依然是那块深色画布。 */
+  --my-cyber-bg:      #070b12;   /* 画布：近黑的蓝，给霓虹留出足够的暗部 */
+  --my-cyber-panel:   #0b131d;   /* 节点填充：不透明（兼作遮住连线的垫底） */
+  --my-cyber-cyan:    #22e0ff;   /* 主描边 / 主文字 */
+  --my-cyber-magenta: #ff3d9a;   /* 次级：边标签、子图、强调 */
+  --my-cyber-lime:    #b6ff3d;   /* 稀用：成功态 */
+  --my-cyber-amber:   #ffc247;   /* 便签 / 警示 */
+  --my-cyber-text:    #eafcff;   /* 正文文字：冷白，压得住霓虹 */
+  --my-cyber-dim:     #8fb3c4;   /* 坐标轴等次要信息 */
+  /* 半透明派生值必须在这里算好：组件层不允许出现 rgb(数字…)，否则构建期告警 */
+  --my-cyber-grid:        rgb(34 224 255 / 0.07);
+  --my-cyber-border:      rgb(34 224 255 / 0.35);
+  --my-cyber-glow:        rgb(34 224 255 / 0.55);
+  --my-cyber-glow-strong: rgb(34 224 255 / 0.85);
+  --my-cyber-magenta-glow: rgb(255 61 154 / 0.65);
+  --my-cyber-amber-soft:  rgb(255 194 71 / 0.14);
+  --my-cyber-shadow:      rgb(34 224 255 / 0.10);
+  --my-cyber-line-soft:   rgb(34 224 255 / 0.34);   /* 生命线等「背景性的线」 */
 }
 
 /* ==========================================================================
@@ -216,6 +237,15 @@
   --my-border-subtle: var(--my-ink-150);
   --my-divider:       var(--my-ink-200);
 
+  /* —— 图表光晕 ——
+   * 「亮晶晶」不是靠加粗，而是给文字与线加一圈同色柔光。
+   * 光晕颜色跟着强调色走，所以换「韵色」时整张图的光感也一起换。
+   * 浅色模式：亮度对比本就有限，光晕要「短而实」，拉长会糊成一片。 */
+  --my-mermaid-glow:      rgb(var(--my-accent-rgb) / 0.32);
+  --my-mermaid-glow-size: 3px;
+  /* 连线与箭头：浅色纸面上彩色线太吵，保持中性 */
+  --my-mermaid-edge:      var(--my-border-strong);
+
   /* —— 强调色（由 .my-tone-* 覆盖；此处为默认青花） —— */
   --my-accent:        var(--my-accent-custom, var(--my-qinghua-500));
   --my-accent-hover:  var(--my-qinghua-400);
@@ -300,6 +330,13 @@
   --my-border-strong: hsl(40 14% 72% / 0.36);
   --my-border-subtle: hsl(40 14% 72% / 0.13);
   --my-divider:       hsl(40 14% 72% / 0.18);
+
+  /* —— 图表光晕：夜间更长更亮，这是「亮晶晶」的主要战场 —— */
+  --my-mermaid-glow:      rgb(var(--my-accent-rgb) / 0.60);
+  --my-mermaid-glow-size: 7px;
+  /* 连线与箭头：夜色里给一点强调色青光，配合辉光才「亮晶晶」；
+   * 但保持半透明（0.58），不让结构线抢走节点的视觉主角。 */
+  --my-mermaid-edge:      rgb(var(--my-accent-rgb) / 0.58);
 
   /* —— 强调色（夜间提亮一档，保证暗底可读） —— */
   --my-accent:        var(--my-accent-custom, var(--my-qinghua-400));

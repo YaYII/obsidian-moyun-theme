@@ -256,6 +256,37 @@ const CHECKS = [
   ['Mermaid 容器透明：图是版面上的插图，不是一张卡片', '.mermaid', 'backgroundColor',
     (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
+  ['Mermaid 文字带辉光（亮晶晶 · SVG 路径用 drop-shadow）', '.mermaid svg text', 'filter',
+    (v) => /drop-shadow/.test(v)],
+  ['Mermaid 文字带辉光（HTML 标签路径用 text-shadow）', '.mermaid .nodeLabel', 'textShadow',
+    (v) => !!v && v !== 'none'],
+  /* 赛博风格是 class-select 写入 body 的类：这里实测「加上类就换画布」，
+   * 而不是只断言 CSS 文件里写了这条规则。 */
+  ['Mermaid 赛博风格：画布切为深色终端（跨明暗恒定，墨韵为透明）', '.mermaid', 'backgroundColor',
+    () => {
+      const el = document.querySelector('.mermaid');
+      document.body.classList.add('my-mermaid-cyber');
+      const cyber = getComputedStyle(el).backgroundColor;
+      document.body.classList.remove('my-mermaid-cyber');
+      const ink = getComputedStyle(el).backgroundColor;
+      const m = cyber.match(/rgba?\(([^)]+)\)/);
+      const p = m ? m[1].split(',').map(Number) : null;
+      const darkCanvas = !!p && (p[3] === undefined || p[3] > 0.9) && (p[0] + p[1] + p[2]) / 3 < 40;
+      return darkCanvas && ink === 'rgba(0, 0, 0, 0)';
+    }],
+  ['Mermaid 赛博风格：节点描边发出青蓝光', '.mermaid .node rect', 'stroke',
+    () => {
+      const el = document.querySelector('.mermaid .node rect');
+      document.body.classList.add('my-mermaid-cyber');
+      const cyber = getComputedStyle(el).stroke;
+      const glow = getComputedStyle(el).filter;
+      document.body.classList.remove('my-mermaid-cyber');
+      const m = cyber.match(/rgba?\(([^)]+)\)/);
+      const p = m ? m[1].split(',').map(Number) : null;
+      // 青蓝：蓝分量最高且明显高于红，绿居中
+      const cyan = !!p && p[2] > 180 && p[2] > p[0] + 80 && p[1] > p[0];
+      return cyan && /drop-shadow/.test(glow);
+    }],
 ];
 
 /* 对比度计算（WCAG 相对亮度法） */
