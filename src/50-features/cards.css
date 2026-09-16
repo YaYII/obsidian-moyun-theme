@@ -1,0 +1,286 @@
+/* ============================================================================
+ * 墨韵 MoYun · 增强特性：卡片化（Cards）
+ * ----------------------------------------------------------------------------
+ * 用途：把「列表型」界面从"一片平铺的行"改成"一张张可点的卡片"。借鉴 Minimal 的
+ *       卡片视图思路，但中式处理：卡片更扁平、阴影更轻、圆角更小，
+ *       避免界面变成"糖果色积木"——中文界面元素密度高，过重的卡片会显脏。
+ *
+ * 开关：body.my-cards          （Style Settings → 内容增强 → 卡片化笔记列表）
+ *      body.my-cards.my-cards-grid（追加：顶层文件列表 / 数据表改成网格排布）
+ *
+ * 覆盖范围：
+ *   ① 文件浏览器条目（.nav-file）        ② 搜索结果条目（.search-result）
+ *   ③ Dataview 表格行与列表项            ④ Obsidian 1.13 原生 Bases 表格行
+ *   ⑤ 关系图谱控制面板（.graph-controls）
+ *
+ * 诚实说明｜关系图谱为什么只有面板能卡片化：
+ *   图谱本体（.graph-view）是用 <canvas> 绘制的，节点不是 DOM 元素，
+ *   CSS 无法给"节点"加圆角阴影（能改的只有 --graph-node 等颜色变量）。
+ *   因此这里把可卡片化的部分——左侧控制面板——做成卡片，并顺带统一节点配色，
+ *   不做"看起来改了其实没改"的假实现。
+ *
+ * 中文注意：卡片内文件名允许折成两行（-webkit-line-clamp: 2），
+ *   因为中文文件名长且没有空格可断，单行省略号会把最有信息量的尾字吃掉。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、卡片尺度令牌
+ * 全部经语义令牌推导，圆角跟随「设置 → 圆角大小」的全局系数一起缩放。
+ * ======================================================================== */
+body.my-cards {
+  --my-card-radius: var(--my-radius-s);
+  --my-card-pad-block: var(--my-space-3);
+  --my-card-pad-inline: var(--my-space-5);
+  --my-card-gap: var(--my-space-3);
+  --my-card-border: var(--my-border-subtle);
+  --my-card-surface: var(--background-primary);
+  /* 抬起幅度：1px 足够。中文界面上大幅位移会让人误以为界面在抖 */
+  --my-card-lift: -1px;
+}
+
+/* ==========================================================================
+ * 二、文件浏览器：每个条目一张卡
+ * .nav-file 是行容器，.nav-file-title 是真正的可点区域；
+ * 卡片外观画在 .nav-file 上，交互态仍交给 .nav-file-title，这样拖拽、
+ * 重命名、右键菜单等原生行为完全不受影响。
+ * ======================================================================== */
+body.my-cards .nav-file {
+  margin-block-end: var(--my-card-gap);
+  border: var(--my-border-width) solid var(--my-card-border);
+  border-radius: var(--my-card-radius);
+  background-color: var(--my-card-surface);
+  box-shadow: var(--my-shadow-xs);
+  overflow: hidden;
+  transition: transform var(--my-duration-fast) var(--my-ease-out),
+              box-shadow var(--my-duration-fast) var(--my-ease-out),
+              border-color var(--my-duration-fast) var(--my-ease-out),
+              background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+body.my-cards .nav-file .nav-file-title {
+  padding: var(--my-space-4) var(--my-card-pad-inline);
+  border-radius: 0; /* 圆角由外层卡片负责，内层再圆一次会出现"双圆角"缝隙 */
+  --nav-item-radius: 0;
+}
+
+body.my-cards .nav-file:hover {
+  transform: translateY(var(--my-card-lift));
+  box-shadow: var(--my-shadow-m);
+  border-color: var(--my-border);
+  background-color: var(--background-primary-alt);
+}
+
+/* 当前打开的文件：用左侧强调色条 + 抬升，而不是整块反色——
+ * 反色在暗色模式下会和侧栏糊在一起，分不清哪张卡是"当前"。 */
+body.my-cards .nav-file:has(.nav-file-title.is-active) {
+  border-color: color-mix(in oklab, var(--my-accent) 45%, var(--my-card-border));
+  box-shadow: inset var(--my-border-width-accent) 0 0 0 var(--my-accent), var(--my-shadow-s);
+}
+
+/* 文件夹标题不做卡片（它是树的分组头，卡片化会切断层级引导线） */
+body.my-cards .nav-folder-title {
+  margin-block-end: var(--my-space-2);
+}
+
+/* —— 中文文件名不截断：最多两行，超出才省略 —— */
+body.my-cards .nav-file-title-content,
+body.my-cards .nav-folder-title-content {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: var(--my-line-height-snug);
+  word-break: break-word;
+}
+
+/* ==========================================================================
+ * 三、搜索结果：一个文件一张卡，卡内命中行保持紧凑
+ * 结构：.search-result > .search-result-file-title + .search-result-file-matches
+ * ======================================================================== */
+body.my-cards .search-result {
+  margin-block-end: var(--my-card-gap);
+  border: var(--my-border-width) solid var(--my-card-border);
+  border-radius: var(--my-card-radius);
+  background-color: var(--my-card-surface);
+  box-shadow: var(--my-shadow-xs);
+  overflow: hidden;
+  transition: box-shadow var(--my-duration-fast) var(--my-ease-out),
+              border-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+body.my-cards .search-result:hover {
+  box-shadow: var(--my-shadow-m);
+  border-color: var(--my-border);
+}
+
+/* 展开态的卡片：标题行左侧一条强调色，暗示"这张卡是打开的" */
+body.my-cards .search-result:not(.is-collapsed) {
+  border-color: color-mix(in oklab, var(--my-accent) 32%, var(--my-card-border));
+}
+
+body.my-cards .search-result-file-title {
+  padding-inline: var(--my-card-pad-inline);
+  padding-block: var(--my-space-3);
+}
+
+/* 卡内的命中列表不再单独画框，否则是"卡片套卡片"的俄罗斯套娃 */
+body.my-cards .search-result-file-matches {
+  border-radius: 0;
+  border-block-start: var(--my-border-width) solid var(--my-card-border);
+  box-shadow: none;
+  margin: 0;
+  background-color: var(--background-secondary);
+}
+
+body.my-cards .search-result-file-match:last-child {
+  border-block-end: none;
+}
+
+/* ==========================================================================
+ * 四、Dataview / Bases：数据行变卡片
+ * 表格行卡片化的关键：必须把 table 的 border-collapse 拆开，
+ * 否则圆角会被相邻单元格的边框切成直角。
+ * ======================================================================== */
+body.my-cards .block-language-dataview .table-view-table,
+body.my-cards table.dataview.table-view-table {
+  border-collapse: separate;
+  border-spacing: 0 var(--my-card-gap);
+}
+
+body.my-cards .block-language-dataview .table-view-table tbody tr {
+  background-color: var(--my-card-surface);
+  box-shadow: var(--my-shadow-xs);
+  transition: box-shadow var(--my-duration-fast) var(--my-ease-out);
+}
+
+body.my-cards .block-language-dataview .table-view-table tbody tr:hover {
+  box-shadow: var(--my-shadow-m);
+}
+
+/* 圆角只加在行首/行尾单元格上，形成"一张卡"的轮廓 */
+body.my-cards .block-language-dataview .table-view-table tbody td {
+  border-block-start: var(--my-border-width) solid var(--my-card-border);
+  border-block-end: var(--my-border-width) solid var(--my-card-border);
+  padding-block: var(--my-space-4);
+}
+
+body.my-cards .block-language-dataview .table-view-table tbody td:first-child {
+  border-inline-start: var(--my-border-width) solid var(--my-card-border);
+  border-start-start-radius: var(--my-card-radius);
+  border-end-start-radius: var(--my-card-radius);
+}
+
+body.my-cards .block-language-dataview .table-view-table tbody td:last-child {
+  border-inline-end: var(--my-border-width) solid var(--my-card-border);
+  border-start-end-radius: var(--my-card-radius);
+  border-end-end-radius: var(--my-card-radius);
+}
+
+/* Dataview 列表视图：每个 li 一张卡 */
+body.my-cards .block-language-dataview .dataview.list-view-ul > li {
+  margin-block-end: var(--my-card-gap);
+  padding: var(--my-card-pad-block) var(--my-card-pad-inline);
+  border: var(--my-border-width) solid var(--my-card-border);
+  border-radius: var(--my-card-radius);
+  background-color: var(--my-card-surface);
+  box-shadow: var(--my-shadow-xs);
+}
+
+/* Obsidian 1.13 原生 Bases 表格：行卡片化（同样靠分离边框拿圆角） */
+body.my-cards .bases-view .bases-tbody .bases-tr {
+  background-color: var(--my-card-surface);
+  box-shadow: var(--my-shadow-xs), inset 0 0 0 var(--my-border-width) var(--my-card-border);
+  border-radius: var(--my-card-radius);
+  transition: box-shadow var(--my-duration-fast) var(--my-ease-out);
+}
+
+body.my-cards .bases-view .bases-tbody .bases-tr:hover {
+  box-shadow: var(--my-shadow-m), inset 0 0 0 var(--my-border-width) var(--my-border);
+}
+
+/* ==========================================================================
+ * 五、关系图谱控制面板（canvas 之外的唯一着力点，见文件头说明）
+ * ======================================================================== */
+body.my-cards .graph-controls {
+  border: var(--my-border-width) solid var(--my-card-border);
+  border-radius: var(--my-card-radius);
+  background-color: var(--my-card-surface);
+  box-shadow: var(--my-shadow-s);
+  padding: var(--my-space-4);
+  margin: var(--my-space-5);
+}
+
+body.my-cards .graph-controls .graph-control-section {
+  border-block-end-color: var(--my-card-border);
+}
+
+/* ==========================================================================
+ * 六、网格排布（body.my-cards.my-cards-grid）
+ * 只作用于「顶层条目」：整棵文件树若变成网格，父子层级就无从辨认了。
+ * 用 auto-fill + minmax，卡片宽度随侧栏宽度自动增减，不写死列数。
+ * ======================================================================== */
+body.my-cards.my-cards-grid .nav-folder.mod-root > .nav-folder-children {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--my-card-gap);
+  align-items: start;
+}
+
+body.my-cards.my-cards-grid .nav-folder.mod-root > .nav-folder-children > .nav-file {
+  margin-block-end: 0;
+}
+
+/* Dataview 表格转网格：表格允许 display 覆写，行变纵向卡片堆。
+ * 代价是表头（thead）失去对齐意义，故在网格模式下隐藏表头——这是明示的取舍。 */
+body.my-cards.my-cards-grid .block-language-dataview .table-view-table thead {
+  display: none;
+}
+
+body.my-cards.my-cards-grid .block-language-dataview .table-view-table tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--my-card-gap);
+}
+
+body.my-cards.my-cards-grid .block-language-dataview .table-view-table tbody tr {
+  display: flex;
+  flex-direction: column;
+  padding: var(--my-card-pad-block) var(--my-card-pad-inline);
+  border: var(--my-border-width) solid var(--my-card-border);
+  border-radius: var(--my-card-radius);
+}
+
+body.my-cards.my-cards-grid .block-language-dataview .table-view-table tbody td {
+  display: flex;
+  gap: var(--my-space-3);
+  border: none;
+  padding-block: var(--my-space-2);
+}
+
+/* 网格模式下用「属性名：值」的同行排布补回表头信息 */
+body.my-cards.my-cards-grid .block-language-dataview .table-view-table tbody td::before {
+  content: attr(data-label);
+  color: var(--my-text-tertiary);
+  font-size: var(--my-font-size-s);
+  min-inline-size: 4.5em;
+}
+
+/* ==========================================================================
+ * 七、动效兜底
+ * 卡片抬起属于"位移"，减少动效偏好下必须去掉，只保留阴影与边框反馈。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  body.my-cards .nav-file,
+  body.my-cards .search-result,
+  body.my-cards .block-language-dataview .table-view-table tbody tr,
+  body.my-cards .bases-view .bases-tbody .bases-tr {
+    transition: box-shadow var(--my-duration-fast) var(--my-ease-out),
+                border-color var(--my-duration-fast) var(--my-ease-out);
+  }
+  body.my-cards .nav-file:hover {
+    transform: none;
+  }
+}

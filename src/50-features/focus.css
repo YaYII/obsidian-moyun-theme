@@ -1,0 +1,210 @@
+/* ============================================================================
+ * 墨韵 MoYun · 增强特性：专注 / 沉浸模式（Focus Mode）
+ * ----------------------------------------------------------------------------
+ * 用途：进入"只读当前这一段"的状态——鼠标停在哪个段落，哪一段就是满色，
+ *       其余段落统一淡化；配合打字机滚动与界面减负选项，得到无干扰的写作环境。
+ *       中文长文尤其吃这套：汉字密度高，满屏黑字时眼睛很难锚定当前行。
+ *
+ * 开关（全部加在 body 上）：
+ *   body.my-focus-mode                 总开关：淡化非当前段落
+ *   body.my-focus-mode.my-focus-typewriter    打字机模式（当前行滚到中线附近）
+ *   body.my-focus-mode.my-focus-no-scrollbar  隐藏滚动条
+ *   body.my-focus-mode.my-focus-no-statusbar  隐藏状态栏
+ *   body.my-typewriter / .my-focus-no-* 也可脱离总开关单独使用（见各节说明）
+ *
+ * 与 body.my-immersive / body.my-immersive-by-default 的分工：
+ *   那两个开关管「格式符号」（#、**、== 的淡化）——属于"源码噪声"；
+ *   本文件管「非当前区块」（整段淡化）——属于"注意力聚焦"。
+ *   两者叠加时若不协调，非当前段落会出现 0.35 × 0.28 的叠乘，符号直接消失；
+ *   故第七节显式接管叠加态，保证"当前行的符号看得见，其他行的符号更安静"。
+ *
+ * 实现取舍：淡化用 opacity 而非更换文字颜色。
+ *   换色只能作用于 color，图片、代码高亮、行内公式不会被一起淡化，
+ *   屏幕上会留下"彩色岛屿"；opacity 对整块内容生效，观感统一，且可被动画插值。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、开关与令牌
+ * ======================================================================== */
+body.my-focus-mode {
+  /* 非当前段落的透明度。0.35 是实测下限：再低就完全读不出上下文，
+   * 而专注模式的价值恰恰是"余光还能看到上下文"。 */
+  --my-focus-dim: 0.35;
+  --my-focus-dim-ease: var(--my-duration-normal) var(--my-ease-out);
+  /* 当前段落的底色提示：只铺极淡一层，避免"选中"错觉 */
+  --my-focus-active-bg: color-mix(in oklab, var(--my-accent) 5%, transparent);
+}
+
+/* ==========================================================================
+ * 二、阅读视图（.markdown-preview-view）
+ * 门控思路：只有"鼠标确实落在某个段落上"时才启动淡化
+ *   —— .markdown-preview-view:has(p:hover)
+ * 这样"刚打开笔记还没动鼠标"时全文依旧清晰，不会一进来就灰一片。
+ *
+ * 淡化目标是区块容器（.markdown-preview-section 的直接子 div，即 el-p、el-h2 …），
+ * 而不是 p / li 混着来：区块容器彼此不嵌套，天然避免"父 0.35 × 子 0.35"的叠乘。
+ * ======================================================================== */
+body.my-focus-mode .markdown-preview-view:has(p:hover) :is(
+  .markdown-preview-section > div:not(.mod-ui),
+  .markdown-preview-sizer > div:not(.mod-ui)
+):not(:hover) {
+  opacity: var(--my-focus-dim);
+}
+
+/* 嵌套块（嵌入笔记、标注内部、列表里的段落）恢复由外层统一淡化，
+ * 否则它们的 0.35 会与父级相乘，直接淡到看不见。 */
+body.my-focus-mode .markdown-preview-view:has(p:hover) :is(
+  .markdown-preview-section > div:not(.mod-ui),
+  .markdown-preview-sizer > div:not(.mod-ui)
+):not(:hover) :is(div, p, li, pre, blockquote, table, img, .callout, .markdown-embed) {
+  opacity: 1;
+}
+
+/* 没有区块容器的老 DOM / 特殊视图：直接对段落级元素生效（同样不嵌套） */
+body.my-focus-mode .markdown-preview-view:has(p:hover) > .markdown-rendered > :is(p, ul, ol, pre, blockquote, table):not(:hover) {
+  opacity: var(--my-focus-dim);
+}
+
+/* 当前段落：给出正向反馈（对焦感），而不是只把别人压暗 */
+body.my-focus-mode .markdown-rendered p:hover,
+body.my-focus-mode .markdown-rendered li:hover {
+  background-color: var(--my-focus-active-bg);
+  border-radius: var(--my-radius-xs);
+}
+
+/* 过渡：淡化与恢复都要平滑，硬切会让眼睛跟丢位置 */
+body.my-focus-mode .markdown-preview-view :is(.markdown-preview-section > div, p, li, pre, blockquote, table) {
+  transition: opacity var(--my-focus-dim-ease), background-color var(--my-focus-dim-ease);
+}
+
+/* ==========================================================================
+ * 三、实时预览 / 源码模式（.markdown-source-view.mod-cm6）
+ * CodeMirror 的行就是 .cm-line，与阅读视图的区块容器同级，不存在嵌套。
+ * 两套门控取并集：
+ *   ① 有光标行（.cm-activeLine）→ 以光标为中心
+ *   ② 鼠标悬停某行          → 以鼠标为中心
+ * 用户正在编辑时通常两者指向同一行；若不同，悬停优先（手比光标新）。
+ * ======================================================================== */
+body.my-focus-mode .markdown-source-view.mod-cm6 .cm-editor:has(.cm-activeLine) .cm-line:not(.cm-activeLine):not(:hover) {
+  opacity: var(--my-focus-dim);
+}
+
+body.my-focus-mode .markdown-source-view.mod-cm6 .cm-editor:has(.cm-line:hover) .cm-line:not(:hover) {
+  opacity: var(--my-focus-dim);
+}
+
+body.my-focus-mode .markdown-source-view.mod-cm6 .cm-editor:has(.cm-activeLine) .cm-line.cm-activeLine {
+  opacity: 1;
+}
+
+/* 光标行底色：与主题的 --my-surface-hover 拉开一点，让"当前行"更明确 */
+body.my-focus-mode .markdown-source-view.mod-cm6 .cm-activeLine {
+  background-color: var(--my-focus-active-bg);
+}
+
+body.my-focus-mode .markdown-source-view.mod-cm6 .cm-line {
+  transition: opacity var(--my-focus-dim-ease), background-color var(--my-focus-dim-ease);
+}
+
+/* 行号槽（若用户开了行号插件）跟随淡化，否则左边一列数字会成为新的干扰源 */
+body.my-focus-mode .markdown-source-view.mod-cm6 .cm-gutters {
+  opacity: var(--my-focus-dim);
+  transition: opacity var(--my-focus-dim-ease);
+}
+
+/* ==========================================================================
+ * 四、打字机模式
+ * 纯 CSS 无法在每次按键后主动把光标行搬到屏幕中央（那需要 JS 调用 scrollIntoView）。
+ * 但滚动容器上的 scroll-padding 会改变 CodeMirror 自身滚动的【落点】：
+ * CM 检测到光标即将超出可视区时会滚动，滚动遵循 scroll-padding 定义的"安全区"，
+ * 于是光标行会被放到距上/下边缘 40% 的位置——视觉上就是"始终待在中间地带"。
+ * 结论：这是"近似打字机"，配合专注模式已经足够好用，且零 JS、零性能开销。
+ * ======================================================================== */
+body.my-focus-mode.my-focus-typewriter .markdown-source-view.mod-cm6 .cm-scroller,
+body.my-typewriter .markdown-source-view.mod-cm6 .cm-scroller {
+  scroll-padding-block: 40%;
+  scroll-behavior: smooth;
+}
+
+/* 阅读视图同样给一份：点大纲跳转时目标标题会落在屏幕中上部，而不是紧贴顶端 */
+body.my-focus-mode.my-focus-typewriter .markdown-preview-view,
+body.my-typewriter .markdown-preview-view {
+  scroll-padding-block: 25%;
+  scroll-behavior: smooth;
+}
+
+/* ==========================================================================
+ * 五、隐藏滚动条
+ * 滚动条在专注模式下是纯粹的视觉噪声；保留滚轮与键盘滚动能力，只隐藏轨道。
+ * 注意：不加 scrollbar-gutter，因为用户明确要"更干净的界面"，
+ *       内容宽度的微小位移由 --my-content-width 的居中版心吸收。
+ * ======================================================================== */
+body.my-focus-mode.my-focus-no-scrollbar .markdown-source-view.mod-cm6 .cm-scroller,
+body.my-focus-mode.my-focus-no-scrollbar .markdown-preview-view,
+body.my-focus-no-scrollbar .markdown-source-view.mod-cm6 .cm-scroller,
+body.my-focus-no-scrollbar .markdown-preview-view {
+  scrollbar-width: none;   /* 标准属性（Chromium 121+ 已支持） */
+}
+
+body.my-focus-mode.my-focus-no-scrollbar .markdown-source-view.mod-cm6 .cm-scroller::-webkit-scrollbar,
+body.my-focus-mode.my-focus-no-scrollbar .markdown-preview-view::-webkit-scrollbar,
+body.my-focus-no-scrollbar .markdown-source-view.mod-cm6 .cm-scroller::-webkit-scrollbar,
+body.my-focus-no-scrollbar .markdown-preview-view::-webkit-scrollbar {
+  inline-size: 0;
+  block-size: 0;
+  display: none;
+}
+
+/* ==========================================================================
+ * 六、隐藏状态栏
+ * 状态栏显示字数、编辑模式等；写作时不需要，读的时候更不需要。
+ * 用 display: none 而不是 opacity: 0 —— 后者会留下一条不可点的空白带。
+ * ======================================================================== */
+body.my-focus-mode.my-focus-no-statusbar .status-bar,
+body.my-focus-no-statusbar .status-bar {
+  display: none;
+}
+
+/* 状态栏消失后右下角会空出位置，顺便把侧栏折叠按钮的圆角修回一致 */
+body.my-focus-mode.my-focus-no-statusbar .workspace-leaf-resize-handle.mod-bottom,
+body.my-focus-no-statusbar .workspace-leaf-resize-handle.mod-bottom {
+  border-radius: 0;
+}
+
+/* ==========================================================================
+ * 七、与沉浸模式（my-immersive / my-immersive-by-default）的协调
+ * 两个开关叠加时，非当前段落里的格式符号会 0.35 × 0.28 叠乘到几乎不可见。
+ * 这里把非当前行的格式符号固定在一个"能看见但不吵"的档位，
+ * 当前行/悬停行则完全恢复——保证任何时候都能编辑（看得见符号）。
+ * 选择器比 10-foundation 与 00-tokens 的同名规则更具体，因此无需 !important。
+ * ======================================================================== */
+body.my-focus-mode.my-immersive .markdown-source-view.mod-cm6 .cm-editor:has(.cm-activeLine) .cm-line:not(.cm-activeLine) .cm-formatting,
+body.my-focus-mode.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-editor:has(.cm-activeLine) .cm-line:not(.cm-activeLine) .cm-formatting {
+  opacity: 0.34;
+}
+
+body.my-focus-mode.my-immersive .markdown-source-view.mod-cm6 .cm-line:hover .cm-formatting,
+body.my-focus-mode.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-line:hover .cm-formatting {
+  opacity: 1;
+}
+
+/* ==========================================================================
+ * 八、动效兜底
+ * 关闭动效偏好时取消过渡与平滑滚动：淡入淡出改瞬时切换（不产生运动感），
+ * 平滑滚动会让"减少动效"的用户眩晕，必须去掉。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  body.my-focus-mode .markdown-preview-view :is(.markdown-preview-section > div, p, li, pre, blockquote, table),
+  body.my-focus-mode .markdown-source-view.mod-cm6 .cm-line,
+  body.my-focus-mode .markdown-source-view.mod-cm6 .cm-gutters,
+  body.my-focus-mode .markdown-rendered p,
+  body.my-focus-mode .markdown-rendered li {
+    transition: none;
+  }
+  body.my-focus-mode.my-focus-typewriter .markdown-source-view.mod-cm6 .cm-scroller,
+  body.my-typewriter .markdown-source-view.mod-cm6 .cm-scroller,
+  body.my-focus-mode.my-focus-typewriter .markdown-preview-view,
+  body.my-typewriter .markdown-preview-view {
+    scroll-behavior: auto;
+  }
+}

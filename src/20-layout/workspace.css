@@ -1,0 +1,191 @@
+/* ============================================================================
+ * 墨韵 MoYun · 布局：工作区骨架
+ * ----------------------------------------------------------------------------
+ * 布局的核心任务是【建立表面层次】。Obsidian 默认把工作区、侧栏、内容区涂成
+ * 几乎相同的底色，导致大屏下"哪块是哪块"要靠边框去猜。墨韵改用三层底色差：
+ *
+ *     app 底（最外）  →  侧栏（中）  →  内容纸面（最亮 / 最暗）
+ *
+ * 日间模式方向是"越靠内容越亮"（像纸张浮在桌面上），夜间则相反（内容区最深，
+ * 减少大面积亮色对眼睛的冲击）。这个方向由令牌层决定，本文件只做结构。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、应用外壳
+ * ======================================================================== */
+
+/* 最外层容器只负责铺底，不参与内容布局 */
+.app-container {
+  background-color: var(--my-surface-app);
+}
+
+/* 主容器：Electron 无边框窗口下的圆角与外阴影由这里承担 */
+.horizontal-main-container {
+  background-color: var(--my-surface-app);
+}
+
+/* 工作区：横向排列「左侧栏 | 主区 | 右侧栏」 */
+.workspace {
+  background-color: var(--my-surface-app);
+}
+
+/* 分割区域：主区承载纸面，故用最亮的表面色 */
+.workspace-split.mod-root {
+  background-color: var(--my-surface-primary);
+}
+
+.workspace-split.mod-root .workspace-tabs {
+  background-color: var(--my-surface-primary);
+}
+
+/* 侧栏区域用中间层色，与主区形成可辨识的落差 */
+.workspace-split.mod-left-split,
+.workspace-split.mod-right-split {
+  background-color: var(--my-surface-secondary);
+}
+
+/* ==========================================================================
+ * 二、叶子（每个标签页的容器）
+ * ======================================================================== */
+
+.workspace-leaf {
+  background-color: transparent;
+}
+
+.workspace-leaf.mod-active {
+  background-color: var(--my-surface-primary);
+}
+
+/* 叶子内容的滚动容器：去掉浏览器默认白底，交给主题控制 */
+.workspace-leaf-content {
+  background-color: transparent;
+}
+
+.workspace-leaf-content[data-type='markdown'] .view-content,
+.workspace-leaf-content[data-type='markdown'] .markdown-reading-view,
+.workspace-leaf-content[data-type='markdown'] .markdown-source-view {
+  background-color: var(--my-surface-primary);
+}
+
+/* ==========================================================================
+ * 三、拖拽分隔条
+ * 默认只有 1px 的线，鼠标很难命中。这里加宽热区、悬停时用强调色提示"可拖拽"，
+ * 并在拖拽过程中加一条更亮的反馈线——这是 Minimal / Border 都做的细节。
+ * ======================================================================== */
+
+.workspace-leaf-resize-handle {
+  background-color: transparent;
+  border-color: transparent;
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 垂直分隔条（左右拖拽） */
+.workspace-leaf-resize-handle:hover,
+.workspace-leaf-resize-handle.is-active {
+  background-color: rgb(var(--my-accent-rgb) / 0.42);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 水平分隔条（上下拖拽）用同色，语义一致 */
+.workspace-split.mod-horizontal > .workspace-leaf-resize-handle:hover {
+  background-color: rgb(var(--my-accent-rgb) / 0.42);
+}
+
+/* 拖拽进行中：整个工作区禁止文本选中，避免误选 */
+body.is-grabbing,
+body.is-grabbing * {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* ==========================================================================
+ * 四、空状态与欢迎页
+ * 新库打开时是空工作区，这里给它一点"纸"的质感，而不是一片死白
+ * ======================================================================== */
+
+.workspace-leaf-content[data-type='empty'] .view-content,
+.empty-state-container {
+  background-color: var(--my-surface-primary);
+}
+
+.empty-state-title {
+  font-family: var(--my-font-heading);
+  font-weight: var(--my-font-weight-heading);
+  color: var(--my-text-primary);
+  letter-spacing: 0;
+}
+
+.empty-state-action {
+  color: var(--my-text-secondary);
+}
+
+/* ==========================================================================
+ * 五、分屏与堆叠
+ * ======================================================================== */
+
+/* 上下分屏时，下半部分与上半部分之间需要一条可辨识的分界 */
+.workspace-split.mod-horizontal.mod-root > .workspace-leaf + .workspace-leaf {
+  border-top: var(--my-border-width) solid var(--my-border-subtle);
+}
+
+/* 堆叠标签（旧版堆叠模式）的横向标签条 */
+.workspace-tabs.mod-stacked .workspace-tab-header {
+  background-color: var(--my-surface-secondary);
+}
+
+.workspace-tabs.mod-stacked .workspace-tab-header.is-active {
+  background-color: var(--my-surface-primary);
+}
+
+/* ==========================================================================
+ * 六、移动端适配
+ * 移动端屏幕窄，层次感靠"减少底色层数"获得，否则屏幕被切成太多色块。
+ * ======================================================================== */
+
+body.is-mobile .workspace-leaf-content[data-type='markdown'] .view-content {
+  background-color: var(--my-surface-primary);
+}
+
+/* 移动端顶部工具栏 */
+body.is-mobile .mobile-navbar {
+  background-color: var(--my-surface-secondary);
+  border-bottom: var(--my-border-width) solid var(--my-border-subtle);
+}
+
+body.is-mobile .mobile-toolbar {
+  background-color: var(--my-surface-secondary);
+  border-top: var(--my-border-width) solid var(--my-border-subtle);
+}
+
+/* ==========================================================================
+ * 七、无边框窗口（Linux / Windows 自绘标题栏）
+ * ======================================================================== */
+
+body.is-frameless.is-hidden-frameless .titlebar {
+  background-color: var(--my-surface-secondary);
+}
+
+/* 窗口控制按钮（最小化/最大化/关闭）——只做悬停反馈，颜色交给系统图标 */
+.titlebar-button {
+  border-radius: var(--my-radius-xs);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.titlebar-button:hover {
+  background-color: var(--my-surface-hover);
+}
+
+.titlebar-button.mod-close:hover {
+  background-color: rgb(var(--my-danger-rgb) / 0.85);
+  color: var(--my-text-on-accent);
+}
+
+/* ==========================================================================
+ * 八、动效降级
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .workspace-leaf-resize-handle,
+  .titlebar-button {
+    transition: none;
+  }
+}

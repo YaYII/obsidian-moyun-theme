@@ -1,0 +1,270 @@
+/* ============================================================================
+ * 墨韵 MoYun · 插件适配 ⑤：Excalidraw 与 Canvas（白板类）
+ * ----------------------------------------------------------------------------
+ * 白板类视图的适配难点在于「谁说了算」：
+ *   · Excalidraw 的内部 DOM 随版本频繁变动，直接写它的类名等于把主题绑死在某个版本上；
+ *   · 但 Excalidraw 的整套 UI（工具栏、弹窗、输入框、阴影）都由一组 CSS 变量驱动，
+ *     覆盖变量既能生效又不会随版本失效——这是本文件的主要手段。
+ *
+ * 深色模式是重点：Excalidraw 自带的深色背景偏中性冷灰，与主题「墨夜」的暖调深墨
+ * 并排放在一起时，会明显看出两块灰不在同一个色系里。把 --default-bg-color /
+ * --island-bg-color 等接到主题表面层级上，白板与笔记才像同一个应用。
+ *
+ * Canvas 是 Obsidian 原生视图，DOM 稳定，直接写类名即可；配色统一走已映射的
+ * --canvas-* 变量（不要在此重新定义它们，那属于 00-tokens/obsidian-map.css 的职责）。
+ *
+ * 依赖：00-tokens/tokens.css、00-tokens/obsidian-map.css
+ * 注意：标注「需实测」的选择器为社区通行写法或跨版本推断，命中失败只会退化为原生样式。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、Excalidraw 变量重映射
+ * 这些变量由 Excalidraw 自身在 .excalidraw 作用域内定义，主题只覆盖数值，
+ * 因此既不需要 !important，也不会泄漏到 Obsidian 的其它界面。
+ * ======================================================================== */
+.excalidraw {
+  /* 画布本身：直接用主题的正文纸面色，用户在笔记与白板之间切换时不会有色差 */
+  --default-bg-color: var(--my-surface-primary);
+  --island-bg-color: var(--background-secondary);
+  --popup-bg-color: var(--background-primary);
+  --popup-secondary-bg-color: var(--background-secondary);
+  --popup-text-color: var(--text-normal);
+  --popup-text-inverted-color: var(--text-on-accent);
+  --dialog-border-color: var(--my-border);
+
+  /* 输入框：与主题的 --input-* 语义保持一致（此处在 .excalidraw 作用域内，不会覆盖 Obsidian 自身的变量） */
+  --input-bg-color: var(--background-modifier-form-field);
+  --input-border-color: var(--my-border);
+  --input-hover-bg-color: var(--background-modifier-form-field-hover);
+  --input-label-color: var(--text-muted);
+
+  /* 按钮与图标 */
+  --button-gray-1: var(--background-secondary);
+  --button-gray-2: var(--background-modifier-hover);
+  --button-gray-3: var(--background-modifier-active-hover);
+  --button-gray-4: var(--my-border);
+  --button-hover-bg: var(--background-modifier-hover);
+  --button-active-bg: var(--background-modifier-active-hover);
+  --icon-fill-color: var(--text-normal);
+  --default-border-color: var(--my-border);
+
+  /* 强调色：跟随主题的八韵分发（body.my-tone-*），
+   * 选框、选中态、主按钮会自动换成青花/朱砂等当前主题色 */
+  --color-primary: var(--my-accent);
+  --color-primary-darker: var(--my-accent-active);
+  --color-primary-light: var(--my-accent-hover);
+  --color-primary-light-darker: var(--my-accent-soft);
+  --select-highlight-color: var(--my-accent);
+  --focus-highlight-color: var(--my-accent);
+  --color-danger: var(--my-danger);
+  --color-warning: var(--my-warning);
+  --color-success: var(--my-success);
+  --text-primary-color: var(--text-normal);
+
+  /* 阴影：换成主题的多层纸感投影，与弹窗、菜单的观感统一 */
+  --shadow-island: var(--my-shadow-m);
+  --sidebar-bg-color: var(--background-secondary);
+  --sidebar-border-color: var(--my-border);
+  --sidebar-shadow: var(--my-shadow-m);
+
+  /* 滚动条：由 Excalidraw 自己绘制，需单独给色，否则默认是它的品牌蓝 */
+  --scrollbar-thumb: var(--my-border-strong);
+  --scrollbar: var(--my-border-subtle);
+
+  /* 新版 Excalidraw 引入了 surface 档位与 on-surface 文字色，一并映射；
+   * 旧版不存在这些变量，多写不会报错（渐进增强）。 */
+  --color-surface-lowest: var(--my-surface-primary);
+  --color-surface-low: var(--my-surface-secondary);
+  --color-surface-high: var(--my-surface-tertiary);
+  --color-surface-highest: var(--my-surface-elevated);
+  --color-on-surface: var(--text-normal);
+
+  font-family: var(--my-font-ui);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+/* 深色模式：Excalidraw 会给自己加 .theme--dark，插件外层也会随 Obsidian 的主题走。
+ * 两条路径都覆盖，避免「Obsidian 已切夜间、白板还停在浅色」的割裂。
+ * 注意这里不是简单地把浅色值倒过来，而是让白板底色与笔记底色完全同源。 */
+body.theme-dark .excalidraw,
+.excalidraw.theme--dark {
+  --default-bg-color: var(--my-surface-primary);
+  --island-bg-color: var(--my-surface-tertiary);
+  --popup-bg-color: var(--my-surface-elevated);
+  --popup-secondary-bg-color: var(--my-surface-secondary);
+  --button-gray-1: var(--my-surface-tertiary);
+  --button-gray-2: var(--my-surface-elevated);
+  --button-gray-3: var(--my-surface-hover);
+  --dialog-border-color: var(--my-border-strong);
+  --input-bg-color: var(--my-surface-sunken);
+  --sidebar-bg-color: var(--my-surface-secondary);
+  --color-surface-lowest: var(--my-surface-primary);
+  --color-surface-low: var(--my-surface-secondary);
+  --color-surface-high: var(--my-surface-tertiary);
+  --color-surface-highest: var(--my-surface-elevated);
+}
+
+/* 画布元素本身由 Excalidraw 用 JS 绘制背景色，容器补一次底色保证边缘不发白 */
+.excalidraw,
+.excalidraw-container {
+  background-color: var(--default-bg-color);
+}
+
+/* ==========================================================================
+ * 二、Excalidraw 的稳定部件
+ * .Island 是 Excalidraw 工具栏/属性面板的通用容器类（浮动小岛），版本间相对稳定；
+ * 其余内部类名一律不写——它们的改动频率远高于本主题的发布节奏。
+ * 需实测：.Island 的类名在 Excalidraw 各版本中保持，但若上游改名，本节自然失效。
+ * ======================================================================== */
+.excalidraw .Island {
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-m);
+  box-shadow: var(--my-shadow-m);
+}
+
+/* 工具栏与属性面板里的图标按钮：统一圆角与悬停底色，
+ * 中文界面下 tooltip 会自动使用主题字体，不需要额外处理。 */
+.excalidraw .Island button,
+.excalidraw .ToolIcon {
+  border-radius: var(--my-radius-s);
+}
+
+.excalidraw .Island button:hover,
+.excalidraw .ToolIcon:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* 属性面板与弹出层的输入控件（描边、线宽、透明度等）：
+ * 这些控件由上面映射的变量驱动，这里只补一处对齐修正——
+ * Chromium 的数字输入在中文行高下会略微下沉。 */
+.excalidraw input[type="number"],
+.excalidraw input[type="text"] {
+  border-radius: var(--my-radius-xs);
+  line-height: var(--my-line-height-tight);
+}
+
+/* 嵌入到笔记里的 Excalidraw 图形（插件渲染为 .excalidraw-svg）：
+ * 去掉浏览器默认给 SVG 的 inline 基线间隙，避免图片下方多出一条白缝。 */
+.markdown-rendered .excalidraw-svg,
+.markdown-preview-view .excalidraw-svg,
+.markdown-source-view.mod-cm6 .excalidraw-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--my-radius-s);
+}
+
+/* ==========================================================================
+ * 三、Canvas：节点
+ * Obsidian 原生画布。节点用「卡片」语言：主底色 + 细描边 + 圆角 + 轻阴影，
+ * 与看板卡片保持同一套视觉语法，用户在两处获得一致的「可拖动内容」认知。
+ * ======================================================================== */
+.canvas-node-container {
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-m);
+  background-color: var(--background-primary);
+  box-shadow: var(--my-shadow-s);
+  overflow: hidden; /* 让内嵌笔记的滚动区域跟随圆角裁切 */
+  transition: box-shadow var(--my-duration-fast) var(--my-ease-out),
+              border-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.canvas-node:hover .canvas-node-container {
+  border-color: var(--my-border-strong);
+  box-shadow: var(--my-shadow-m);
+}
+
+/* 选中态：用强调色描边 + 光环，而不是加粗边框——加粗会让节点内容发生位移 */
+.canvas-node.is-selected .canvas-node-container,
+.canvas-node.is-focused .canvas-node-container {
+  border-color: var(--my-accent);
+  box-shadow: var(--my-shadow-m), 0 0 0 var(--my-border-width-thick) rgb(var(--my-accent-rgb) / 0.28);
+}
+
+/* 节点标签：中文标签常是「会议纪要 2024-06」这类混排，字号不宜小于 0.8em，
+ * 颜色用已映射的 --canvas-card-label-color，跟随主题自动切换明暗。 */
+.canvas-node-label {
+  padding: var(--my-space-2) var(--my-space-4);
+  border-radius: var(--my-radius-xs);
+  color: var(--canvas-card-label-color);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+  text-autospace: normal;
+}
+
+/* 节点内嵌笔记：默认字号偏小，中文会明显发糊，这里抬到 0.95em 并放开行高 */
+.canvas-node-content :is(.markdown-rendered, .markdown-preview-view) {
+  font-size: 0.95em;
+  line-height: var(--my-line-height-normal);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+/* 连线端点：小圆点默认与节点同色，很难发现「这里可以拉线」，
+ * 用强调色 + 柔光环提示可交互。 */
+.canvas-node-connection-point {
+  background-color: var(--my-accent);
+  box-shadow: 0 0 0 var(--my-border-width-thick) rgb(var(--my-accent-rgb) / 0.25);
+}
+
+/* 分组：Obsidian 的分组同样以 .canvas-node 渲染，只是内部带 .canvas-group 容器。
+ * 需实测：分组容器的类名（.canvas-group）来自社区写法，命中失败时分组仍用原生外观。 */
+.canvas-group {
+  border-radius: var(--my-radius-l);
+}
+
+.canvas-group-label {
+  color: var(--text-muted);
+  font-size: var(--my-font-size-s);
+  font-weight: var(--my-font-weight-medium);
+}
+
+/* ==========================================================================
+ * 四、Canvas：浮层控件与菜单
+ * 画布左右下角的控制条与节点菜单都浮在画布之上，需要与画布底拉开层次，
+ * 否则在浅色画布上几乎看不见边界。圆角用已映射的 --canvas-controls-radius。
+ * ======================================================================== */
+.canvas-controls {
+  gap: var(--my-space-3);
+}
+
+.canvas-controls .canvas-control-group {
+  padding: var(--my-space-2);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--canvas-controls-radius);
+  background-color: var(--background-primary);
+  box-shadow: var(--my-shadow-s);
+}
+
+.canvas-controls .canvas-control-item:hover {
+  background-color: var(--background-modifier-hover);
+  border-radius: var(--my-radius-xs);
+}
+
+.canvas-menu {
+  padding: var(--my-space-5);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-m);
+  background-color: var(--background-primary);
+  box-shadow: var(--my-shadow-l);
+}
+
+/* 节点菜单里的表单：中文占位文字较长，输入框给足最小宽度避免被压成一条缝 */
+.canvas-menu :is(input, textarea, select) {
+  min-width: 8em;
+  border-radius: var(--my-radius-s);
+}
+
+.canvas-menu .setting-item {
+  padding: var(--my-space-4) 0;
+  border-top: none;
+}
+
+/* ==========================================================================
+ * 五、动效兜底
+ * 白板类视图大量使用 hover 阴影，对动效敏感的用户全部取消过渡。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .canvas-node-container {
+    transition: none;
+  }
+}

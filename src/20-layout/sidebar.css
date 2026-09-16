@@ -1,0 +1,247 @@
+/* ============================================================================
+ * 墨韵 MoYun · 布局：侧栏与文件树
+ * ----------------------------------------------------------------------------
+ * 文件树是 Obsidian 里被点击最多次的界面。中文用户的文件/文件夹名普遍较长
+ * （"2026年度项目复盘与规划"），因此本文件的设计前提与英文主题不同：
+ *   ① 条目高度略大（中文 16px 字号下 22px 会更舒服），但提供紧凑开关；
+ *   ② 悬停底色用极淡的整行高亮，命中面积覆盖整行而不是文字；
+ *   ③ 激活项用「强调色文字 + 极淡强调底色」，而不是只改文字颜色；
+ *   ④ 缩进引导线要看得见，否则深层嵌套的中文目录会分不清层级。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、侧栏头部（库名 / 按钮区）
+ * ======================================================================== */
+
+/* 库名区：它是"这是哪个库"的唯一标识，值得给一点视觉重量 */
+.workspace-sidedock-vault-profile {
+  background-color: transparent;
+  border-top: var(--my-border-width) solid var(--my-border-subtle);
+  padding: var(--my-space-3) var(--my-space-4);
+}
+
+.workspace-sidedock-vault-profile .workspace-sidedock-vault-profile-name {
+  color: var(--my-text-secondary);
+  font-weight: var(--my-font-weight-medium);
+  letter-spacing: 0;
+}
+
+/* 顶部操作按钮（新建笔记 / 新建文件夹 / 排序 / 折叠全部） */
+.nav-buttons-container {
+  gap: var(--my-space-1);
+  padding: var(--my-space-2) var(--my-space-3);
+}
+
+/* 图标按钮：默认安静，悬停时才浮出来 —— 减少视觉噪声 */
+.nav-action-button,
+.clickable-icon {
+  color: var(--my-text-tertiary);
+  border-radius: var(--my-radius-xs);
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.nav-action-button:hover,
+.clickable-icon:hover {
+  background-color: var(--my-surface-hover);
+  color: var(--my-text-primary);
+}
+
+.nav-action-button.is-active,
+.clickable-icon.is-active {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 二、文件树容器
+ * ======================================================================== */
+
+.nav-files-container {
+  padding: var(--my-space-2) var(--my-space-3) var(--my-space-9);
+}
+
+/* 文件树条目统一基类：整行可点，圆角，过渡 */
+.tree-item-self.nav-file-title,
+.tree-item-self.nav-folder-title {
+  border-radius: var(--my-radius-xs);
+  color: var(--nav-item-color);
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 悬停：整行淡底 + 文字加深。命中区域覆盖整行，符合"长文件名也好点"的目标 */
+.tree-item-self.nav-file-title:hover,
+.tree-item-self.nav-folder-title:hover {
+  background-color: var(--nav-item-background-hover);
+  color: var(--nav-item-color-hover);
+}
+
+/* 激活的笔记：强调色文字 + 极淡强调底色，双重信号 */
+.tree-item-self.nav-file-title.is-active {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+  font-weight: var(--my-font-weight-medium);
+}
+
+/* 选中（多选态）与激活区分开：选中用更实的底色 */
+.tree-item-self.nav-file-title.is-selected {
+  background-color: var(--nav-item-background-selected);
+  color: var(--nav-item-color-selected);
+}
+
+/* 文件夹展开态：文字略深，与折叠态区分 */
+.nav-folder.is-collapsed > .nav-folder-title {
+  color: var(--nav-item-color);
+}
+
+.nav-folder:not(.is-collapsed) > .nav-folder-title {
+  color: var(--my-text-secondary);
+}
+
+/* ==========================================================================
+ * 三、折叠箭头
+ * 默认的箭头在中文长文件名旁边容易被忽略，这里让它始终可见（而不是仅悬停），
+ * 并给一个柔和的旋转过渡。
+ * ======================================================================== */
+
+.tree-item-icon.collapse-icon {
+  color: var(--nav-collapse-icon-color);
+  opacity: 0.85;
+  transition: transform var(--my-duration-fast) var(--my-ease-out);
+}
+
+.tree-item-self:hover .tree-item-icon.collapse-icon {
+  color: var(--nav-collapse-icon-color-collapsed);
+  opacity: 1;
+}
+
+/* ==========================================================================
+ * 四、嵌套层级与缩进引导线
+ * 深层目录（如"项目/2026/第一季度/复盘"）如果没有可见的引导线，很容易看错层级。
+ * ======================================================================== */
+
+.nav-folder-children {
+  /* 引导线画在子容器左侧；用强调色的低透明度版本，比纯灰更"活" */
+  border-inline-start: var(--nav-indentation-guide-width) solid var(--nav-indentation-guide-color);
+  margin-inline-start: var(--nav-item-children-margin-start);
+  padding-inline-start: var(--nav-item-children-padding-start);
+}
+
+/* 悬停到某个子容器时，它所属层级的引导线加深，形成"当前在哪一层"的反馈 */
+.nav-folder-children:hover {
+  border-inline-start-color: var(--my-border-strong);
+}
+
+/* ==========================================================================
+ * 五、文件名的溢出处理
+ * 中文长文件名在窄侧栏里必然溢出。默认的省略号会切在汉字中间导致语义丢失，
+ * 因此这里保持省略号，但补一个 title 属性的原生提示（由 Obsidian 提供），
+ * 并把行高加大，让截断处不至于挤在一起。
+ * ======================================================================== */
+
+.nav-file-title-content,
+.nav-folder-title-content {
+  line-height: var(--my-line-height-snug);
+  letter-spacing: 0;
+  /* 中文标题截断时在右侧留一点空隙，避免省略号贴着侧栏边缘 */
+  padding-inline-end: var(--my-space-2);
+}
+
+/* ==========================================================================
+ * 六、标签页列表（右侧栏的"标签"视图）
+ * ======================================================================== */
+
+.workspace-leaf-content[data-type='tag'] .tag-container {
+  padding: var(--my-space-6);
+}
+
+.workspace-leaf-content[data-type='tag'] .tree-item-self {
+  border-radius: var(--my-radius-xs);
+}
+
+/* ==========================================================================
+ * 七、搜索结果面板
+ * ======================================================================== */
+
+.search-result-container {
+  padding: var(--my-space-3);
+}
+
+.search-result-file-title {
+  color: var(--my-accent);
+  font-weight: var(--my-font-weight-medium);
+  border-radius: var(--my-radius-xs);
+}
+
+.search-result-file-match {
+  border-radius: var(--my-radius-xs);
+  color: var(--my-text-secondary);
+}
+
+/* 搜索命中的关键词高亮。
+ * 实现要点：用"强调色淡化 + 保持正文颜色"，而不是换字色——中文命中片段往往是
+ * 几十个字，换字色会让整段变成彩色噪声。
+ * 所有权：本属性【只在此处实现】，reading-extras.css 不再重复声明。 */
+.search-result-file-matched-text {
+  background-color: color-mix(in oklab, var(--my-accent) 24%, transparent);
+  color: inherit;
+  border-radius: var(--my-radius-xs);
+  padding-inline: 0.12em;
+  /* 长命中片段会跨行，clone 让每一行的底色都带圆角而不是"断成两截" */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* 当前命中的那一条再亮一档 */
+.search-result-file-match:hover .search-result-file-matched-text {
+  background-color: color-mix(in oklab, var(--my-accent) 34%, transparent);
+}
+
+/* ==========================================================================
+ * 八、大纲 / 反链 / 出链面板
+ * ======================================================================== */
+
+.workspace-leaf-content[data-type='outline'] .tree-item-self,
+.workspace-leaf-content[data-type='backlink'] .tree-item-self,
+.workspace-leaf-content[data-type='outgoing-link'] .tree-item-self {
+  border-radius: var(--my-radius-xs);
+}
+
+/* 大纲的层级标题：越深层文字越淡，形成纵深 */
+.outline .tree-item-inner {
+  line-height: var(--my-line-height-snug);
+}
+
+/* ==========================================================================
+ * 九、紧凑模式（body.my-ui-compact，由设置面板开启）
+ * 开启后同屏能多显示约 30% 的文件条目，代价是行高变紧——适合文件极多的库。
+ * ======================================================================== */
+
+body.my-ui-compact .tree-item-self.nav-file-title,
+body.my-ui-compact .tree-item-self.nav-folder-title {
+  padding-block: var(--my-space-0);
+  min-height: 20px;
+}
+
+body.my-ui-compact .nav-buttons-container {
+  padding-block: var(--my-space-1);
+}
+
+body.my-ui-compact .nav-files-container {
+  padding-top: 0;
+}
+
+/* ==========================================================================
+ * 十、动效降级
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .tree-item-self.nav-file-title,
+  .tree-item-self.nav-folder-title,
+  .tree-item-icon.collapse-icon,
+  .nav-action-button,
+  .clickable-icon {
+    transition: none;
+  }
+}

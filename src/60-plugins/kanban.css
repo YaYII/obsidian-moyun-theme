@@ -1,0 +1,249 @@
+/* ============================================================================
+ * 墨韵 MoYun · 插件适配 ④：Kanban 看板
+ * ----------------------------------------------------------------------------
+ * 看板是「一眼看全局」的视图，它的美观取决于三件事：列与卡的边界是否清晰、
+ * 卡片信息密度是否合适、中文标题能不能完整读完。插件默认样式的问题恰好在这三点：
+ *   ① 卡片与列背景接近同色，扫视时看不出「一列 = 一组任务」；
+ *   ② 卡片内边距偏小、行高偏紧，中文标题两行就顶到边；
+ *   ③ 部分版本用 line-clamp 截断长标题——中文标题一旦被截，后半句的语义就丢了，
+ *      这是中文用户最不能接受的（「把这个月的报销单据整理并上交给财务」截成
+ *      「把这个月的报销单据整理…」意思就变了）。
+ * 本文件统一圆角 / 阴影 / 内边距语言，并明确关掉标题截断。
+ *
+ * 依赖：00-tokens/tokens.css、00-tokens/obsidian-map.css
+ * 适配：看板是独立视图（不是 markdown 渲染块），因此不涉及阅读视图 / 实时预览之分；
+ *       但卡片内部是真实的 markdown 预览视图，需要顺带保证中文排版设置有 heredity。
+ * 注意：Kanban 插件的类名以 kanban-plugin__ 前缀的 BEM 写法为主（社区主题通行依赖），
+ *       旧版曾用 .kanban-column / .kanban-item；两者都写，命中失败只退化为原生样式。
+ *       拖拽态由 react-beautiful-dnd 驱动，类名不稳定，相关规则已标注「需实测」。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、看板外壳
+ * 看板是一整块可横向滚动的区域，不需要额外的边框与底色——底色越干净，
+ * 列的层次越容易被看见。只补上滚动手感需要的纵向留白。
+ * ======================================================================== */
+.kanban-plugin,
+.kanban {
+  --kanban-card-radius: var(--my-radius-m);
+  --kanban-card-gap: var(--my-space-5);
+  font-family: var(--my-font-text);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+.kanban-plugin__board {
+  padding-block: var(--my-space-4);
+  gap: var(--my-space-7);
+  background-color: transparent; /* 让画布底色透出来，避免与列背景形成「双层纸」 */
+}
+
+/* ==========================================================================
+ * 二、列（lane）
+ * 列是「容器」，用次级底色 + 描边表达；卡片是「内容」，用主底色 + 阴影浮起。
+ * 这一升一降的对比是看板可读性的关键，缺了它整块会糊成一片。
+ * ======================================================================== */
+.kanban-plugin__lane-wrapper {
+  margin-inline-end: var(--my-space-7);
+}
+
+.kanban-plugin__lane {
+  padding: var(--my-space-5);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  border-radius: var(--my-radius-l);
+  background-color: var(--background-secondary);
+}
+
+/* 列标题吸顶：看板列经常比视口长，滚动时列名消失会导致「不知道这列是什么」 */
+.kanban-plugin__lane-header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-block-end: var(--my-space-4);
+  padding-block: var(--my-space-3);
+  border-block-end: var(--my-border-width) solid var(--my-divider);
+  background-color: var(--background-secondary); /* 不透明，否则滚动时下方卡片会透出来 */
+}
+
+.kanban-plugin__lane-title {
+  color: var(--text-normal);
+  font-size: var(--my-font-size-l);
+  font-weight: var(--my-font-weight-medium); /* 汉字超过 600 笔画会粘连 */
+  line-height: var(--my-line-height-snug);
+  text-wrap: pretty;
+}
+
+/* 列计数：徽标式数字，等宽数字保证 9→10 时不会把标题推移 */
+.kanban-plugin__lane-title-count,
+.kanban-plugin__lane-title-count-wrapper {
+  padding: 0 var(--my-space-4);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-full);
+  background-color: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-size: var(--my-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--my-line-height-tight);
+}
+
+.kanban-plugin__lane-items,
+.kanban-plugin__lane-items-wrapper {
+  gap: var(--kanban-card-gap);
+}
+
+/* 拖拽经过时的列高亮。需实测：类名可能为 .is-dragging / .is-over / data 属性之一，
+ * 这里用「列内是否含有拖拽容器」以及常见类名做兜底。 */
+.kanban-plugin__lane.is-dragging,
+.kanban-plugin__lane.is-over,
+.kanban-plugin__lane-wrapper:has(.kanban-plugin__drag-container) .kanban-plugin__lane {
+  border-color: var(--my-accent);
+  background-color: color-mix(in srgb, var(--my-accent) 6%, var(--background-secondary));
+}
+
+/* ==========================================================================
+ * 三、卡片
+ * 卡片是唯一的「可拖动内容」，用主底色 + 细阴影把层级抬起来；
+ * 悬停时轻微上浮，给出「可以抓取」的物理暗示（上浮幅度必须极小，
+ * 否则看板会显得很吵，中文界面尤其忌讳元素乱动）。
+ * ======================================================================== */
+.kanban-plugin__item {
+  padding: var(--my-space-5) var(--my-space-6);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  border-radius: var(--kanban-card-radius);
+  background-color: var(--background-primary);
+  box-shadow: var(--my-shadow-xs);
+  transition: box-shadow var(--my-duration-fast) var(--my-ease-out),
+              transform var(--my-duration-fast) var(--my-ease-out),
+              border-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.kanban-plugin__item:hover {
+  transform: translateY(-1px);
+  border-color: var(--my-border);
+  box-shadow: var(--my-shadow-s);
+}
+
+.kanban-plugin__item-wrapper {
+  margin-block-end: var(--kanban-card-gap);
+}
+
+/* 卡片标题：中文必须完整换行显示，绝不截断。
+ * 插件部分版本用 -webkit-box + line-clamp 做单行省略，那对中文是「断义」，
+ * 故这里显式改回块级流并取消截断。 */
+.kanban-plugin__item-title,
+.kanban-plugin__item-title-wrapper {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-break: strict;
+  text-wrap: pretty;
+  color: var(--text-normal);
+  font-size: var(--my-font-size-base);
+  line-height: var(--my-line-height-normal);
+}
+
+/* 卡片内容里的 markdown 预览：继承主题的中文排版（中西文自动间距），
+ * 否则卡片里「修复 BUG 后重新部署」这类混排会挤成一团。 */
+.kanban-plugin__markdown-preview-view {
+  text-autospace: normal;
+  line-height: var(--my-line-height-normal);
+}
+
+/* 卡片上的元信息（日期、归档标记）与标签：整体降噪，不与被拖动的正文抢注意力 */
+.kanban-plugin__item-metadata {
+  margin-block-start: var(--my-space-3);
+  color: var(--text-faint);
+  font-size: var(--my-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.kanban-plugin__item-tags {
+  gap: var(--my-space-2);
+  margin-block-start: var(--my-space-3);
+}
+
+/* ==========================================================================
+ * 四、拖拽态
+ * 需实测：拖拽由 react-beautiful-dnd 实现，插件的 .is-dragging 类名各版本不一。
+ * 最稳的锚点是拖拽克隆体一定被放进 .kanban-plugin__drag-container，
+ * 因此以「拖拽容器内的卡片」为主选择器，类名规则作为补充。
+ * ======================================================================== */
+.kanban-plugin__drag-container .kanban-plugin__item,
+.kanban-plugin__item.is-dragging {
+  transform: rotate(1.2deg); /* 轻微倾斜，让「正在被拿起」这件事一眼可见 */
+  border-color: var(--my-accent);
+  box-shadow: var(--my-shadow-l);
+  cursor: grabbing;
+}
+
+/* 拖拽时原位置的空档：用虚线框表达「松手后会落在这里」 */
+.kanban-plugin__item-wrapper[data-rbd-placeholder-context-id] {
+  border: var(--my-border-width) dashed var(--my-border-strong);
+  border-radius: var(--kanban-card-radius);
+  background-color: var(--background-modifier-hover);
+}
+
+/* ==========================================================================
+ * 五、新增卡片
+ * 「+ 添加卡片」默认是低对比度的裸文字，在长列底部几乎看不见。
+ * 这里做成虚线轮廓的「空槽」：既是按钮，也预告了「新卡片会加在这里」。
+ * ======================================================================== */
+.kanban-plugin__item-button-wrapper,
+.kanban-plugin__lane-form-wrapper {
+  padding: var(--my-space-4) 0 0;
+  border-top: none;
+}
+
+.kanban-plugin__item-button-wrapper > button,
+.kanban-plugin__new-item-button {
+  width: 100%;
+  padding: var(--my-space-4);
+  border: var(--my-border-width) dashed var(--my-border);
+  border-radius: var(--my-radius-s);
+  background-color: transparent;
+  color: var(--text-faint);
+  font-size: var(--my-font-size-s);
+  box-shadow: none;
+  transition: color var(--my-duration-fast) var(--my-ease-out),
+              border-color var(--my-duration-fast) var(--my-ease-out),
+              background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.kanban-plugin__item-button-wrapper > button:hover,
+.kanban-plugin__new-item-button:hover {
+  border-color: var(--my-accent);
+  background-color: color-mix(in srgb, var(--my-accent) 8%, transparent);
+  color: var(--my-accent);
+}
+
+/* 新建卡片输入区：与卡片同样的圆角与内边距，视觉上「已经是一张卡片」 */
+.kanban-plugin__item-form textarea,
+.kanban-plugin__lane-form-wrapper textarea {
+  border-radius: var(--my-radius-s);
+  background-color: var(--background-primary);
+  line-height: var(--my-line-height-normal);
+  resize: vertical;
+}
+
+/* ==========================================================================
+ * 六、动效兜底
+ * 前庭敏感用户对「卡片位移」最敏感，这里不仅取消过渡，也取消悬停上浮——
+ * 只把 transition 设为 none 的话，位移仍会瞬间发生，仍是突变刺激。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .kanban-plugin__item {
+    transition: none;
+  }
+
+  .kanban-plugin__item:hover {
+    transform: none;
+  }
+
+  .kanban-plugin__drag-container .kanban-plugin__item,
+  .kanban-plugin__item.is-dragging {
+    transform: none;
+  }
+}

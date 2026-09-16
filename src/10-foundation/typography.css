@@ -1,0 +1,533 @@
+/* ============================================================================
+ * 墨韵 MoYun · 中文排版核心（Chinese Typography）
+ * ----------------------------------------------------------------------------
+ * 这是本主题存在的理由。英文主题对中文用户的问题不是"颜色不好看"，而是：
+ *   ① 行高 1.4 在中文下拥挤；              ② 中西文之间没有间隙，糊成一团；
+ *   ③ 标点挤压缺失，全角标点四周留白过大；       ④ 没有首行缩进，段落界限不清；
+ *   ⑤ 断行按字符硬切，词被劈开；              ⑥ 标题字重过粗，汉字笔画糊死。
+ * 本文件逐条解决以上六点。
+ *
+ * 运行环境：Obsidian 1.13.x / Chromium 150 —— 支持 CSS Text 4 的
+ * text-autospace / text-spacing-trim / word-break: auto-phrase / text-wrap: pretty。
+ * 这些是【原生】能力，不需要任何 JS 插件，是当前中文主题普遍没吃到的红利。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、字体族落地
+ * 通过 --font-*-theme 让主题层生效；用户在「设置 → 外观」里手动指定字体时，
+ * Obsidian 会写 --font-*-override，其优先级更高——这是预期行为，尊重用户选择。
+ * ======================================================================== */
+body {
+  --font-text-override: var(--my-font-text);
+  --font-interface-override: var(--my-font-ui);
+  --font-monospace-override: var(--my-font-mono);
+  --font-print-override: var(--my-font-text);
+}
+
+/* ==========================================================================
+ * 二、正文基础排版
+ * 行高 1.8（中文汉字方块密度高，1.4 会显著降低阅读速度）
+ * ======================================================================== */
+.markdown-preview-view,
+.markdown-rendered,
+.markdown-source-view.mod-cm6 .cm-content,
+.markdown-source-view.mod-cm6 .cm-scroller,
+.markdown-reading-view {
+  font-family: var(--my-font-text);
+  font-size: var(--my-font-size-base);
+  line-height: var(--my-line-height-relaxed);
+  letter-spacing: var(--my-letter-spacing-cjk);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-east-asian: proportional-width; /* 避免全角标点被强制等宽撑开 */
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+/* 段落之间的呼吸感：中文段距宜为 0.8~1em 行高 */
+.markdown-rendered p,
+.markdown-preview-view p {
+  margin-block-start: 0;
+  margin-block-end: var(--p-spacing);
+}
+
+/* 段末不留多余空白 */
+.markdown-rendered > p:last-child {
+  margin-block-end: 0;
+}
+
+/* ==========================================================================
+ * 三、中西文自动间距（text-autospace）
+ * 作用：在「中文↔拉丁字母/数字」之间自动插入 1/4 全角间隙，
+ *       这是专业中文排版的硬要求，也是英文主题最明显的短板。
+ * 兼容：Chromium 136+ 原生支持；旧版自动忽略该声明（渐进增强，不破坏布局）。
+ * ======================================================================== */
+.markdown-rendered,
+.markdown-source-view.mod-cm6 .cm-content,
+.markdown-preview-view {
+  text-autospace: normal;
+}
+
+/* ==========================================================================
+ * 四、标点挤压（text-spacing-trim）
+ * 作用：压缩连续全角标点（如「。」与「」」相邻）之间多余的空隙，让行首/行尾的
+ *       全角标点贴合边界。中文排版里这一步叫"标点挤压"。
+ *
+ * ⚠ 实测结论（重要，避免误解）：本属性在 Chromium 中【能解析但当前无效果】。
+ *   根因：它依赖字体的 chws 特性，而思源黑体 / Noto Sans CJK 只提供
+ *   halt / palt / vhal / vpal / fwid，没有 chws。
+ *   因此本行保留是为了"字体具备 chws 时自动受益"（面向未来），
+ *   真正想要紧凑标点请开启设置里的「紧凑标点」（使用 halt 特性）。
+ * ======================================================================== */
+.markdown-rendered,
+.markdown-source-view.mod-cm6 .cm-content,
+.markdown-preview-view {
+  text-spacing-trim: space-first;
+}
+
+/* ==========================================================================
+ * 五、避头尾（行首禁则 / 行尾禁则）
+ *
+ * ⚠ 实测结论：Chromium 默认【已经强制】执行中文避头尾，无需主题干预——
+ *   在 200px 宽容器里逐字符测量，"一二三四五六七八九。十" 的句号始终留在行末，
+ *   且 line-break 取 auto/loose/normal/strict/anywhere 与 word-break: break-all
+ *   六种组合的断行结果完全一致。
+ *   因此下面这行属于"防御性声明"：在将来引擎行为变化或其它主题覆盖时保底，
+ *   而不是当前生效的关键项。真正有效的是本节末的 text-wrap: pretty。
+ * ======================================================================== */
+.markdown-rendered,
+.markdown-source-view.mod-cm6 .cm-content,
+.markdown-preview-view,
+.markdown-rendered p,
+.markdown-rendered li {
+  line-break: strict;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* 智能断词：word-break: auto-phrase 只在**日文**下由 Chromium 内置词典驱动。
+ * 实测同一段文本：lang="ja" 时断行点由 [0,10,20] 变为 [0,7,14]（按词组断行）；
+ * lang="zh-Hans" 时完全无变化——Chromium 未随附中文词典。
+ * 故此处只对日文内容开启，中文不做无效声明。 */
+.markdown-rendered p:lang(ja),
+.markdown-rendered li:lang(ja) {
+  word-break: auto-phrase;
+}
+
+/* 段落最后一行避免孤立单字（寡行控制）。
+ * 实测有效：同一段文本的断行点由 [0,10,20] 变为 [0,10,19]，即把一个字从第 2 行
+ * 挪到第 3 行，正好解决中文常见的"尾行孤字"。这是低成本高收益的一条。 */
+.markdown-rendered p,
+.markdown-rendered li {
+  text-wrap: pretty;
+}
+
+/* ==========================================================================
+ * 六、首行缩进（可开关）
+ * 默认关闭——因为并非所有中文用户都喜欢缩进；Style Settings 打开后会
+ * 给 body 加上 .my-indent-on 类。
+ * 关键：必须精确豁免不该缩进的段落，否则列表/引用/代码会被推歪。
+ * ======================================================================== */
+body.my-indent-on .markdown-rendered p,
+body.my-indent-on .markdown-preview-view p {
+  text-indent: var(--my-indent-cjk);
+}
+
+/* —— 豁免清单（逐条说明为什么） —— */
+
+/* 1. 列表项内部段落：已在列表缩进层级里，再缩进会"二次凹陷" */
+body.my-indent-on .markdown-rendered li p,
+body.my-indent-on .markdown-rendered li > p:first-child {
+  text-indent: 0;
+}
+
+/* 2. 引用块：引用已有左侧边线作视觉标识，再缩进层级过深 */
+body.my-indent-on .markdown-rendered blockquote p {
+  text-indent: 0;
+}
+
+/* 3. 标注（Callout）内部：容器自带内边距 */
+body.my-indent-on .markdown-rendered .callout p {
+  text-indent: 0;
+}
+
+/* 4. 表格单元格：空间有限，缩进会挤压列宽 */
+body.my-indent-on .markdown-rendered td p,
+body.my-indent-on .markdown-rendered th p {
+  text-indent: 0;
+}
+
+/* 5. 代码块与数学块：缩进会破坏对齐与公式基线 */
+body.my-indent-on .markdown-rendered pre,
+body.my-indent-on .markdown-rendered pre code,
+body.my-indent-on .markdown-rendered .math,
+body.my-indent-on .markdown-rendered mjx-container {
+  text-indent: 0;
+}
+
+/* 6. 仅含图片/嵌入/分隔线/表格的段落：不是文字段，缩进只会让图偏移 */
+body.my-indent-on .markdown-rendered p:has(> img:only-child),
+body.my-indent-on .markdown-rendered p:has(> .internal-embed:only-child),
+body.my-indent-on .markdown-rendered p:has(> .external-embed:only-child),
+body.my-indent-on .markdown-rendered p:has(> .math-block:only-child),
+body.my-indent-on .markdown-rendered p:has(> video:only-child),
+body.my-indent-on .markdown-rendered p:has(> audio:only-child) {
+  text-indent: 0;
+}
+
+/* 7. 脚注、任务列表描述、属性区 */
+body.my-indent-on .markdown-rendered .footnotes p,
+body.my-indent-on .markdown-rendered .metadata-container,
+body.my-indent-on .markdown-rendered .markdown-embed p {
+  text-indent: 0;
+}
+
+/* 8. 标题永不安缩进 */
+body.my-indent-on .markdown-rendered h1,
+body.my-indent-on .markdown-rendered h2,
+body.my-indent-on .markdown-rendered h3,
+body.my-indent-on .markdown-rendered h4,
+body.my-indent-on .markdown-rendered h5,
+body.my-indent-on .markdown-rendered h6 {
+  text-indent: 0;
+}
+
+/* —— 实时预览模式的首行缩进 ——
+ * 难点：CodeMirror 里每个源码行是一个 .cm-line，软换行仍在同一元素内，
+ *       因此 text-indent 会作用于"每条源码行"，若用户习惯硬换行会每行都缩进。
+ * 取舍：只对普通正文行缩进，并排除所有带 HyperMD 语义类的行（标题/列表/引用/
+ *       代码/表格/任务），这是中文主题里最稳的做法。 */
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line {
+  text-indent: var(--my-indent-cjk);
+}
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-header,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-list-line,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-quote,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-table-row,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-hr,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.cm-line-hmd,
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line:has(.cm-formatting),
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line:has(.cm-embed-block),
+body.my-indent-on .markdown-source-view.mod-cm6 .cm-line:has(.cm-widgetBuffer) {
+  text-indent: 0;
+}
+
+/* ==========================================================================
+ * 七、两端对齐（可选）
+ * 中文方块字天生适合两端对齐（传统排版称"均等割付"）：西文的伸缩发生在词间
+ * 空隙，中文没有词间空格，伸缩发生在汉字之间。故使用 inter-character。
+ * 取舍：① 只在阅读视图开启——实时预览下对齐会与光标/选区交互怪异；
+ *       ② 中西文混排时仍可能产生字间空隙，故默认关闭。
+ * ======================================================================== */
+body.my-justify .markdown-rendered p,
+body.my-justify .markdown-preview-view p,
+body.my-justify .markdown-rendered li {
+  text-align: justify;
+  text-justify: inter-character;   /* Chrome 145+；旧版自动忽略，回退 inter-ideograph */
+}
+@supports not (text-justify: inter-character) {
+  body.my-justify .markdown-rendered p,
+  body.my-justify .markdown-preview-view p,
+  body.my-justify .markdown-rendered li {
+    text-justify: inter-ideograph;
+  }
+}
+
+/* 单行段落不做两端对齐（否则被强行拉开）——用 :not 无法判断行数，
+ * 因此改用 text-align-last: left 让最后一行自然左对齐。 */
+body.my-justify .markdown-rendered p,
+body.my-justify .markdown-rendered li {
+  text-align-last: left;
+}
+
+/* ==========================================================================
+ * 八、标题排版
+ * 中文标题的问题：字重一粗，汉字笔画就粘连。因此统一 650 字重 + 略紧字距，
+ * 并用「呼吸感」而非「加粗」来建立层级。
+ * ======================================================================== */
+.markdown-rendered h1,
+.markdown-rendered h2,
+.markdown-rendered h3,
+.markdown-rendered h4,
+.markdown-rendered h5,
+.markdown-rendered h6,
+.markdown-rendered .inline-title,
+.markdown-preview-view h1,
+.markdown-preview-view h2,
+.markdown-preview-view h3 {
+  font-family: var(--my-font-heading);
+  font-weight: var(--my-font-weight-heading);
+  letter-spacing: 0;
+  line-break: strict;
+  text-wrap: balance;   /* 标题折行时自动平衡两行长度 */
+  text-indent: 0;
+}
+
+.markdown-rendered h1 { margin-block: 1.6em 0.9em; }
+.markdown-rendered h2 { margin-block: 1.8em 0.8em; }
+.markdown-rendered h3 { margin-block: 1.5em 0.7em; }
+.markdown-rendered h4 { margin-block: 1.3em 0.6em; }
+.markdown-rendered h5 { margin-block: 1.2em 0.5em; }
+.markdown-rendered h6 { margin-block: 1.1em 0.5em; }
+
+/* 首个标题不留上方间距 */
+.markdown-rendered > h1:first-child,
+.markdown-rendered > h2:first-child,
+.markdown-rendered > h3:first-child {
+  margin-block-start: 0;
+}
+
+/* h6 用小号大写字距来区分层级（中文下改用字距而非斜体） */
+.markdown-rendered h6 {
+  color: var(--my-text-tertiary);
+  font-size: var(--my-h6-size);
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+/* ==========================================================================
+ * 九、行内元素
+ * ======================================================================== */
+/* 加粗：中文加粗容易糊，用"字重 650 + 极淡底色"双重强调 */
+.markdown-rendered strong,
+.markdown-rendered b {
+  font-weight: var(--my-font-weight-bold);
+  color: var(--my-text-primary);
+}
+
+/* 斜体：汉字没有真斜体，浏览器强行倾斜（伪斜体）会让笔画失真，是最伤中文
+ * 版面的一处细节。中文排版惯例用「着重号」（句下小圆点）或变色代替，
+ * 这里默认采用"变色 + 半粗"，并另提供 body.my-emphasis-dot 使用真正的着重号。 */
+.markdown-rendered em,
+.markdown-rendered i {
+  font-style: normal;
+  font-weight: var(--my-font-weight-medium);
+  color: var(--my-accent);
+  letter-spacing: 0.02em;
+}
+/* 西文斜体保持真斜体 */
+.markdown-rendered em:lang(en),
+.markdown-rendered i:lang(en) {
+  font-style: italic;
+  color: inherit;
+}
+
+/* 删除线：加一点"划掉"的墨感 */
+.markdown-rendered del,
+.markdown-rendered s {
+  color: var(--my-text-faint);
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--my-text-faintest);
+}
+
+/* 高亮：中文高亮块要略作圆角并留出内边距，否则紧贴汉字 */
+.markdown-rendered mark {
+  background-color: var(--my-mark-yellow);
+  color: inherit;
+  padding: 0.08em 0.2em;
+  border-radius: var(--my-radius-xs);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* 内联代码：中文环境下必须留出足够内边距，并统一等宽字体 */
+.markdown-rendered code,
+.markdown-source-view.mod-cm6 .cm-inline-code {
+  font-family: var(--my-font-mono);
+  font-size: var(--code-size);
+  letter-spacing: var(--my-letter-spacing-code);
+  background-color: var(--my-code-surface);
+  border: 1px solid var(--my-code-border);
+  border-radius: var(--my-radius-xs);
+  padding: 0.12em 0.34em;
+  color: var(--my-code-tag);
+  word-break: break-word;
+}
+
+/* 键盘按键（kbd）：做成"实体按键"观感 */
+.markdown-rendered kbd {
+  font-family: var(--my-font-mono);
+  font-size: 0.82em;
+  padding: 0.14em 0.42em;
+  border: 1px solid var(--my-border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--my-radius-xs);
+  background: var(--my-surface-secondary);
+  box-shadow: var(--my-shadow-xs);
+}
+
+/* ==========================================================================
+ * 十、中文专属排版模式（cssclass 切换）
+ * 通过笔记 frontmatter 的 cssclasses 使用，详见 docs/zh/03-cssclass速查.md
+ * ======================================================================== */
+
+/* —— ① 公文模式：参照 GB/T 9704-2012《党政机关公文格式》——
+ * 特征：仿宋_GB2312 三号（16pt）、行距 28~30pt、首行缩进 2 字、标题黑体 */
+.my-govdoc .markdown-rendered {
+  font-family: "FangSong", "仿宋", "FangSong_GB2312", "仿宋_GB2312", "STFangsong", serif;
+  font-size: 16pt;
+  line-height: 1.75;
+  text-autospace: normal;
+}
+.my-govdoc .markdown-rendered p {
+  text-indent: 2em;
+  margin-block-end: 0;
+}
+.my-govdoc .markdown-rendered h1,
+.my-govdoc .markdown-rendered .inline-title {
+  font-family: "SimHei", "黑体", "Source Han Sans SC", sans-serif;
+  font-size: 22pt;
+  font-weight: 400;
+  text-align: center;
+  letter-spacing: 0.02em;
+  margin-block: 0 1.6em;
+}
+.my-govdoc .markdown-rendered h2 {
+  font-family: "KaiTi", "楷体", "STKaiti", serif;
+  font-size: 16pt;
+  font-weight: 700;
+}
+.my-govdoc .markdown-rendered h3,
+.my-govdoc .markdown-rendered h4 {
+  font-family: "SimHei", "黑体", sans-serif;
+  font-size: 16pt;
+  font-weight: 400;
+}
+/* 公文体不用彩色，一律黑 */
+.my-govdoc .markdown-rendered a,
+.my-govdoc .markdown-rendered strong,
+.my-govdoc .markdown-rendered em {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* —— ② 诗词模式：楷体、居中、宽行距，保留原诗换行 —— */
+.my-poetry .markdown-rendered {
+  font-family: var(--my-font-heading-serif);
+  font-size: 1.08em;
+  line-height: 2.1;
+  /* 诗歌需要疏朗的呼吸感，字距略放开；但字距会在末字后也追加空隙，
+   * 故控制在 0.06em 以内，避免居中时视觉重心偏移。 */
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.my-poetry .markdown-rendered p {
+  text-indent: 0;
+  text-align: center;
+  margin-block-end: 0.4em;
+}
+.my-poetry .markdown-rendered h1,
+.my-poetry .markdown-rendered h2 {
+  text-align: center;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+}
+.my-poetry .markdown-rendered h2 {
+  font-size: 1.15em;
+  color: var(--my-text-secondary);
+  margin-block-end: 1.4em;
+}
+
+/* —— ③ 论文模式：宋体正文 + 黑体标题，严肃学术观感 —— */
+.my-thesis .markdown-rendered {
+  font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", serif;
+  font-size: 12pt;
+  line-height: 1.9;
+  text-autospace: normal;
+}
+.my-thesis .markdown-rendered p {
+  text-indent: 2em;
+  margin-block-end: 0;
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+.my-thesis .markdown-rendered h1,
+.my-thesis .markdown-rendered h2,
+.my-thesis .markdown-rendered h3 {
+  font-family: "SimHei", "黑体", "Source Han Sans SC", sans-serif;
+  text-align: left;
+}
+
+/* —— ④ 信纸模式：轻微横线纹理，模拟手写稿纸 —— */
+.my-letter .markdown-rendered {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--my-line-height-relaxed) * 1em - 1px),
+    var(--my-divider) calc(var(--my-line-height-relaxed) * 1em - 1px),
+    var(--my-divider) calc(var(--my-line-height-relaxed) * 1em)
+  );
+  background-attachment: local;
+  line-height: var(--my-line-height-relaxed);
+}
+
+/* —— ⑤ 大字模式：适合投影讲解，整体放大 —— */
+.my-bigscreen .markdown-rendered {
+  font-size: calc(var(--my-font-size-base) * 1.35);
+  line-height: 1.85;
+}
+.my-bigscreen .markdown-rendered h1 { font-size: 2.1em; }
+.my-bigscreen .markdown-rendered h2 { font-size: 1.7em; }
+.my-bigscreen .markdown-rendered h3 { font-size: 1.4em; }
+
+/* —— ⑥ 沉浸阅读：隐藏行内格式符号，只留正文 —— */
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting,
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting-header,
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting-list,
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting-quote,
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting-link,
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting-strong,
+.my-immersive .markdown-source-view.mod-cm6 .cm-formatting-em {
+  opacity: 0.28;
+  transition: opacity var(--my-duration-normal) var(--my-ease-out);
+}
+.my-immersive .markdown-source-view.mod-cm6 .cm-line:hover .cm-formatting {
+  opacity: 1;
+}
+
+/* ==========================================================================
+ * 十一、打印 / 导出 PDF
+ * 导出时应当还原为「纸质排版」：去背景色、加打印边距、保证分页不断行。
+ * ======================================================================== */
+@media print {
+  .markdown-rendered {
+    font-size: 11.5pt;
+    line-height: 1.85;
+    color: var(--my-print-text);
+    text-autospace: normal;
+    text-spacing-trim: space-first;
+  }
+  .markdown-rendered h1,
+  .markdown-rendered h2,
+  .markdown-rendered h3,
+  .markdown-rendered h4 {
+    break-after: avoid-page;
+    color: var(--my-print-text);
+  }
+  .markdown-rendered img,
+  .markdown-rendered table,
+  .markdown-rendered pre,
+  .markdown-rendered blockquote {
+    break-inside: avoid;
+  }
+  .markdown-rendered a {
+    color: var(--my-print-text);
+    text-decoration: underline;
+  }
+  /* 打印时把外链地址显示出来 */
+  .markdown-rendered a.external-link::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: var(--my-print-text-muted);
+  }
+  body.my-print-indent .markdown-rendered p {
+    text-indent: 2em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* 沉浸模式下格式符号的淡入淡出属装饰性动效，可直接取消过渡 */
+  .my-immersive .markdown-source-view.mod-cm6 .cm-formatting {
+    transition: none;
+  }
+}

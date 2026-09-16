@@ -1,0 +1,200 @@
+/* ============================================================================
+ * 墨韵 MoYun · 增强特性：图片画廊 / 网格（Image Grids）
+ * ----------------------------------------------------------------------------
+ * 用途：把笔记里「连续的图片」自动排成等宽等高的画廊；单张图片保持原样，
+ *       图文混排不受影响。灵感来自 Minimal 的 Image Grids 与 Blue Topaz 的图集。
+ *
+ * 开关：body.my-image-grid
+ * 列数：body.my-image-grid.my-grid-2 / .my-grid-3 / .my-grid-4
+ *
+ * 三种形态，分别对应三种写法：
+ *   ① 一段多图：![a](a.png)![b](b.png)   → 该段落自身变成网格（最稳）
+ *   ② 连续多段：每段一张图，段落顶格相邻 → 由 :has() 判定后把区块容器网格化
+ *   ③ 单图 / 图文混排                     → 完全不动（这是本文件最看重的克制）
+ *
+ * 为什么不用 JS 也无法用 grid 直接"包裹"相邻段落：
+ *   CSS 没有"把若干个兄弟节点包进一个新容器"的能力。能改的只有它们的父容器，
+ *   因此②走的是「容器网格 + 非图片块横跨全部列」的方案，并用 :has() 严格门控，
+ *   保证只有真正含图片组的笔记才被改变布局。
+ *
+ * 实时预览（mod-cm6）的诚实说明：
+ *   CodeMirror 的行高与位置由 JS 计算（虚拟滚动 + 位置缓存），把 .cm-line 改成
+ *   grid / inline-block 会让测量值与实际渲染错位，直接导致光标漂移与滚动跳变。
+ *   所以实时预览只享受"图片视觉增强"（圆角、悬停放大、行高上限），不做网格重排；
+ *   想看图集请切到阅读视图——这也是 Minimal 等主题的共同做法。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、开关与网格尺度
+ * 变量集中在这里，用户可在 CSS 片段里覆盖，无需改动本文件。
+ * ======================================================================== */
+body.my-image-grid {
+  --my-grid-columns: 3;                        /* 默认列数，可被 .my-grid-N 覆盖 */
+  --my-grid-gap: var(--my-space-3);            /* 图间距：中文截图多为带说明的界面图，间距不宜大 */
+  --my-grid-row: 11rem;                        /* 网格行高：约 3:2 的界面截图比例 */
+  --my-grid-fit: cover;                        /* 裁切填充；改成 contain 可看全图但会有留白 */
+  --my-grid-radius: var(--my-radius-m);
+  --my-grid-zoom: 1.03;                        /* 悬停放大倍数：>1.05 会盖住相邻图 */
+}
+
+body.my-image-grid.my-grid-2 { --my-grid-columns: 2; --my-grid-row: 14rem; }
+body.my-image-grid.my-grid-3 { --my-grid-columns: 3; }
+body.my-image-grid.my-grid-4 { --my-grid-columns: 4; --my-grid-row: 8.5rem; --my-grid-gap: var(--my-space-2); }
+
+/* ==========================================================================
+ * 二、形态①：一段多图 —— 段落自身成为网格
+ * 判定用 :has(图 + 图)：相邻兄弟选择器要求"至少两张图挨在一起"，
+ * 单独一张图（无论是否带说明文字）都不会命中。
+ * ======================================================================== */
+body.my-image-grid .markdown-rendered p:has(> :is(img, .image-embed, video) + :is(img, .image-embed, video)),
+body.my-image-grid .markdown-rendered p:has(> a:has(> :is(img, .image-embed)) + a:has(> :is(img, .image-embed))) {
+  display: grid;
+  grid-template-columns: repeat(var(--my-grid-columns), minmax(0, 1fr));
+  gap: var(--my-grid-gap);
+  align-items: stretch;
+  margin-block: var(--my-space-7);
+}
+
+/* 网格项：图片、图片嵌入、以及包裹图片的链接都要吃满单元格 */
+body.my-image-grid .markdown-rendered p:has(> :is(img, .image-embed, video) + :is(img, .image-embed, video)) > :is(img, .image-embed, video, a),
+body.my-image-grid .markdown-rendered p:has(> a:has(> img) + a:has(> img)) > a {
+  min-inline-size: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--my-grid-radius);
+}
+
+/* ==========================================================================
+ * 三、形态②：连续图片段落 —— 区块容器网格化（:has() 严格门控）
+ * 门控含义：只有当容器里确实出现「两个相邻的、只含一张图的块」时才启用网格，
+ * 普通笔记（无图片组）连 display: grid 都不会被应用，零风险。
+ * ======================================================================== */
+body.my-image-grid :is(.markdown-preview-section, .markdown-preview-sizer):has(
+  > div:has(> p:only-child > :is(img, .image-embed):only-child)
++ div:has(> p:only-child > :is(img, .image-embed):only-child)
+) {
+  display: grid;
+  grid-template-columns: repeat(var(--my-grid-columns), minmax(0, 1fr));
+  column-gap: var(--my-grid-gap);
+  align-items: start;
+}
+
+/* 默认：所有块横跨整行 —— 文字、标题、表格、代码块因此保持原有版心宽度 */
+body.my-image-grid :is(.markdown-preview-section, .markdown-preview-sizer) > * {
+  grid-column: 1 / -1;
+}
+
+/* 图片组内的块只占一格：两个互补选择器取并集（"后面还有图" ∪ "前面是图"） */
+body.my-image-grid :is(.markdown-preview-section, .markdown-preview-sizer) > div:has(> p:only-child > :is(img, .image-embed):only-child):has(+ div:has(> p:only-child > :is(img, .image-embed):only-child)),
+body.my-image-grid :is(.markdown-preview-section, .markdown-preview-sizer) > div:has(> p:only-child > :is(img, .image-embed):only-child) + div:has(> p:only-child > :is(img, .image-embed):only-child) {
+  grid-column: span 1;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+/* 网格顶部那颗滚动锚点在网格里只会白占一行间距，故收掉；
+ * 它的本职（顶部分页留白）已由 --file-margins 提供。 */
+body.my-image-grid :is(.markdown-preview-section, .markdown-preview-sizer):has(
+  > div:has(> p:only-child > :is(img, .image-embed):only-child)
++ div:has(> p:only-child > :is(img, .image-embed):only-child)
+) > .markdown-preview-pusher {
+  display: none;
+}
+
+/* ==========================================================================
+ * 四、图片本体的统一处理
+ * object-fit: cover 让同一行里的图无论原始比例如何都等高，
+ * 视觉上才是"网格"而不是"参差的砖墙"。
+ * ======================================================================== */
+body.my-image-grid .markdown-rendered :is(p:has(> :is(img, .image-embed) + :is(img, .image-embed)), :is(.markdown-preview-section, .markdown-preview-sizer) > div:has(> p:only-child > :is(img, .image-embed):only-child):has(+ div:has(> p:only-child > :is(img, .image-embed):only-child))) :is(img, .image-embed img) {
+  inline-size: 100%;
+  block-size: var(--my-grid-row);
+  object-fit: var(--my-grid-fit);
+  object-position: center;
+  border-radius: var(--my-grid-radius);
+  display: block;
+  transition: transform var(--my-duration-normal) var(--my-ease-out),
+              box-shadow var(--my-duration-normal) var(--my-ease-out);
+}
+
+/* 悬停放大：只放大图片本体（不是容器），因此不会顶开相邻图；
+ * 配合上面容器的 overflow: hidden，放大被裁在卡片内，观感是"镜头推近"。 */
+body.my-image-grid .markdown-rendered p:has(> img + img) > img:hover,
+body.my-image-grid .markdown-rendered p:has(> .image-embed + .image-embed) > .image-embed:hover img,
+body.my-image-grid .markdown-rendered :is(.markdown-preview-section, .markdown-preview-sizer) > div:has(> p:only-child > :is(img, .image-embed):only-child):has(+ div:has(> p:only-child > :is(img, .image-embed):only-child)):hover img {
+  transform: scale(var(--my-grid-zoom));
+  box-shadow: var(--my-shadow-m);
+}
+
+/* 图片上的"单击查看原图"等悬浮工具条：统一圆角，避免和网格圆角打架 */
+body.my-image-grid .markdown-rendered .image-embed .embed-actions {
+  border-radius: var(--my-radius-full);
+}
+
+/* ==========================================================================
+ * 五、形态③：单图与图文混排的豁免
+ * 单图不加任何尺寸约束——中文笔记里的流程图、架构图常需要按原比例展示，
+ * 强行裁成 11rem 会把图注与图例切掉。
+ * ======================================================================== */
+body.my-image-grid .markdown-rendered p:has(> img:only-child) > img,
+body.my-image-grid .markdown-rendered p:has(> .image-embed:only-child) > .image-embed img {
+  block-size: auto;
+  max-block-size: 100%;
+  --my-grid-fit: contain;
+}
+
+/* 图片说明文字（alt / 图注）在网格里居中，单图时保持默认左对齐 */
+body.my-image-grid .markdown-rendered p:has(> :is(img, .image-embed) + :is(img, .image-embed)) > em:only-child,
+body.my-image-grid .markdown-rendered .image-caption {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--my-text-tertiary);
+  font-size: var(--my-font-size-s);
+}
+
+/* ==========================================================================
+ * 六、实时预览：只做视觉增强，不做重排（原因见文件头）
+ * ======================================================================== */
+body.my-image-grid .markdown-source-view.mod-cm6 .cm-content .image-embed img {
+  border-radius: var(--my-grid-radius);
+  max-block-size: 60vh;
+  object-fit: contain;
+  transition: box-shadow var(--my-duration-normal) var(--my-ease-out);
+}
+
+body.my-image-grid .markdown-source-view.mod-cm6 .cm-content .image-embed:hover img {
+  box-shadow: var(--my-shadow-m);
+}
+
+/* 侧栏 / 悬浮预览 / 嵌入笔记里的图片同样给圆角，保持全局一致 */
+body.my-image-grid .markdown-embed .markdown-rendered img,
+body.my-image-grid .popover .markdown-rendered img {
+  border-radius: var(--my-grid-radius);
+}
+
+/* ==========================================================================
+ * 七、动效兜底
+ * 减少动效偏好下取消放大，改为"边框高亮"，反馈仍在但不产生位移。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  body.my-image-grid .markdown-rendered :is(img, .image-embed img) {
+    transition: box-shadow var(--my-duration-fast) var(--my-ease-out);
+  }
+  body.my-image-grid .markdown-rendered :is(img, .image-embed img):hover {
+    transform: none;
+    box-shadow: 0 0 0 var(--my-border-width-thick) var(--my-accent);
+  }
+}
+
+/* 打印 / 导出 PDF 时网格化会浪费纸张，恢复为常规流式排布 */
+@media print {
+  body.my-image-grid :is(.markdown-preview-section, .markdown-preview-sizer) {
+    display: block;
+  }
+  body.my-image-grid .markdown-rendered img {
+    block-size: auto;
+    object-fit: contain;
+  }
+}

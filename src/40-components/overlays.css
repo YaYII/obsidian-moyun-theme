@@ -1,0 +1,438 @@
+/* ============================================================================
+ * 墨韵 MoYun · 通用组件：浮层（Overlays）
+ * ----------------------------------------------------------------------------
+ * 覆盖：模态框、菜单、命令面板、工具提示、提示消息（Notice）。
+ *
+ * 浮层的三条设计准则（本文件所有规则都从这里推导）：
+ *   ① 浮得起来 —— 圆角更大、阴影更深、描边更亮。主题的纸面是暖灰，
+ *      浮层必须比纸面"亮"一档（--my-surface-elevated），否则再大的阴影也像贴在纸上；
+ *   ② 看得清字 —— 中文提示文字比西文长 30%~50%，浮层宽度与行高都要放宽；
+ *      同时**必须修正原生把提示写成"深底白字"的假设**（见第七节，本主题的
+ *      消息底色在两种模式下都是浅色，白字会直接消失）；
+ *   ③ 进得来也退得出 —— 统一的入场动效（透明度 + 位移），且一律只动
+ *      translate/scale 这两个独立属性，不动 transform：
+ *      菜单与子菜单的定位依赖内联 transform，若动画也写 transform，
+ *      动画结束后会覆盖内联值，导致子菜单跳到屏幕角落。
+ *
+ * 依赖：obsidian-map.css 已映射 --modal-* / --menu-* / --prompt-* / --suggestion-*
+ *       等 30 余个变量，本文件只补充"中文手感"与原生缺失的部分。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、浮层共用语言
+ * 只列出需要统一的属性；各组件随后再补自己的专门规则。
+ * ======================================================================== */
+.modal,
+.menu,
+.prompt,
+.suggestion-container {
+  background-color: var(--my-surface-elevated);
+  border: var(--my-border-width) solid var(--my-border);
+  /* 浮层的圆角比按钮大一档：面积越大，同样的圆角看起来越尖锐 */
+  border-radius: var(--my-radius-m);
+  box-shadow: var(--my-shadow-l);
+}
+
+/* ==========================================================================
+ * 二、模态框
+ * 层次：遮罩（压暗）→ 卡片（抬起）→ 标题栏（分隔）→ 内容（滚动的正文）
+ * ======================================================================== */
+
+/* 遮罩：在原生覆盖色之上加一层"毛玻璃"。为什么不直接写 blur(4px)？
+ * 因为 Obsidian 允许用户调节模糊强度，--blur-radius-m 是它暴露的接口，
+ * 用户关掉模糊时本主题也自动跟随。 */
+.modal-bg {
+  background-color: var(--background-modifier-cover);
+  backdrop-filter: blur(var(--blur-radius-m, 0px));
+}
+.modal-container {
+  /* 中文弹窗内容普遍更长，居中时给上下留出安全距离，避免贴到屏幕边 */
+  padding: var(--my-space-8);
+}
+.modal {
+  border-radius: var(--my-radius-l);
+  box-shadow: var(--my-shadow-xl);
+  padding: var(--my-space-9);
+  animation: moyun-modal-in var(--my-duration-normal) var(--my-ease-out) both;
+}
+@keyframes moyun-modal-in {
+  from {
+    opacity: 0;
+    scale: 0.985;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* —— 标题栏 —— */
+.modal-title,
+.modal-header {
+  font-size: var(--my-font-size-l);
+  font-weight: var(--my-font-weight-heading);
+  line-height: var(--my-line-height-snug);
+  color: var(--my-text-primary);
+  /* 中文标题在弹窗里不居中：汉字居中后与左侧内容的对位关系会变模糊 */
+  text-align: start;
+}
+.modal-header {
+  padding-block-end: var(--my-space-6);
+  margin-block-end: var(--my-space-6);
+  border-block-end: var(--my-border-width) solid var(--my-divider);
+}
+
+/* —— 关闭按钮 ——
+ * 原生只有一个 8px 的 padding 图标，中文界面里太难点。这里做成 28×28 的
+ * 圆形热区，并在悬停时给底色——用户需要"看到"自己瞄准的是哪个按钮。 */
+.modal-close-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--my-radius-full);
+  color: var(--my-text-tertiary);
+  top: var(--my-space-6);
+  inset-inline-end: var(--my-space-6);
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+@media (hover: hover) {
+  .modal-close-button:hover {
+    background-color: var(--my-surface-hover);
+    color: var(--my-text-primary);
+  }
+}
+.modal-close-button:focus-visible {
+  outline: 2px solid var(--my-accent);
+  outline-offset: 2px;
+}
+
+/* —— 内容区 ——
+ * 行高按中文正文给（1.65），字号仍用 UI 字号：弹窗是"操作界面"不是"阅读界面"。
+ * 右侧预留滚动条宽度，避免滚动条出现时文字跟着跳一行。 */
+.modal-content {
+  line-height: var(--my-line-height-normal);
+  padding-inline-end: var(--my-space-2);
+  scrollbar-gutter: stable;
+}
+.modal-content p {
+  margin-block: 0 var(--my-space-6);
+}
+
+/* —— 底部按钮区 —— */
+.modal-button-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--my-space-5);
+  justify-content: flex-end;
+  margin-block-start: var(--my-space-8);
+}
+
+/* 侧栏式弹窗（社区插件、设置）：侧栏与内容同底色会糊成一片，加一条分隔线 */
+.modal-sidebar-inner {
+  border-inline-end: var(--my-border-width) solid var(--my-divider);
+}
+
+/* ==========================================================================
+ * 三、菜单
+ * 中文菜单项比西文高：13px 的 UI 字号在汉字下偏小，行高也要够，否则
+ * "文件/编辑/视图"三行挤在一起会误点。取 14px 字号 + 30px 最小高度。
+ * ======================================================================== */
+.menu {
+  padding: var(--my-space-3);
+  animation: moyun-menu-in var(--my-duration-fast) var(--my-ease-out) both;
+}
+@keyframes moyun-menu-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.menu-item {
+  min-height: 30px;
+  padding: var(--my-space-3) var(--my-space-5);
+  border-radius: var(--my-radius-s);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+  gap: var(--my-space-5);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+.menu-item:not(.is-label):not(.is-disabled):hover,
+.menu-item.selected {
+  background-color: var(--my-surface-hover);
+}
+/* 选中项：底色 + 左侧 2px 强调条。仅靠底色在浅色模式下对比不足，
+   色条能在扫视时立刻定位当前项。 */
+.menu-item.selected {
+  background-color: var(--my-surface-selected);
+  box-shadow: inset 2px 0 0 var(--my-accent);
+}
+.menu-item.is-label {
+  font-size: var(--my-font-size-xs);
+  color: var(--my-text-faint);
+  letter-spacing: var(--my-letter-spacing-cjk);
+  padding-block-end: var(--my-space-2);
+}
+.menu-item.is-disabled {
+  color: var(--my-text-faintest);
+}
+.menu-item.is-warning:not(.is-disabled) {
+  color: var(--my-danger);
+}
+.menu-item-icon {
+  color: var(--my-text-tertiary);
+}
+.menu-item-icon .svg-icon {
+  width: 1.05em;
+  height: 1.05em;
+}
+/* 说明文字（如"重命名…"的补充说明）：比标题小一档、淡两档 */
+.menu-item-desc {
+  color: var(--my-text-faint);
+  font-size: var(--my-font-size-xs);
+  line-height: var(--my-line-height-snug);
+}
+.menu-separator {
+  height: var(--menu-divider-width);
+  background-color: var(--menu-divider-color);
+  margin-block: var(--my-space-3);
+  border: none;
+}
+
+/* ==========================================================================
+ * 四、命令面板 / 自动完成（.prompt 与 .suggestion-*）
+ * 命令面板是全键盘操作的组件，因此：输入框字号放大到 15px（中文输入法
+ * 候选框与输入内容要够大才看得清）、结果项加左色条、快捷键提示用等宽字体。
+ * ======================================================================== */
+.prompt {
+  border-radius: var(--my-radius-l);
+  box-shadow: var(--my-shadow-xl);
+  animation: moyun-prompt-in var(--my-duration-normal) var(--my-ease-out) both;
+}
+@keyframes moyun-prompt-in {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* 输入框：中文输入需要更大的字面与内边距 */
+input.prompt-input {
+  font-size: var(--my-font-size-l);
+  line-height: var(--my-line-height-snug);
+  padding-inline-start: var(--my-space-8);
+  color: var(--my-text-primary);
+}
+input.prompt-input::placeholder {
+  color: var(--my-text-faint);
+}
+input.prompt-input:hover,
+input.prompt-input:focus,
+input.prompt-input:focus-visible {
+  /* 面板本身已有完整描边，输入框再画一圈焦点环会变成"框中框" */
+  border-bottom: var(--my-border-width) solid var(--my-divider);
+  background-color: transparent;
+}
+
+.prompt-results {
+  padding: var(--my-space-4);
+}
+.prompt-instructions {
+  border-block-start: var(--my-border-width) solid var(--my-divider);
+  color: var(--my-text-faint);
+  gap: var(--my-space-6);
+}
+.prompt-instruction-command {
+  font-family: var(--my-font-mono);
+  font-size: 0.9em;
+  color: var(--my-text-tertiary);
+}
+
+/* —— 结果项 —— */
+.suggestion-item {
+  border-radius: var(--my-radius-s);
+  padding: var(--my-space-4) var(--my-space-6);
+  min-height: 30px;
+  line-height: var(--my-line-height-snug);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+.suggestion-item.is-selected {
+  background-color: var(--my-surface-selected);
+  box-shadow: inset 2px 0 0 var(--my-accent);
+}
+.suggestion-item.mod-downranked {
+  color: var(--my-text-faint);
+}
+.suggestion-title {
+  font-size: var(--my-font-size-s);
+  color: var(--my-text-primary);
+}
+/* 第二行的路径/说明：中文路径很长，必须允许折行并压到淡色 */
+.suggestion-note {
+  color: var(--my-text-faint);
+  font-size: var(--my-font-size-xs);
+  line-height: var(--my-line-height-snug);
+  overflow-wrap: anywhere;
+}
+/* 快捷键徽标：等宽字体 + 描边胶囊，与正文命令名区分开 */
+.suggestion-flair,
+.prompt-instruction .suggestion-flair {
+  font-family: var(--my-font-mono);
+  font-size: var(--my-font-size-xs);
+  color: var(--my-text-faint);
+  background-color: var(--my-surface-secondary);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  border-radius: var(--my-radius-xs);
+  padding: 0.1em 0.36em;
+}
+.suggestion-empty {
+  color: var(--my-text-faint);
+  padding: var(--my-space-8);
+}
+.suggestion-container {
+  border-radius: var(--my-radius-m);
+  box-shadow: var(--my-shadow-l);
+}
+
+/* ==========================================================================
+ * 五、工具提示（.tooltip）
+ * 中文提示的断行点少，最大宽度从 300px 放宽到 320px，并允许按词断行。
+ * ======================================================================== */
+.tooltip,
+.cm-tooltip.cm-completionInfo {
+  background-color: var(--my-surface-elevated);
+  color: var(--my-text-primary);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-s);
+  box-shadow: var(--my-shadow-m);
+  font-size: var(--my-font-size-xs);
+  font-weight: var(--my-font-weight-normal);
+  line-height: var(--my-line-height-snug);
+  letter-spacing: var(--my-letter-spacing-cjk);
+  padding: var(--my-space-3) var(--my-space-5);
+  max-width: 320px;
+  overflow-wrap: anywhere;
+}
+/* 报错提示反色处理：必须是"深底浅字"才符合危险语义，
+ * 而主题的 --background-modifier-error 是淡红底，配白字会消失，
+ * 所以这里用实心危险色 + 强调底文字色。 */
+.tooltip.mod-error {
+  background-color: var(--my-danger);
+  color: var(--my-text-on-accent);
+  border-color: transparent;
+}
+
+/* ==========================================================================
+ * 六、提示消息（Notice）
+ * 右下角的一次性反馈。中文提示往往是一整句话，原生 300px 只有十来个字就断行，
+ * 放宽到 340px 并给 1.55 的行高，两三行内读完才不费力。
+ * ======================================================================== */
+.notice-container {
+  gap: var(--my-space-4);
+  padding: var(--my-space-8);
+}
+.notice {
+  background-color: var(--my-surface-elevated);
+  color: var(--my-text-primary);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-l);
+  box-shadow: var(--my-shadow-l);
+  font-size: var(--my-font-size-s);
+  line-height: 1.55;
+  letter-spacing: var(--my-letter-spacing-cjk);
+  padding: var(--my-space-7) var(--my-space-8);
+  max-width: 340px;
+  animation: moyun-notice-in var(--my-duration-normal) var(--my-ease-out) both;
+}
+@keyframes moyun-notice-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+/* 操作链接（如"撤销"）：用强调色 + 下划线，明确它是可点的 */
+.notice-cta {
+  color: var(--my-accent);
+  font-weight: var(--my-font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+@media (hover: hover) {
+  .notice-cta:hover {
+    color: var(--my-accent-hover);
+  }
+}
+/* 进度条：用 accent-color 让原生 progress 跟随主题色，不必写伪元素 */
+.notice progress {
+  accent-color: var(--my-accent);
+  height: 4px;
+  border-radius: var(--my-radius-full);
+}
+
+/* ==========================================================================
+ * 七、为什么必须覆盖原生提示文字色（重要）
+ * Obsidian 的 .tooltip / .notice / .cm-completionInfo 都硬编码了 color: #FAFAFA，
+ * 前提是它的 --background-modifier-message 在明暗两种模式下都是深色。
+ * 本主题把该变量映射为"抬起一档的表面"（浅色模式下是近白纸面），
+ * 于是原生白字会在浅色模式里彻底消失。因此上面对这三类浮层
+ * 都显式指定了 color: var(--my-text-primary) —— 这不是风格偏好，是可用性修复。
+ * 若将来映射层把 --background-modifier-message 改回深色，
+ * 请同步删除本节说明并复核对比度。
+ * ======================================================================== */
+
+/* ==========================================================================
+ * 八、打印 / 导出 PDF
+ * 浮层是"操作中"的产物，不应出现在纸面上：导出时它们要么已关闭，
+ * 要么正悬停在某个链接上——留在 PDF 里会遮住正文。
+ * ======================================================================== */
+@media print {
+  .modal-container,
+  .menu,
+  .prompt,
+  .suggestion-container,
+  .tooltip,
+  .notice-container,
+  .cm-tooltip {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+ * 九、动效兜底
+ * 关闭"减少动态效果"时移除位移，只保留瞬时出现——
+ * 位移是最容易引发前庭不适的一类动效。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .menu,
+  .prompt,
+  .notice,
+  .popover.hover-popover {
+    animation: none;
+  }
+  .modal-close-button,
+  .menu-item,
+  .suggestion-item {
+    transition: none;
+  }
+}

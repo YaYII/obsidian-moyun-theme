@@ -1,0 +1,212 @@
+/* ============================================================================
+ * 墨韵 MoYun · 插件适配 ②：Dataview
+ * ----------------------------------------------------------------------------
+ * Dataview 是中文知识库最常用的插件：它把笔记当数据库，输出表格 / 列表 / 任务 / 日历。
+ * 问题在于它的默认样式基本沿用了「英文主题 + 小字号」的假设：
+ *   ① 表格又高又松，一屏看不到几行，中文表格尤其浪费纵向空间；
+ *   ② 行内字段（inline field）没有视觉边界，与正文糊在一起，扫读时找不到字段名；
+ *   ③ 查询无结果时的提示是一句英文斜体——斜体对汉字是伪斜（强行切变字形），非常难看；
+ *   ④ 列表视图每层嵌套都加间距，四五层后整块被推得很低。
+ * 本文件逐条解决，并保证同一段查询在阅读视图与实时预览中高度一致。
+ *
+ * 依赖：00-tokens/tokens.css、00-tokens/obsidian-map.css
+ * 适配：Dataview 自己渲染 DOM，在阅读视图与实时预览中结构同构，无需写两套选择器；
+ *       但它会被包进 CM6 的嵌入块（.cm-embed-block）里，那一层的外框需要单独收一下。
+ * 注意：标注「需实测」的选择器（错误提示、日历视图内部）来自插件的历史版本写法，
+ *       不保证 100% 命中；命中失败只会退化成原生样式，不会破坏内容。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、渲染块外壳
+ * 实测兜底：实时预览里查询块被包在 .cm-embed-block 中，用 :has() 只命中含 Dataview 的
+ * 那一块，避免给所有嵌入块（图片、表格、excalidraw…）加边框。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-embed-block:has(.block-language-dataview),
+.markdown-source-view.mod-cm6 .cm-embed-block:has(.block-language-dataviewjs) {
+  padding-inline: var(--my-space-4);
+  border-radius: var(--my-radius-m);
+}
+
+/* 查询结果的高密度场景：行高从正文的 1.8 收紧到 1.45，但字号保持正文大小，
+ * 中文在 0.85em 以下会明显发糊，绝不为了「紧凑」牺牲字号。 */
+.block-language-dataview,
+.block-language-dataviewjs {
+  line-height: var(--my-line-height-snug);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+/* ==========================================================================
+ * 二、表格视图
+ * 比正文表格更紧凑：表格是「扫码式」阅读，行高低一点更快定位；
+ * 表头字重压到 500，因为汉字在 600 以上笔画会相互挤压。
+ * ======================================================================== */
+.dataview.table-view-table {
+  font-size: 0.94em;
+  line-height: var(--my-line-height-snug);
+  border: var(--my-border-width) solid var(--table-border-color);
+  border-radius: var(--my-radius-m);
+  overflow: hidden; /* 让表头底色跟随外层圆角裁切，否则四角会露出方形 */
+}
+
+.dataview.table-view-table thead th {
+  position: sticky; /* 长结果表滚动时表头常驻，省去来回滚动确认列义 */
+  top: 0;
+  z-index: 1;
+  padding: var(--my-space-3) var(--my-space-6);
+  background-color: var(--table-header-background);
+  color: var(--table-header-color);
+  font-weight: var(--my-font-weight-medium);
+  text-wrap: pretty;
+}
+
+.dataview.table-view-table tbody td {
+  padding: var(--my-space-3) var(--my-space-6);
+  vertical-align: var(--table-cell-vertical-alignment);
+  overflow-wrap: break-word;
+}
+
+/* 悬停高亮整行：中文表格列窄，靠底色比靠边框更容易判断当前行 */
+.dataview.table-view-table tbody tr:hover > td {
+  background-color: var(--table-row-background-hover);
+}
+
+/* 单元格里的多个字段（如 file.tags）用逗号分隔，紧贴会看不清边界 */
+.dataview.table-view-table td > .dataview.inline-field {
+  margin-inline-end: var(--my-space-2);
+}
+
+/* ==========================================================================
+ * 三、列表视图
+ * 列表项本身就是中文长文本，行高保持正文级别；只把「项与项之间」收紧，
+ * 并把嵌套层级的内间距压掉，避免深层列表被推得越来越长。
+ * ======================================================================== */
+.dataview.list-view-ul,
+.dataview-ul {
+  margin-block: var(--my-space-3);
+  padding-inline-start: var(--list-padding-inline-start);
+}
+
+.dataview.list-view-ul > li {
+  margin-block: var(--my-space-2);
+  line-height: var(--my-line-height-normal);
+}
+
+.dataview.list-view-ul li::marker {
+  color: var(--list-marker-color);
+}
+
+/* 嵌套列表：原生每一层都加满间距，三层以后整块就散了 */
+.dataview.list-view-ul ul,
+.dataview-ul ul {
+  margin-block: var(--my-space-2);
+  padding-inline-start: var(--list-indent);
+}
+
+/* ==========================================================================
+ * 四、行内字段
+ * 中文笔记里「字段名：值」这类行内字段常用于属性速查。默认无任何视觉边界，
+ * 与正文同色同底，读起来只是一串普通文字。这里给它一个极淡的胶囊底，
+ * 让字段名可被一眼扫到，同时用等宽字体把「键」和「值」区分开。
+ * ======================================================================== */
+.dataview.inline-field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--my-space-2);
+  padding: 0 var(--my-space-3);
+  border-radius: var(--my-radius-xs);
+  background-color: color-mix(in srgb, var(--my-accent) 8%, transparent);
+  box-decoration-break: clone; /* 跨行时两端都保留内边距，否则换行处会「切边」 */
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.dataview.inline-field:hover {
+  background-color: color-mix(in srgb, var(--my-accent) 15%, transparent);
+}
+
+.dataview.inline-field-key {
+  font-family: var(--my-font-mono);
+  font-size: 0.86em;
+  color: var(--my-text-tertiary);
+}
+
+.dataview.inline-field-value {
+  color: var(--text-normal);
+}
+
+/* 需实测：.dataview-uniq 由 Dataview 加在「唯一值」的格式化结果上，挂载点随版本变动。
+ * 这里只做两件无副作用的事：数字等宽、长值不撑破容器。 */
+.dataview-uniq {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+ * 五、任务视图
+ * 需实测：任务视图的根类名在插件不同版本里为 .dataview.task-list-item 或
+ * .dataview .task-list-item，故两者都写；命中失败只是退化为原生复选框样式。
+ * ======================================================================== */
+.dataview.task-list-item,
+.dataview .task-list-item {
+  margin-block: var(--my-space-2);
+  line-height: var(--my-line-height-normal);
+}
+
+.dataview .task-list-item-checkbox {
+  margin-inline-end: var(--my-space-3);
+  vertical-align: middle; /* 复选框与汉字基线对齐，中文行高较大时默认对齐会偏上 */
+}
+
+/* 已完成任务降噪：色退到 muted，但不加删除线——中文长句加删除线后可读性骤降 */
+.dataview .task-list-item:has(.task-list-item-checkbox:checked) {
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+ * 六、日历视图（容器级）
+ * 需实测：Dataview 的日历视图类名（.dataview.calendar）尚未在插件环境验证，
+ * 因此这里只做容器级适配——限宽、圆角、滚动手感，不猜内部单元格类名。
+ * ======================================================================== */
+.dataview.calendar {
+  overflow-x: auto;
+  padding: var(--my-space-4);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  border-radius: var(--my-radius-m);
+  background-color: var(--background-secondary);
+  font-size: var(--my-font-size-s);
+}
+
+/* ==========================================================================
+ * 七、空结果与错误提示
+ * 讨论「查询为什么没结果」时，这段文字是用户唯一的线索，不该像报错一样刺眼，
+ * 也不该用斜体——汉字没有真斜体，浏览器强行切变会让笔画发虚。
+ * 需实测：.dataview-error-box / .dataview-error-message 为插件历史版本类名。
+ * ======================================================================== */
+.dataview-error-box,
+.dataview-error-message,
+.dataview.dataview-error {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+.dataview-error-box {
+  padding: var(--my-space-5) var(--my-space-6);
+  border: var(--my-border-width) dashed var(--my-border);
+  border-radius: var(--my-radius-s);
+  background-color: var(--background-secondary);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+}
+
+.dataview-error-message {
+  font-family: var(--my-font-mono); /* 错误信息里常含查询语句，等宽更易比对 */
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+ * 八、动效兜底
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .dataview.inline-field {
+    transition: none;
+  }
+}

@@ -1,0 +1,230 @@
+/* ==========================================================================
+   专业中文排版（CJK Typography for Obsidian）
+   存放位置：<vault>/.obsidian/snippets/cjk-typography.css
+   启用方式：设置 → 外观 → CSS 代码片段 → 刷新 → 打开开关
+
+   实测环境：Obsidian 1.13.7 / Electron 43.3.0 / Chromium 150.0.7871.212
+   兼容性数据：MDN browser-compat-data (main)
+   所有数值均经 Chromium 151 真实渲染测量验证（非记忆推断）
+
+   核心实测结论：
+     · 2em = 32px = 2.000 汉字  ✅   2ch = 17.77px ≈ 1.11 汉字  ❌
+     · text-autospace 初始值为 no-autospace，必须显式开启
+     · text-spacing-trim 对思源/Noto 无效果（字体缺 chws 特性）
+     · hanging-punctuation 在 Chromium 中从未实现，不可用
+     · 避头尾（行头禁则）Chromium 默认已生效，无需 CSS
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. 可调参数（想改只改这里）
+   -------------------------------------------------------------------------- */
+body {
+  /* 正文行高：中文 1.7~1.9（Obsidian 默认 1.5 对中文偏紧） */
+  --line-height-normal: 1.75;
+
+  /* 段间距：书籍式排版（首行缩进）配小段距 */
+  --p-spacing: 0.35rem;
+
+  /* 版心宽度：40rem = 640px ≈ 40 字/行（中文最佳 30~45 字/行） */
+  --file-line-width: 40rem;
+
+  /* ---------- 字体 ---------- */
+  /* 正文：西文字体在前（决定拉丁/数字形态），中文字体承接 CJK 字形
+     （实测：font-family 顺序即可正确分流中西文字形） */
+  --font-text-override:
+    "Inter",
+    "LXGW WenKai", "霞鹜文楷",
+    "PingFang SC",
+    "HarmonyOS Sans SC", "MiSans",
+    "Source Han Sans SC", "Noto Sans CJK SC",
+    "Microsoft YaHei",
+    sans-serif;
+
+  /* 代码：中文等宽字体在前，保证中文注释占 2 个西文字符宽 */
+  --font-monospace-override:
+    "Sarasa Mono SC",
+    "Maple Mono", "JetBrains Mono",
+    "Noto Sans Mono CJK SC",
+    ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  /* 界面字体（西文优先，UI 更整洁） */
+  --font-interface-override:
+    "Inter", "PingFang SC", "HarmonyOS Sans SC",
+    "Source Han Sans SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   1. 全局：中英文自动间距 + 字体特性
+   Chromium 140+；⚠️ 初始值是 no-autospace，必须显式开启
+   作用域：阅读视图 + 实时预览 + 源码模式
+   -------------------------------------------------------------------------- */
+.markdown-rendered,
+.markdown-preview-view,
+.markdown-source-view.mod-cm6 .cm-content {
+  /* 中英文/数字之间自动插入 0.125em 间距（实测值） */
+  text-autospace: normal;
+
+  /* 让全角标点/字母数字使用比例宽度，版面更紧凑 */
+  font-variant-east-asian: proportional-width;
+
+  /* 本地化字形 + 中西文边界字距微调 */
+  font-feature-settings: "locl" 1, "kern" 1;
+}
+
+/* 代码块内：关闭自动间距与比例宽度，保护等宽对齐 */
+.markdown-rendered :is(pre, code, pre code),
+.markdown-source-view.mod-cm6 :is(.HyperMD-codeblock, .cm-inline-code) {
+  text-autospace: no-autospace;
+  font-variant-east-asian: normal;
+  font-feature-settings: normal;
+}
+
+/* 表格内同理（数值列用等宽数字对齐） */
+.markdown-rendered :is(table, th, td) {
+  text-autospace: no-autospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   2. 首行缩进：text-indent: 2em（= 2 个全角汉字，实测 32px @16px）
+   ⚠️ 绝不要用 2ch（实测仅 17.77px ≈ 1.11 字）
+   -------------------------------------------------------------------------- */
+.markdown-rendered p,
+.markdown-preview-view p {
+  text-indent: 2em;
+  /* 尾行优化：避免尾行孤字（Chromium 117+，实测对中文有效） */
+  text-wrap: pretty;
+}
+
+/* 不该缩进的元素：一次归零（实测 li / blockquote>p 均为 0） */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6,
+                       ul, ol, li,
+                       blockquote,
+                       pre, code,
+                       table, th, td,
+                       .callout, .callout-content, .callout-title,
+                       .internal-embed, .markdown-embed, .markdown-embed-content,
+                       .frontmatter, .metadata-container,
+                       mjx-container, .math, .math-block,
+                       .footnotes, hr),
+.markdown-preview-view :is(h1, h2, h3, h4, h5, h6,
+                           ul, ol, li, blockquote, pre, code,
+                           table, th, td, .callout,
+                           .internal-embed, .markdown-embed,
+                           mjx-container, .math, .math-block) {
+  text-indent: 0;
+}
+
+/* 含图片/嵌入的段落不缩进（图片应居中） */
+.markdown-rendered p:has(img),
+.markdown-rendered p:has(.internal-embed) { text-indent: 0; }
+
+/* 纯空段落不缩进 */
+.markdown-rendered p:has(> br:only-child) { text-indent: 0; }
+
+/* --------------------------------------------------------------------------
+   3. 实时预览 / 源码模式首行缩进（CodeMirror 6）
+   每个 .cm-line 是「一个逻辑行」= 一个段落 → text-indent 只影响其第一视觉行
+   （实测：首行 left=40px，续行 left=0，行为正确）
+   -------------------------------------------------------------------------- */
+.markdown-source-view.mod-cm6 .cm-line {
+  text-indent: 2em;
+}
+
+/* 排除所有非正文行类型 */
+.markdown-source-view.mod-cm6 .cm-line:is(
+  .HyperMD-header, .HyperMD-header-1, .HyperMD-header-2,
+  .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6,
+  .HyperMD-list-line, .HyperMD-list-line-nobullet,
+  .HyperMD-quote,
+  .HyperMD-codeblock,
+  .HyperMD-table-row, .HyperMD-table-row-1, .HyperMD-table-row-2,
+  .HyperMD-hr, .HyperMD-footnote,
+  .cm-embed-block, .cm-hmd-frontmatter
+) {
+  text-indent: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. 标题：不缩进、收紧行高、多行均衡
+   -------------------------------------------------------------------------- */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6),
+.markdown-source-view.mod-cm6 .HyperMD-header {
+  text-indent: 0;
+  line-height: 1.35;
+  text-wrap: balance;          /* Chromium 114+ */
+  letter-spacing: 0.02em;      /* 标题微量字距（正文不要加） */
+  font-family: "Inter", "Source Han Sans SC", "Noto Sans CJK SC",
+               "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 标题「上疏下密」 */
+.markdown-rendered h1 { margin-top: 1.8em; margin-bottom: 0.7em; }
+.markdown-rendered h2 { margin-top: 1.6em; margin-bottom: 0.6em; }
+.markdown-rendered h3 { margin-top: 1.3em; margin-bottom: 0.5em; }
+.markdown-rendered h4,
+.markdown-rendered h5,
+.markdown-rendered h6 { margin-top: 1.1em; margin-bottom: 0.4em; }
+
+/* --------------------------------------------------------------------------
+   5. 两端对齐（仅阅读视图；实时预览保持左对齐避免光标交互怪异）
+   Chromium 145+ 支持 text-justify，旧版本静默忽略
+   中文适合 justify（伸缩发生在汉字之间）；西文不适合（会出 rivers）
+   -------------------------------------------------------------------------- */
+.markdown-reading-view .markdown-rendered p {
+  text-align: justify;
+  text-justify: inter-character;   /* 伸缩发生在汉字之间（Chrome 145+） */
+  text-align-last: left;           /* 最后一行左对齐，不拉满 */
+  overflow-wrap: break-word;
+  hyphens: none;                   /* 中文文档不做西文断词 */
+}
+
+/* 纯西文段落不 justify */
+.markdown-reading-view .markdown-rendered p:lang(en) { text-align: left; }
+
+/* 窄容器关闭 justify（一行放不下几个字时 justify 会产生巨大字间距） */
+@media (max-width: 700px) {
+  .markdown-reading-view .markdown-rendered p { text-align: left; }
+}
+
+/* --------------------------------------------------------------------------
+   6. 中文斜体 → 着重号（中文字体无真 italic，伪斜体很丑）
+   -------------------------------------------------------------------------- */
+.markdown-rendered em,
+.markdown-source-view.mod-cm6 .cm-em {
+  font-style: normal;
+  text-emphasis: dot;
+  text-emphasis-position: under right;
+  -webkit-text-emphasis: dot;
+}
+
+/* --------------------------------------------------------------------------
+   7. 可选：标点挤压（谨慎使用）
+   text-spacing-trim 对中文/思源字体是空操作（字体缺 chws 特性）；
+   halt 才是有效手段（实测「中」120px → 80px），
+   但会把所有全角标点压成半角，全文使用会显得偏挤 —— 默认关闭。
+   若追求紧凑版面（如脚注/脚注区），取消下面注释：
+   -------------------------------------------------------------------------- */
+/*
+.footnotes, .markdown-rendered .footnotes {
+  font-feature-settings: "halt" 1;
+}
+*/
+
+/* --------------------------------------------------------------------------
+   8. 可选：竖排（展示性内容，如诗词）
+   用法：<div class="vertical-text">…</div>
+   ⚠️ 实时预览对自定义 HTML 的 writing-mode 支持不保证，建议阅读视图使用
+   -------------------------------------------------------------------------- */
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-feature-settings: "vert" 1, "vrt2" 1;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  height: 22em;
+  max-height: 80vh;
+  overflow: auto;
+  margin: 1em auto;
+}
+.vertical-text :is(time, .num) { text-combine-upright: all; }

@@ -1,0 +1,320 @@
+/* ============================================================================
+ * 墨韵 MoYun · 通用组件：标签、徽标与链接（Tags, Pills & Links）
+ * ----------------------------------------------------------------------------
+ * 用途：统一"可点击的文字标记"这一族的观感 —— 正文标签、属性面板标签、
+ *       标签面板条目、内部/外部链接、未解析链接、悬停预览浮层。
+ *
+ * 中文排版要点（英文主题普遍踩的三个坑）：
+ *   ① 标签底色与汉字紧贴 —— 汉字字面比西文字母大，同样的 padding 在中文下
+ *      看起来"顶格"，需要多给 0.06~0.1em 的横向内边距；
+ *   ② 链接下划线切断汉字 —— 下划线默认贴着基线，会划过"心、必、成"等字的底部
+ *      笔画，必须抬高 text-underline-offset（这里取 0.22em）；
+ *   ③ 标签/链接在标题里、属性面板里、代码块里的观感完全不同，
+ *      需要按上下文分档，而不是一条 a.tag 走天下。
+ *
+ * 依赖：obsidian-map.css 的 --tag-* / --pill-* / --link-* / --nav-tag-* 已接好。
+ * 边界：标题内标签的字号由 30-editor/headings.css 负责，本文件不再重复设定。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、正文标签 a.tag
+ * 底色沿用映射层（强调色 11%），这里只做"中文手感"的修正：
+ * 圆角保持 3px（方中带圆），字重 500，横向内边距按汉字收紧后的视觉补回来。
+ * ======================================================================== */
+a.tag {
+  padding: var(--tag-padding-y) 0.52em;
+  border-radius: var(--my-radius-xs);
+  font-weight: var(--my-font-weight-medium);
+  letter-spacing: var(--my-letter-spacing-cjk);
+  /* 行内标签不参与行高撑高：汉字行高 1.8，标签若按 1 倍行高参与布局会下沉 */
+  line-height: 1.35;
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+@media (hover: hover) {
+  a.tag:hover {
+    background-color: var(--tag-background-hover);
+    color: var(--tag-color-hover);
+  }
+}
+
+/* 标签被按下时给一点点"回弹"以外的反馈：只改底色，不做位移——
+   行内元素位移会让整段文字抖动，中文长段落尤其明显。 */
+a.tag:active {
+  background-color: var(--my-surface-active);
+}
+
+/* ==========================================================================
+ * 二、实时预览里的标签（.cm-hashtag）
+ * CodeMirror 会把 #标签 拆成三段 span：begin(#) / middle / end，
+ * 圆角与内边距由 Obsidian 分段处理，主题只调"# 的存在感"与悬停反馈。
+ * 设计判断：把 # 压到 55% 透明——中文用户读的是词，不是井号。
+ * ======================================================================== */
+.cm-hashtag {
+  font-weight: var(--my-font-weight-medium);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+.cm-hashtag.cm-hashtag-begin {
+  color: color-mix(in oklab, var(--tag-color) 55%, transparent);
+}
+@media (hover: hover) {
+  .cm-hashtag:hover {
+    background-color: var(--tag-background-hover);
+  }
+  .cm-hashtag.cm-hashtag-begin:hover {
+    color: var(--tag-color);
+  }
+}
+
+/* ==========================================================================
+ * 三、前置元数据（属性面板）里的标签
+ * 取舍：正文标签用"强调色淡底"表示可点击；属性面板里的标签属于分类信息，
+ *       改用中性底 + 描边，把强调色留给真正需要点击的内容。
+ *       注意底色必须实心（不用 transparent），否则在浅色纸面上会与分隔线糊在一起。
+ * ======================================================================== */
+.metadata-property-value .tag {
+  background-color: var(--my-surface-secondary);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  color: var(--my-text-secondary);
+  font-size: 0.8em;
+  padding: 0.1em 0.45em;
+}
+@media (hover: hover) {
+  .metadata-property-value .tag:hover {
+    background-color: var(--tag-background);
+    border-color: var(--tag-background-hover);
+    color: var(--tag-color);
+  }
+}
+
+/* 多值属性用小胶囊（.pill）。映射层已给出中性色，这里补齐尺寸与删除按钮的反馈。 */
+.multi-select-container .pill {
+  font-size: 0.82em;
+  padding: 0.12em 0.5em;
+}
+.multi-select-pill-remove-button {
+  color: var(--pill-color-remove);
+  transition: color var(--my-duration-fast) var(--my-ease-out);
+}
+.multi-select-pill-remove-button:hover {
+  color: var(--pill-color-remove-hover);
+}
+
+/* ==========================================================================
+ * 四、标签面板（右侧栏 → 标签）
+ * 这一栏是树状结构，条目密度高。中文条目高度要比西文略大（汉字 x 高度小，
+ * 需要更大的行高才有足够识别度），但过大会一屏放不下几个标签，取 1.5em。
+ * ======================================================================== */
+.tag-container {
+  padding: var(--my-space-4) var(--my-space-5);
+}
+.tag-container .tree-item-self {
+  border-radius: var(--my-radius-s);
+  line-height: var(--my-line-height-snug);
+}
+@media (hover: hover) {
+  .tag-container .tree-item-self:hover {
+    background-color: var(--nav-item-background-hover);
+  }
+}
+.tag-pane-tag.is-active .tree-item-inner {
+  color: var(--nav-item-color-active);
+  font-weight: var(--my-font-weight-medium);
+}
+/* 计数徽标：用最淡的一档，避免一屏几十个数字在抢注意力 */
+.tag-pane-tag-count {
+  color: var(--nav-item-color);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--my-font-size-xs);
+}
+/* 多级标签（#领域/子领域）的父级应当比子级更"轻"，让层级自明 */
+.tag-pane-tag-parent {
+  color: var(--my-text-faint);
+}
+
+/* ==========================================================================
+ * 五、链接：内部链接 / 外部链接 / 未解析链接
+ * 中文链接的三个关键属性：下划线抬高、粗细 1px、悬停时颜色先变再出线。
+ * ======================================================================== */
+.internal-link,
+.external-link {
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1px;
+  transition: color var(--my-duration-fast) var(--my-ease-out);
+}
+
+@media (hover: hover) {
+  .internal-link:hover {
+    color: var(--link-color-hover);
+  }
+}
+
+/* —— 外部链接的小箭头 ——
+ * 原生实现是一张固定颜色的位图（background-image: url(public/images/…svg)），
+ * 无法跟随主题色，深色模式下显得脏。这里改用 mask + currentColor：
+ * 箭头永远是当前链接色，悬停变深时自动同步。
+ * 用 ::after 而非 background 是必要的——mask 会裁剪整个元素的背景，含文字。 */
+.external-link {
+  background-image: none;
+  padding-inline-end: 0;
+}
+.external-link::after {
+  content: "";
+  display: inline-block;
+  width: 0.62em;
+  height: 0.62em;
+  margin-inline-start: 0.22em;
+  vertical-align: 0.06em;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M6.5 2H2.8A.8.8 0 0 0 2 2.8v10.4c0 .44.36.8.8.8h10.4a.8.8 0 0 0 .8-.8V9.5h-1.6v3.3H3.6V3.6h2.9V2z'/><path d='M9.2 1.6h5.2v5.2h-1.6V4.2l-5.1 5.1-1.1-1.1 5.1-5.1H9.2V1.6z'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M6.5 2H2.8A.8.8 0 0 0 2 2.8v10.4c0 .44.36.8.8.8h10.4a.8.8 0 0 0 .8-.8V9.5h-1.6v3.3H3.6V3.6h2.9V2z'/><path d='M9.2 1.6h5.2v5.2h-1.6V4.2l-5.1 5.1-1.1-1.1 5.1-5.1H9.2V1.6z'/></svg>");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+/* 属性面板里的外链已是"值"，再挂箭头会显得零碎 */
+.metadata-property-value .external-link::after {
+  display: none;
+}
+
+/* —— 实时预览里的链接 —— */
+.markdown-source-view.mod-cm6 .cm-link,
+.markdown-source-view.mod-cm6 .cm-hmd-internal-link {
+  text-underline-offset: 0.22em;
+}
+/* 源码态的 URL 部分（[文字](url) 的 url）压低对比，让文字部分成为主角 */
+.markdown-source-view.mod-cm6 .cm-url {
+  color: var(--my-text-faint);
+}
+
+/* —— 未解析链接：虚线下划线传达"目标尚未存在" ——
+ * 用虚线而非实线，因为实线加淡化色会被误读为"次要链接"；虚线的语义是"缺"。 */
+.is-unresolved {
+  color: var(--link-unresolved-color);
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: var(--link-unresolved-decoration-color);
+  text-underline-offset: 0.24em;
+  opacity: var(--link-unresolved-opacity);
+}
+@media (hover: hover) {
+  .is-unresolved:hover {
+    opacity: 1;
+    color: var(--my-text-secondary);
+  }
+}
+
+/* ==========================================================================
+ * 六、悬停预览浮层（.popover / .hover-popover）
+ * 这是"阅读时不离开当前页"的关键组件：必须一眼看出它悬浮在正文之上，
+ * 故采用 浮起阴影 + 描边 + 圆角 三件套，而不是靠更深的底色。
+ * ======================================================================== */
+.popover {
+  background-color: var(--my-surface-elevated);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-l);
+  box-shadow: var(--my-shadow-l);
+  overflow: hidden;
+}
+.popover.hover-popover {
+  animation: moyun-popover-in var(--my-duration-normal) var(--my-ease-out) both;
+}
+@keyframes moyun-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 浮层内部：中文预览的行高要比正文略收紧（浮层空间有限），
+   同时把段落外边距减半，避免"没看几行就到头了"。 */
+.popover .markdown-preview-view,
+.popover .markdown-rendered {
+  line-height: var(--my-line-height-normal);
+  padding: var(--my-space-7);
+}
+.popover .markdown-rendered p {
+  margin-block-end: var(--my-space-5);
+}
+/* 浮层标题条：与正文拉开层次，但不使用强调色（避免与链接抢色） */
+.popover .markdown-embed-title,
+.popover .inline-title {
+  font-size: var(--my-font-size-s);
+  font-weight: var(--my-font-weight-medium);
+  color: var(--my-text-secondary);
+  padding: var(--my-space-4) var(--my-space-7);
+  border-block-end: var(--my-border-width) solid var(--my-divider);
+  background-color: var(--my-surface-secondary);
+}
+/* 浮层内的嵌入笔记不再重复描边（外层浮层已有边框） */
+.popover .markdown-embed {
+  border: none;
+  background-color: transparent;
+}
+/* 无可预览内容时的空态提示 */
+.popover > .mod-empty {
+  color: var(--my-text-faint);
+  padding: var(--my-space-8);
+  text-align: center;
+}
+
+/* ==========================================================================
+ * 七、打印 / 导出 PDF
+ * 链接在纸面上要点得动是不现实的，因此：
+ *   · 标签改成描边（省墨、灰度下也能与正文区分）；
+ *   · 未解析链接的虚线样式在灰度打印后会消失，改用实线；
+ *   · 外链恢复"把 URL 印出来"的做法（与 typography.css 的打印约定一致）。
+ * ======================================================================== */
+@media print {
+  a.tag {
+    background-color: transparent;
+    border: var(--my-border-width) solid var(--my-border-strong);
+    color: var(--my-text-primary);
+  }
+  .is-unresolved {
+    opacity: 1;
+    text-decoration-style: solid;
+  }
+  .external-link {
+    background-image: none;
+  }
+  .external-link::after {
+    content: " (" attr(href) ")";
+    display: inline;
+    width: auto;
+    height: auto;
+    margin: 0;
+    background-color: transparent;
+    -webkit-mask-image: none;
+    mask-image: none;
+    font-size: 0.85em;
+    color: var(--my-text-tertiary);
+  }
+  .popover {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+ * 八、动效兜底
+ * 悬停预览的入场动画在"减少动态效果"下应当退化为直接出现（不做位移）。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .popover.hover-popover {
+    animation: none;
+  }
+  a.tag,
+  .cm-hashtag,
+  .internal-link,
+  .external-link {
+    transition: none;
+  }
+}

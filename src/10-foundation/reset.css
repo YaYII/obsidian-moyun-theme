@@ -1,0 +1,58 @@
+/* ============================================================================
+ * 墨韵 MoYun · 基础重置与分隔线
+ * ----------------------------------------------------------------------------
+ * 只做三件事：统一盒模型、统一分隔线、去掉中文排版下不该继承的样式。
+ * ========================================================================== */
+
+/* 分隔线：中文正文的 --- 应当是一条安静的细线，而不是粗黑横杠 */
+.markdown-rendered hr {
+  border: none;
+  border-top: var(--my-border-width) solid var(--my-border-strong);
+  margin-block: 2.2em;
+  margin-inline: 0;
+}
+
+/* 让"分段线"在视觉上略作收窄，避免贯穿整行显得突兀 */
+.markdown-rendered hr {
+  width: 100%;
+  opacity: 0.75;
+}
+
+/* 强制继承：避免中文下的斜体/粗体被父级意外影响 */
+.markdown-rendered * {
+  font-synthesis: none;
+}
+
+/* 正文图片圆角 —— Obsidian 原生只给内嵌图片（.internal-embed img）与选中态的
+ * image-wrapper 加圆角，正文里的普通图片是直角。此处统一补齐，让图文混排的
+ * 观感与卡片、代码块、表格保持一致。 */
+.markdown-rendered img,
+.markdown-preview-view img,
+.markdown-source-view.mod-cm6 .cm-content img {
+  border-radius: var(--image-radius);
+}
+
+/* 独占一段的图片给出上下留白，避免与正文文字贴死 */
+.markdown-rendered p > img:only-child {
+  margin-block: var(--my-space-3);
+}
+
+/* 主题自带的分隔线样式变体（由 Style Settings 的 my-hr-style 切换） */
+body[data-my-hr="粗线"] .markdown-rendered hr,
+body.my-hr-thick .markdown-rendered hr {
+  border-top-width: 3px;
+  border-radius: var(--my-radius-full);
+}
+body[data-my-hr="渐变淡出"] .markdown-rendered hr,
+body.my-hr-fade .markdown-rendered hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--my-border-strong) 22%, var(--my-border-strong) 78%, transparent);
+}
+body[data-my-hr="双线"] .markdown-rendered hr,
+body.my-hr-double .markdown-rendered hr {
+  border: none;
+  border-top: var(--my-border-width) solid var(--my-border-strong);
+  border-bottom: var(--my-border-width) solid var(--my-border-strong);
+  height: 3px;
+}

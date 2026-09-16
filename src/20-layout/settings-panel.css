@@ -1,0 +1,240 @@
+/* ============================================================================
+ * 墨韵 MoYun · 布局：设置界面
+ * ----------------------------------------------------------------------------
+ * 为什么单独为「设置」写一个模块？因为中文用户在这里停留的时间远超英文用户：
+ * Obsidian 原生设置项、社区插件设置项大多是英文，中文用户需要逐个读说明文字，
+ * 因此【可读性】在这个界面比在别处更重要。具体做法：
+ *   ① 说明文字（description）不能太淡，否则读不清就等于没有；
+ *   ② 设置项之间用足够间距分组，避免"一大坨"；
+ *   ③ 左侧分类导航选中态要明显；
+ *   ④ Style Settings 面板的多层折叠要有清晰的层级缩进。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、设置窗口容器
+ * ======================================================================== */
+
+.mod-settings .modal,
+.mod-settings .modal-content {
+  background-color: var(--my-surface-elevated);
+}
+
+/* 左侧分类导航栏 */
+.vertical-tab-header {
+  background-color: var(--my-surface-secondary);
+  border-inline-end: var(--my-border-width) solid var(--my-border-subtle);
+  padding: var(--my-space-4) var(--my-space-3);
+}
+
+.vertical-tab-header-group-title {
+  color: var(--my-text-tertiary);
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  padding: var(--my-space-5) var(--my-space-3) var(--my-space-2);
+}
+
+.vertical-tab-nav-item {
+  color: var(--my-text-secondary);
+  border-radius: var(--my-radius-s);
+  padding: var(--my-space-3) var(--my-space-4);
+  margin-block-end: 1px;
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.vertical-tab-nav-item:hover {
+  background-color: var(--my-surface-hover);
+  color: var(--my-text-primary);
+}
+
+/* 选中的分类：强调色文字 + 极淡强调底色，与文件树保持一致的语言 */
+.vertical-tab-nav-item.is-active {
+  background-color: rgb(var(--my-accent-rgb) / 0.12);
+  color: var(--my-accent);
+  font-weight: var(--my-font-weight-medium);
+}
+
+/* ==========================================================================
+ * 二、设置项
+ * ======================================================================== */
+
+.vertical-tab-content-container {
+  background-color: var(--my-surface-elevated);
+}
+
+.vertical-tab-content {
+  padding: var(--my-space-9) var(--my-space-10);
+}
+
+.setting-item {
+  border-top: var(--my-border-width) solid var(--my-divider);
+  padding-block: var(--my-space-6);
+  gap: var(--my-space-8);
+}
+
+/* 第一项不画上分隔线，避免与标题贴太近 */
+.setting-item:first-child,
+.setting-item.setting-item-heading + .setting-item {
+  border-top: none;
+}
+
+.setting-item-name {
+  color: var(--my-text-primary);
+  font-size: var(--font-ui-medium);
+  font-weight: var(--my-font-weight-medium);
+  line-height: var(--my-line-height-snug);
+}
+
+/* 设置说明文字：刻意比 --text-faint 更亮。
+ * 原生 Obsidian 用 --text-faint，在中文小字下几乎读不清；设置项说明恰恰是
+ * 中文用户最需要读的文字，因此这里提到 --my-text-secondary。 */
+.setting-item-description {
+  color: var(--my-text-secondary);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--my-line-height-normal);
+  letter-spacing: 0;
+  margin-block-start: var(--my-space-2);
+}
+
+/* 说明里的链接与代码 */
+.setting-item-description a {
+  color: var(--my-accent);
+}
+
+.setting-item-description code {
+  font-family: var(--my-font-mono);
+  font-size: 0.92em;
+  background-color: var(--my-code-surface);
+  border-radius: var(--my-radius-xs);
+  padding: 0.05em 0.3em;
+}
+
+/* 控件区垂直居中，避免长说明把控件挤到顶部 */
+.setting-item-control {
+  gap: var(--my-space-3);
+}
+
+/* 分组标题（插件自己写的 .setting-item-heading） */
+.setting-item.setting-item-heading {
+  border-top: none;
+  padding-block: var(--my-space-8) var(--my-space-3);
+}
+
+.setting-item.setting-item-heading .setting-item-name {
+  color: var(--my-text-primary);
+  font-size: var(--font-ui-large);
+  font-weight: var(--my-font-weight-heading);
+}
+
+/* ==========================================================================
+ * 三、Style Settings 插件面板
+ * Style Settings 会把主题的 @settings 块渲染成多层折叠列表。它的默认样式在
+ * 深色模式下层级不清（每层长得一样），这里用「左缩进 + 左侧色条」建立纵深。
+ * ======================================================================== */
+
+.style-settings-container {
+  padding-inline-start: 0;
+}
+
+/* 每一层折叠容器都往右缩进一级，并画一条低对比度的层级线 */
+.style-settings-container .style-settings-container {
+  padding-inline-start: var(--my-space-7);
+  border-inline-start: var(--my-border-width) solid var(--my-divider);
+  margin-inline-start: var(--my-space-4);
+}
+
+/* 折叠头：让"能点开"这件事看起来可点 */
+.style-settings-heading {
+  border-radius: var(--my-radius-s);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.style-settings-heading:hover {
+  background-color: var(--my-surface-hover);
+}
+
+/* 一级分组（"🎨 配色"这类）给一点视觉重量，作为整棵树的锚点 */
+.style-settings-container > .style-settings-heading[data-level='1'] .setting-item-name,
+.style-settings-heading[data-level='1'] .setting-item-name {
+  font-size: var(--font-ui-large);
+  font-weight: var(--my-font-weight-heading);
+  color: var(--my-text-primary);
+}
+
+/* 二级分组 */
+.style-settings-heading[data-level='2'] .setting-item-name {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--my-font-weight-medium);
+  color: var(--my-text-primary);
+}
+
+/* 三级分组（"1 - Modern"这类子项）用次要色，避免层级过平 */
+.style-settings-heading[data-level='3'] .setting-item-name {
+  font-size: var(--font-ui-small);
+  color: var(--my-text-secondary);
+}
+
+/* 滑块的值显示（字号、行高等数值）用等宽数字，拖动时不会左右跳动 */
+.style-settings-container .slider-value,
+.style-settings-container input[type='number'] {
+  font-family: var(--my-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 颜色选择器：让色块有边框，浅色主题下才看得出边界 */
+.style-settings-container .setting-item-control input[type='color'] {
+  border: var(--my-border-width) solid var(--my-border-strong);
+  border-radius: var(--my-radius-xs);
+}
+
+/* ==========================================================================
+ * 四、插件设置页的社区插件列表
+ * ======================================================================== */
+
+.community-plugin-item,
+.community-plugin-readme {
+  border-radius: var(--my-radius-m);
+}
+
+.community-plugin-name {
+  color: var(--my-text-primary);
+  font-weight: var(--my-font-weight-medium);
+}
+
+.community-plugin-description {
+  color: var(--my-text-secondary);
+  line-height: var(--my-line-height-normal);
+}
+
+/* 已启用的插件用强调色标题暗示状态 */
+.community-plugin-item.is-enabled .community-plugin-name {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 五、设置里的小标识（"需要重启"等）与提示块
+ * ======================================================================== */
+
+.mod-settings .setting-item .mod-warning,
+.mod-settings .setting-item .mod-error {
+  color: var(--my-danger);
+}
+
+/* Obsidian 设置页里的信息横幅 */
+.mod-settings .mod-info,
+.setting-item .mod-info {
+  color: var(--my-info);
+}
+
+/* ==========================================================================
+ * 六、动效降级
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .vertical-tab-nav-item,
+  .style-settings-heading {
+    transition: none;
+  }
+}

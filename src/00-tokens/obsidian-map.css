@@ -1,0 +1,1101 @@
+/* ============================================================================
+ * 墨韵 MoYun · 第三层：Obsidian 变量适配层（Adapter）
+ * ----------------------------------------------------------------------------
+ * 本文件是「我们的设计令牌」与「Obsidian 原生变量」之间唯一的桥梁。
+ * 上层的组件样式一律写成 Obsidian 原生变量的消费者，因此在 Obsidian 的
+ * 任何视图（阅读 / 实时预览 / 源码 / 侧栏 / 弹窗）中都能自动生效。
+ *
+ * 变量名对照 Obsidian 1.13.7 的 app.css（共 1096 个变量）逐一核对，
+ * 完整清单见 docs/reference/obsidian-1.13-variables.txt。
+ *
+ * 铁律：本文件【只允许】出现 var(--my-*) 与字面量，不允许出现组件选择器。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、基础色阶
+ * Obsidian 用 base-00(最浅) → base-100(最深) 表示"深浅语义"，
+ * 注意它**不会**随 light/dark 自动翻转，必须由主题分别赋值。
+ * ======================================================================== */
+.theme-light {
+  --color-base-00: var(--my-ink-0);
+  --color-base-05: var(--my-ink-25);
+  --color-base-10: var(--my-ink-50);
+  --color-base-20: var(--my-ink-100);
+  --color-base-25: var(--my-ink-150);
+  --color-base-30: var(--my-ink-200);
+  --color-base-35: var(--my-ink-250);
+  --color-base-40: var(--my-ink-300);
+  --color-base-50: var(--my-ink-400);
+  --color-base-60: var(--my-ink-500);
+  --color-base-70: var(--my-ink-600);
+  --color-base-100: var(--my-ink-850);
+}
+.theme-dark {
+  --color-base-00: var(--my-ink-925);
+  --color-base-05: var(--my-ink-900);
+  --color-base-10: var(--my-ink-850);
+  --color-base-20: var(--my-ink-800);
+  --color-base-25: var(--my-ink-750);
+  --color-base-30: var(--my-ink-700);
+  --color-base-35: var(--my-ink-650);
+  --color-base-40: var(--my-ink-600);
+  --color-base-50: var(--my-ink-500);
+  --color-base-60: var(--my-ink-400);
+  --color-base-70: var(--my-ink-300);
+  --color-base-100: var(--my-ink-0);
+}
+
+/* ==========================================================================
+ * 二、背景层次
+ * Obsidian 的 primary/secondary 语义：primary = 内容纸面，secondary = 侧栏。
+ * ======================================================================== */
+body {
+  --background-primary: var(--my-surface-primary);
+  --background-primary-alt: var(--my-surface-secondary);
+  --background-secondary: var(--my-surface-secondary);
+  --background-secondary-alt: var(--my-surface-tertiary);
+  --background-modifier-border: var(--my-border);
+  --background-modifier-border-hover: var(--my-border-strong);
+  --background-modifier-border-focus: var(--my-accent);
+  --background-modifier-hover: var(--my-surface-hover);
+  --background-modifier-active-hover: var(--my-surface-active);
+  --background-modifier-form-field: var(--my-surface-sunken);
+  --background-modifier-form-field-hover: var(--my-surface-elevated);
+  --background-modifier-box-shadow: var(--my-shadow-color);
+  --background-modifier-cover: hsl(0 0% 0% / 0.42);
+  --background-modifier-message: var(--my-surface-elevated);
+  --background-modifier-success: rgb(var(--my-success-rgb) / 0.14);
+  --background-modifier-error: rgb(var(--my-danger-rgb) / 0.14);
+  --background-modifier-error-hover: rgb(var(--my-danger-rgb) / 0.22);
+  --background-modifier-warning: rgb(var(--my-warning-rgb) / 0.14);
+  --background-modifier-warning-hover: rgb(var(--my-warning-rgb) / 0.22);
+  --background-modifier-success-rgb: var(--my-success-rgb);
+  --background-modifier-error-rgb: var(--my-danger-rgb);
+}
+
+/* ==========================================================================
+ * 三、文字
+ * ======================================================================== */
+body {
+  --text-normal: var(--my-text-primary);
+  --text-muted: var(--my-text-secondary);
+  --text-faint: var(--my-text-faint);
+  --text-accent: var(--my-accent);
+  --text-accent-hover: var(--my-accent-hover);
+  --text-on-accent: var(--my-text-on-accent);
+  --text-on-accent-inverted: var(--my-text-inverse);
+  --text-selection: var(--my-selection-bg);
+  --text-highlight-bg: var(--my-mark-yellow);
+  --text-highlight-bg-rgb: 255, 224, 130;
+  --text-success: var(--my-success);
+  --text-error: var(--my-danger);
+  --text-warning: var(--my-warning);
+  --text-color: var(--my-text-primary);
+  --text-primary-color: var(--my-text-primary);
+  --text-secondary-color: var(--my-text-secondary);
+
+  --bold-color: var(--my-text-primary);
+  --bold-weight: var(--my-font-weight-bold);
+  --bold-modifier: 150;
+  --italic-color: var(--my-text-primary);
+  --italic-weight: var(--my-font-weight-normal);
+
+  --caret-color: var(--my-accent);
+  --cursor: default;
+  --cursor-link: pointer;
+}
+
+/* ==========================================================================
+ * 四、强调色与交互色
+ * --color-accent-hsl / --interactive-accent-hsl 必须是 "H, S%, L%" 三元组格式，
+ * 否则 Obsidian 内部的 hsl(var(--color-accent-hsl), opacity) 会失效。
+ * ======================================================================== */
+body {
+  --color-accent: var(--my-accent);
+  --color-accent-1: var(--my-accent-hover);
+  --color-accent-2: var(--my-accent-active);
+  --interactive-accent: var(--my-accent);
+  --interactive-accent-hover: var(--my-accent-hover);
+  --interactive-normal: var(--my-surface-secondary);
+  --interactive-hover: var(--my-surface-hover);
+}
+
+/* 把 8 套强调色的 RGB 换算成 HSL 三元组 —— 由 .my-tone-* 类切换 */
+body.my-tone-qinghua,
+body:not([class*="my-tone-"]) {
+  --color-accent-hsl: 210, 48%, 44%;
+  --interactive-accent-hsl: 210, 48%, 44%;
+}
+body.my-tone-zhusha {
+  --color-accent-hsl: 8, 52%, 48%;
+  --interactive-accent-hsl: 8, 52%, 48%;
+}
+body.my-tone-zhuqing {
+  --color-accent-hsl: 145, 27%, 38%;
+  --interactive-accent-hsl: 145, 27%, 38%;
+}
+body.my-tone-tengzi {
+  --color-accent-hsl: 265, 29%, 49%;
+  --interactive-accent-hsl: 265, 29%, 49%;
+}
+body.my-tone-qiuxiang {
+  --color-accent-hsl: 44, 45%, 38%;
+  --interactive-accent-hsl: 44, 45%, 38%;
+}
+body.my-tone-daiqing {
+  --color-accent-hsl: 189, 39%, 33%;
+  --interactive-accent-hsl: 189, 39%, 33%;
+}
+body.my-tone-yanzhi {
+  --color-accent-hsl: 340, 34%, 52%;
+  --interactive-accent-hsl: 340, 34%, 52%;
+}
+body.my-tone-songyan {
+  --color-accent-hsl: 60, 2%, 37%;
+  --interactive-accent-hsl: 60, 2%, 37%;
+}
+.theme-dark.my-tone-qinghua,
+.theme-dark:not([class*="my-tone-"]) {
+  --color-accent-hsl: 210, 47%, 60%;
+  --interactive-accent-hsl: 210, 47%, 60%;
+}
+.theme-dark.my-tone-zhusha   { --color-accent-hsl: 8, 62%, 69%;   --interactive-accent-hsl: 8, 62%, 69%; }
+.theme-dark.my-tone-zhuqing  { --color-accent-hsl: 145, 23%, 61%; --interactive-accent-hsl: 145, 23%, 61%; }
+.theme-dark.my-tone-tengzi   { --color-accent-hsl: 265, 37%, 70%; --interactive-accent-hsl: 265, 37%, 70%; }
+.theme-dark.my-tone-qiuxiang { --color-accent-hsl: 44, 43%, 59%;  --interactive-accent-hsl: 44, 43%, 59%; }
+.theme-dark.my-tone-daiqing  { --color-accent-hsl: 189, 26%, 56%; --interactive-accent-hsl: 189, 26%, 56%; }
+.theme-dark.my-tone-yanzhi   { --color-accent-hsl: 340, 55%, 73%; --interactive-accent-hsl: 340, 55%, 73%; }
+.theme-dark.my-tone-songyan  { --color-accent-hsl: 60, 2%, 60%;   --interactive-accent-hsl: 60, 2%, 60%; }
+
+/* 通用语义色（红/橙/黄/绿/青/蓝/紫/粉）——独立于强调色 */
+body {
+  --color-red:    var(--my-tone-danger-500);
+  --color-red-rgb:    var(--my-tone-danger-rgb);
+  --color-orange: var(--my-tone-warning-500);
+  --color-orange-rgb: var(--my-tone-warning-rgb);
+  --color-yellow: #c9a227;
+  --color-yellow-rgb: 201, 162, 39;
+  --color-green:  var(--my-tone-success-500);
+  --color-green-rgb:  var(--my-tone-success-rgb);
+  --color-cyan:   #2f8f96;
+  --color-cyan-rgb:   47, 143, 150;
+  --color-blue:   var(--my-tone-info-500);
+  --color-blue-rgb:   var(--my-tone-info-rgb);
+  --color-purple: var(--my-tengzi-500);
+  --color-purple-rgb: 113, 89, 163;
+  --color-pink:   var(--my-yanzhi-500);
+  --color-pink-rgb:   180, 88, 118;
+}
+.theme-dark {
+  --color-yellow: #e0c060;
+  --color-yellow-rgb: 224, 192, 96;
+  --color-cyan:   #6fbcc4;
+  --color-cyan-rgb:   111, 188, 196;
+  --color-purple: var(--my-tengzi-300);
+  --color-purple-rgb: 168, 148, 207;
+  --color-pink:   var(--my-yanzhi-300);
+  --color-pink-rgb:   223, 148, 171;
+  --color-red:    var(--my-tone-danger-300);
+  --color-red-rgb:    var(--my-danger-rgb);
+  --color-orange: var(--my-tone-warning-300);
+  --color-orange-rgb: var(--my-warning-rgb);
+  --color-green:  var(--my-tone-success-300);
+  --color-green-rgb:  var(--my-success-rgb);
+  --color-blue:   var(--my-tone-info-300);
+  --color-blue-rgb:   var(--my-info-rgb);
+}
+
+/* ==========================================================================
+ * 五、字体
+ * --font-text-theme / --font-interface-theme 是"主题层"变量，
+ * 设置里的「字体」面板在用户手动指定时会覆盖 *-override，这是预期行为。
+ * ======================================================================== */
+body {
+  --font-text-theme: var(--my-font-text);
+  --font-interface-theme: var(--my-font-ui);
+  --font-monospace-theme: var(--my-font-mono);
+  --font-mermaid: var(--my-font-text);
+  --font-text: var(--my-font-text);
+  --font-interface: var(--my-font-ui);
+  --font-monospace: var(--my-font-mono);
+  --font-print: var(--my-font-text);
+
+  --font-text-size: var(--my-font-size-base);
+  --font-ui-smaller: calc(var(--my-font-size-base) * 0.72);
+  --font-ui-small: calc(var(--my-font-size-base) * 0.82);
+  --font-ui-medium: calc(var(--my-font-size-base) * 0.94);
+  --font-ui-large: calc(var(--my-font-size-base) * 1.12);
+  --font-smallest: 0.7em;
+  --font-smaller: 0.8em;
+  --font-small: 0.875em;
+
+  --font-weight: var(--my-font-weight-normal);
+  --font-thin: 100; --font-extralight: 200; --font-light: 300;
+  --font-normal: var(--my-font-weight-normal);
+  --font-medium: var(--my-font-weight-medium);
+  --font-semibold: 600; --font-bold: var(--my-font-weight-bold);
+  --font-extrabold: 800; --font-black: 900;
+
+  --line-height-normal: var(--my-line-height-relaxed);
+  --line-height-tight: var(--my-line-height-tight);
+  --p-spacing: 0.85em;
+  --p-spacing-empty: 0.4em;
+  --heading-spacing: 1.4em;
+  --heading-formatting: var(--my-text-faint);
+}
+
+/* ==========================================================================
+ * 六、标题字阶
+ * 中文标题不宜过大，故 h1 仅 1.9 倍；字重统一 650 保证笔画不过粗。
+ * ======================================================================== */
+body {
+  --h1-size: var(--my-h1-size);
+  --h2-size: var(--my-h2-size);
+  --h3-size: var(--my-h3-size);
+  --h4-size: var(--my-h4-size);
+  --h5-size: var(--my-h5-size);
+  --h6-size: var(--my-h6-size);
+
+  --h1-weight: var(--my-font-weight-heading);
+  --h2-weight: var(--my-font-weight-heading);
+  --h3-weight: var(--my-font-weight-heading);
+  --h4-weight: var(--my-font-weight-heading);
+  --h5-weight: var(--my-font-weight-heading);
+  --h6-weight: var(--my-font-weight-heading);
+
+  --h1-font: var(--my-font-heading);
+  --h2-font: var(--my-font-heading);
+  --h3-font: var(--my-font-heading);
+  --h4-font: var(--my-font-heading);
+  --h5-font: var(--my-font-heading);
+  --h6-font: var(--my-font-heading);
+
+  --h1-color: var(--my-text-primary);
+  --h2-color: var(--my-text-primary);
+  --h3-color: var(--my-text-primary);
+  --h4-color: var(--my-text-primary);
+  --h5-color: var(--my-text-secondary);
+  --h6-color: var(--my-text-secondary);
+
+  --h1-line-height: var(--my-line-height-tight);
+  --h2-line-height: var(--my-line-height-tight);
+  --h3-line-height: var(--my-line-height-snug);
+  --h4-line-height: var(--my-line-height-snug);
+  --h5-line-height: var(--my-line-height-snug);
+  --h6-line-height: var(--my-line-height-snug);
+
+  --h1-style: normal; --h2-style: normal; --h3-style: normal;
+  --h4-style: normal; --h5-style: normal; --h6-style: normal;
+  --h1-variant: normal; --h2-variant: normal; --h3-variant: normal;
+  --h4-variant: normal; --h5-variant: normal; --h6-variant: normal;
+  --h1-letter-spacing: 0; --h2-letter-spacing: 0; --h3-letter-spacing: 0;
+  --h4-letter-spacing: 0; --h5-letter-spacing: 0; --h6-letter-spacing: 0;
+}
+
+/* ==========================================================================
+ * 七、页面与编辑器度量
+ * --file-line-width 是正文最大行宽：中文一行 30~40 字最舒适，
+ * 因此默认 46rem（约 34 个汉字），而不是英文主题常见的 700px。
+ * ======================================================================== */
+body {
+  --file-line-width: var(--my-content-width);
+  --file-margins: var(--my-editor-padding-y) var(--my-editor-padding-x);
+  --file-margins-x: var(--my-editor-padding-x);
+  --file-margins-y: var(--my-editor-padding-y);
+  --file-folding-offset: 26px;
+  --inline-title-size: 2.1em;
+  --inline-title-weight: var(--my-font-weight-heading);
+  --inline-title-color: var(--my-text-primary);
+  --inline-title-font: var(--my-font-heading);
+  --inline-title-line-height: var(--my-line-height-tight);
+  --inline-title-style: normal;
+  --inline-title-variant: normal;
+  --inline-title-margin-bottom: 1.2em;
+}
+
+/* ==========================================================================
+ * 八、链接
+ * ======================================================================== */
+body {
+  --link-color: var(--my-accent);
+  --link-color-hover: var(--my-accent-hover);
+  --link-weight: var(--my-font-weight-normal);
+  --link-decoration: none;
+  --link-decoration-hover: underline;
+  --link-decoration-thickness: 1px;
+  --link-external-color: var(--my-accent);
+  --link-external-color-hover: var(--my-accent-hover);
+  --link-external-decoration: none;
+  --link-external-decoration-hover: underline;
+  --link-external-filter: none;
+  --link-fg-color: var(--my-accent);
+  --link-hover-fg-color: var(--my-accent-hover);
+  --link-unresolved-color: var(--my-text-faint);
+  --link-unresolved-opacity: 0.75;
+  --link-unresolved-filter: grayscale(0.4);
+  --link-unresolved-decoration-style: dashed;
+  --link-unresolved-decoration-color: var(--my-border-strong);
+  --link-outline: none;
+}
+
+/* ==========================================================================
+ * 九、代码
+ * ======================================================================== */
+body {
+  --code-background: var(--my-code-surface);
+  --code-border-color: var(--my-code-border);
+  --code-border-width: 1px;
+  --code-radius: var(--my-radius-s);
+  --code-size: 0.9em;
+  --code-white-space: pre-wrap;
+  --code-bracket-background: var(--my-surface-hover);
+  --code-normal: var(--my-text-primary);
+  --code-comment: var(--my-code-comment);
+  --code-function: var(--my-code-function);
+  --code-important: var(--my-code-tag);
+  --code-keyword: var(--my-code-keyword);
+  --code-operator: var(--my-code-operator);
+  --code-property: var(--my-code-property);
+  --code-punctuation: var(--my-text-tertiary);
+  --code-string: var(--my-code-string);
+  --code-tag: var(--my-code-tag);
+  --code-value: var(--my-code-number);
+}
+
+/* ==========================================================================
+ * 十、引用块
+ * ======================================================================== */
+body {
+  --blockquote-background-color: transparent;
+  --blockquote-border-color: var(--my-border-strong);
+  --blockquote-border-thickness: 3px;
+  --blockquote-color: var(--my-text-secondary);
+  --blockquote-font-style: normal;
+}
+
+/* ==========================================================================
+ * 十一、标注（Callout）
+ * 八种语义色各配一色，保证在双模式下都可读。
+ * ======================================================================== */
+body {
+  --callout-color:  var(--my-accent-rgb);
+  --callout-default: var(--my-tone-info-500);
+  --callout-info:    var(--my-tone-info-500);
+  --callout-todo:    var(--my-tone-info-500);
+  --callout-tip:     var(--my-daiqing-500);
+  --callout-success: var(--my-tone-success-500);
+  --callout-question: var(--my-qiuxiang-500);
+  --callout-warning: var(--my-tone-warning-500);
+  --callout-fail:    var(--my-tone-danger-500);
+  --callout-error:   var(--my-tone-danger-500);
+  --callout-bug:     var(--my-tone-danger-500);
+  --callout-example: var(--my-tengzi-500);
+  --callout-quote:   var(--my-tone-quote-500);
+  --callout-summary: var(--my-tone-info-500);
+  --callout-important: var(--my-tone-danger-500);
+
+  --callout-border-width: 1px;
+  --callout-border-opacity: 0.22;
+  --callout-radius: var(--my-radius-m);
+  --callout-padding: var(--my-space-6) var(--my-space-7);
+  --callout-title-padding: 0;
+  --callout-title-size: 1em;
+  --callout-title-weight: 600;
+  --callout-title-color: inherit;
+  --callout-content-padding: 0;
+  --callout-content-background: transparent;
+  --callout-blend-mode: normal;
+  --callout-icon: lucide-pencil;
+}
+.theme-dark {
+  --callout-default: var(--my-tone-info-300);
+  --callout-info:    var(--my-tone-info-300);
+  --callout-todo:    var(--my-tone-info-300);
+  --callout-tip:     var(--my-daiqing-300);
+  --callout-success: var(--my-tone-success-300);
+  --callout-question: var(--my-qiuxiang-300);
+  --callout-warning: var(--my-tone-warning-300);
+  --callout-fail:    var(--my-tone-danger-300);
+  --callout-error:   var(--my-tone-danger-300);
+  --callout-bug:     var(--my-tone-danger-300);
+  --callout-example: var(--my-tengzi-300);
+  --callout-quote:   var(--my-tone-quote-300);
+  --callout-summary: var(--my-tone-info-300);
+  --callout-important: var(--my-tone-danger-300);
+}
+
+/* ==========================================================================
+ * 十二、列表与缩进
+ * --indent-unit 决定折叠缩进，中文正文缩进需比英文宽松。
+ * ======================================================================== */
+body {
+  --list-indent: 1.7em;
+  --list-indent-editing: 1.5em;
+  --list-indent-source: 1.5em;
+  --list-spacing: 0.15em;
+  --list-padding-inline-start: 1.7em;
+  --list-bullet-size: 0.34em;
+  --list-bullet-radius: 50%;
+  --list-bullet-transform: none;
+  --list-bullet-border: none;
+  --list-bullet-end-padding: 1.1em;
+  --list-marker-color: var(--my-accent);
+  --list-marker-color-hover: var(--my-accent-hover);
+  --list-marker-color-collapsed: var(--my-text-faint);
+  --list-marker-space: 0.45em;
+  --list-numbered-style: decimal;
+
+  --indent-size: 4;
+  --indent-unit: 1.7em;
+  --indentation-guide-color: var(--my-divider);
+  --indentation-guide-color-active: var(--my-border-strong);
+  --indentation-guide-width: 1px;
+  --indentation-guide-width-active: 2px;
+  --indentation-guide-reading-indent: -0.95em;
+  --indentation-guide-source-indent: -0.6em;
+  --indentation-guide-editing-indent: 0.1em;
+}
+
+/* ==========================================================================
+ * 十三、表格
+ * ======================================================================== */
+body {
+  --table-background: transparent;
+  --table-border-color: var(--my-border);
+  --table-border-width: 1px;
+  --table-header-background: var(--my-surface-secondary);
+  --table-header-background-hover: var(--my-surface-hover);
+  --table-header-border-color: var(--my-border-strong);
+  --table-header-color: var(--my-text-primary);
+  --table-header-font: var(--my-font-text);
+  --table-header-size: 0.95em;
+  --table-header-weight: 600;
+  --table-header-border-width: 2px;
+  --table-text-color: var(--my-text-primary);
+  --table-text-size: 0.94em;
+  --table-line-height: var(--my-line-height-snug);
+  --table-white-space: normal;
+  --table-cell-vertical-alignment: top;
+  --table-column-alt-background: var(--my-surface-hover);
+  --table-row-alt-background: hsl(35 20% 50% / 0.035);
+  --table-row-alt-background-hover: var(--my-surface-hover);
+  --table-row-background-hover: var(--my-surface-hover);
+  --table-column-first-border-width: 0;
+  --table-column-last-border-width: 0;
+  --table-row-last-border-width: 0;
+  --table-column-min-width: 6ch;
+  --table-column-max-width: 46ch;
+  --table-selection: var(--my-surface-selected);
+  --table-selection-border-color: var(--my-accent);
+  --table-selection-border-width: 2px;
+  --table-selection-border-radius: var(--my-radius-xs);
+  --table-drag-handle-background: var(--my-accent);
+  --table-drag-handle-background-active: var(--my-accent-active);
+  --table-drag-handle-color: var(--my-text-on-accent);
+  --table-drag-handle-color-active: var(--my-text-on-accent);
+  --table-add-button-background: transparent;
+  --table-add-button-border-color: var(--my-border);
+  --table-add-button-border-width: 1px;
+}
+.theme-dark {
+  --table-row-alt-background: hsl(40 15% 80% / 0.03);
+}
+
+/* ==========================================================================
+ * 十四、文件树 / 侧栏导航
+ * ======================================================================== */
+body {
+  --nav-item-color: var(--my-text-secondary);
+  --nav-item-color-hover: var(--my-text-primary);
+  --nav-item-color-active: var(--my-accent);
+  --nav-item-color-selected: var(--my-accent);
+  --nav-item-color-highlighted: var(--my-accent);
+  --nav-item-background-hover: var(--my-surface-hover);
+  --nav-item-background-active: var(--my-surface-selected);
+  --nav-item-background-selected: var(--my-surface-selected);
+  --nav-item-weight: var(--my-font-weight-normal);
+  --nav-item-weight-hover: var(--my-font-weight-normal);
+  --nav-item-weight-active: var(--my-font-weight-medium);
+  --nav-item-size: 0.875em;
+  --nav-item-padding: 5px 8px 5px 10px;
+  --nav-item-parent-padding: 5px 8px 5px 10px;
+  --nav-item-margin-bottom: 1px;
+  --nav-item-radius: var(--my-radius-xs);
+  --nav-item-white-space: nowrap;
+  --nav-item-children-padding-start: var(--my-space-4);
+  --nav-item-children-margin-start: 6px;
+  --nav-indentation-guide-color: var(--my-divider);
+  --nav-indentation-guide-width: 1px;
+  --nav-collapse-icon-color: var(--my-text-faint);
+  --nav-collapse-icon-color-collapsed: var(--my-text-tertiary);
+  --nav-heading-color: var(--my-text-tertiary);
+  --nav-heading-color-hover: var(--my-text-secondary);
+  --nav-heading-color-collapsed: var(--my-text-faint);
+  --nav-heading-color-collapsed-hover: var(--my-text-secondary);
+  --nav-heading-weight: 600;
+  --nav-heading-weight-hover: 600;
+  --nav-height: 34px;
+  --nav-tag-color: var(--my-text-tertiary);
+  --nav-tag-color-hover: var(--my-text-secondary);
+  --nav-tag-color-active: var(--my-accent);
+  --nav-tag-background: transparent;
+  --nav-tag-radius: var(--my-radius-xs);
+  --nav-tag-weight: normal;
+
+  --vault-profile-color: var(--my-text-secondary);
+  --vault-profile-color-hover: var(--my-text-primary);
+  --vault-profile-font-size: 0.86em;
+  --vault-profile-font-weight: 600;
+  --vault-profile-radius: var(--my-radius-s);
+  --vault-profile-display: flex;
+  --vault-profile-order: 0;
+  --vault-profile-actions-display: flex;
+}
+
+/* ==========================================================================
+ * 十五、标签页 / 标题栏 / 功能区
+ * ======================================================================== */
+body {
+  --tab-background-active: var(--my-surface-primary);
+  --tab-container-background: var(--my-surface-secondary);
+  --tab-text-color: var(--my-text-tertiary);
+  --tab-text-color-active: var(--my-text-secondary);
+  --tab-text-color-focused: var(--my-text-tertiary);
+  --tab-text-color-focused-active: var(--my-text-primary);
+  --tab-text-color-focused-active-current: var(--my-text-primary);
+  --tab-text-color-focused-highlighted: var(--my-accent);
+  --tab-font-size: 0.86em;
+  --tab-font-weight: 500;
+  --tab-radius: var(--my-radius-s);
+  --tab-radius-active: var(--my-radius-s);
+  --tab-width: 190px;
+  --tab-max-width: 260px;
+  --tab-outline-color: var(--my-border-subtle);
+  --tab-outline-width: 0;
+  --tab-divider-color: var(--my-divider);
+  --tab-curve: 5px;
+  --tab-stacked-pane-width: 700px;
+  --tab-stacked-header-width: 34px;
+  --tab-stacked-font-size: 0.86em;
+  --tab-stacked-font-weight: 500;
+  --tab-stacked-shadow: var(--my-shadow-m);
+  --tab-stacked-text-align: left;
+  --tab-stacked-text-transform: none;
+  --tab-stacked-text-writing-mode: vertical-rl;
+
+  --titlebar-background: var(--my-surface-secondary);
+  --titlebar-background-focused: var(--my-surface-secondary);
+  --titlebar-border-color: var(--my-border-subtle);
+  --titlebar-border-width: 0px;
+  --titlebar-height: 30px;
+  --titlebar-text-color: var(--my-text-tertiary);
+  --titlebar-text-color-focused: var(--my-text-secondary);
+  --titlebar-text-weight: 600;
+
+  --ribbon-background: var(--my-surface-secondary);
+  --ribbon-background-collapsed: var(--my-surface-secondary);
+  --ribbon-width: 42px;
+  --ribbon-padding: var(--my-space-2) var(--my-space-2) var(--my-space-6);
+
+  --status-bar-background: var(--my-surface-tertiary);
+  --status-bar-border-color: var(--my-border-subtle);
+  --status-bar-border-width: 1px 0 0 0;
+  --status-bar-font-size: 0.76em;
+  --status-bar-position: fixed;
+  --status-bar-radius: 0;
+  --status-bar-text-color: var(--my-text-tertiary);
+
+  --sidebar-width: 270px;
+  --sidebar-left-toggle-inner-width: 8.33%;
+  --sidebar-right-toggle-inner-width: 8.33%;
+  --sidebar-left-toggle-inner-width-open: 0px;
+  --sidebar-right-toggle-inner-width-open: 0px;
+  --sidebar-tab-text-display: none;
+  --sidebar-markdown-font-size: 0.9em;
+}
+
+/* ==========================================================================
+ * 十六、图标
+ * ======================================================================== */
+body {
+  --icon-color: var(--my-text-tertiary);
+  --icon-color-hover: var(--my-text-primary);
+  --icon-color-active: var(--my-accent);
+  --icon-color-focus: var(--my-accent);
+  --icon-color-focused: var(--my-text-primary);
+  --icon-opacity: 1;
+  --icon-opacity-hover: 1;
+  --icon-opacity-active: 1;
+  --icon-size: 17px;
+  --icon-stroke: 1.65px;
+  --icon-xs: 13px; --icon-xs-stroke-width: 1.7px;
+  --icon-s: 15px; --icon-s-stroke-width: 1.7px;
+  --icon-m: 17px; --icon-m-stroke-width: 1.65px;
+  --icon-l: 19px; --icon-l-stroke-width: 1.55px;
+  --icon-xl: 26px; --icon-xl-stroke-width: 1.4px;
+  --clickable-icon-radius: var(--my-radius-xs);
+}
+
+/* ==========================================================================
+ * 十七、表单控件
+ * ======================================================================== */
+body {
+  --input-height: 30px;
+  --input-radius: var(--my-radius-s);
+  --input-border-width: 1px;
+  --input-border-width-focus: 1px;
+  --input-padding: var(--my-space-2) var(--my-space-5);
+  --input-font-weight: var(--my-font-weight-normal);
+  --input-text-bg-color: var(--my-surface-sunken);
+  --input-text-fg-color: var(--my-text-primary);
+  --input-placeholder-color: var(--my-text-faint);
+  --input-shadow: none;
+  --input-shadow-hover: none;
+  --input-unfocused-border-color: var(--my-border);
+  --input-disabled-border-color: var(--my-border-subtle);
+  --input-hover-border-color: var(--my-border-strong);
+  --input-focus-border-color: var(--my-accent);
+  --input-focus-outline: 2px solid rgb(var(--my-accent-rgb) / 0.25);
+  --input-icon-inset: var(--my-space-3);
+  --input-date-separator: var(--my-text-faint);
+  --input-corner-shape: round;
+
+  --dropdown-background: var(--my-surface-sunken);
+  --dropdown-background-hover: var(--my-surface-hover);
+  --dropdown-icon-background: var(--my-text-tertiary);
+  --dropdown-icon-inset: var(--my-space-3);
+  --dropdown-icon-width: 0.85em;
+  --dropdown-padding: var(--my-space-2) var(--my-space-5);
+  --dropdown-padding-start: var(--my-space-5);
+  --dropdown-padding-end: var(--my-space-8);
+  --dropdown-text-align: left;
+  --dropdown-background-blend-mode: normal;
+  --dropdown-background-position: right var(--my-space-4) top 50%, 0 0;
+  --dropdown-background-size: 0.8em auto, 100%;
+
+  --toggle-width: 36px;
+  --toggle-radius: var(--my-radius-full);
+  --toggle-thumb-radius: var(--my-radius-full);
+  --toggle-thumb-color: var(--my-ink-0);
+  --toggle-thumb-width: 15px;
+  --toggle-thumb-height: 15px;
+  --toggle-border-width: 2px;
+  --toggle-s-width: 27px;
+  --toggle-s-border-width: 2px;
+  --toggle-s-thumb-width: 11px;
+  --toggle-s-thumb-height: 11px;
+
+  --slider-track-background: var(--my-surface-sunken);
+  --slider-track-height: 5px;
+  --slider-thumb-background: var(--my-accent);
+  --slider-thumb-background-hover: var(--my-accent-hover);
+  --slider-thumb-border-color: transparent;
+  --slider-thumb-border-width: 0;
+  --slider-thumb-width: 15px;
+  --slider-thumb-height: 15px;
+  --slider-thumb-width-active: 17px;
+  --slider-thumb-height-active: 17px;
+  --slider-thumb-radius: var(--my-radius-full);
+  --slider-thumb-y: -5px;
+  --slider-thumb-y-active: -6px;
+  --slider-thumb-opacity-active: 1;
+  --slider-thumb-shadow: none;
+  --slider-thumb-shadow-hover: none;
+  --slider-thumb-shadow-focus: none;
+  --slider-thumb-shadow-active: none;
+  --slider-fill-background: var(--my-accent);
+  --slider-value-font-size: 0.85em;
+  --slider-value-font-weight: 500;
+
+  --checkbox-size: 16px;
+  --checkbox-radius: var(--my-radius-xs);
+  --checkbox-color: var(--my-accent);
+  --checkbox-color-hover: var(--my-accent-hover);
+  --checkbox-border-color: var(--my-border-strong);
+  --checkbox-border-color-hover: var(--my-accent);
+  --checkbox-marker-color: var(--my-ink-0);
+  --checkbox-margin-inline-start: 0.35em;
+  --checklist-done-color: var(--my-text-faint);
+  --checklist-done-decoration: line-through;
+}
+
+/* ==========================================================================
+ * 十八、弹窗 / 菜单 / 提示
+ * ======================================================================== */
+body {
+  --modal-background: var(--my-surface-elevated);
+  --modal-border-color: var(--my-border);
+  --modal-border-width: 1px;
+  --modal-radius: var(--my-radius-l);
+  --modal-shadow: var(--my-shadow-xl);
+  --modal-width: 92vw;
+  --modal-height: 90vh;
+  --modal-max-width: 1140px;
+  --modal-max-width-narrow: 780px;
+  --modal-max-height: 92vh;
+  --modal-header-height: auto;
+  --modal-sidebar-background: var(--my-surface-secondary);
+  --modal-sidebar-inset: var(--my-space-2);
+  --modal-community-sidebar-width: 300px;
+
+  --menu-background: var(--my-surface-elevated);
+  --menu-border-color: var(--my-border);
+  --menu-border-width: 1px;
+  --menu-radius: var(--my-radius-m);
+  --menu-shadow: var(--my-shadow-l);
+  --menu-padding: var(--my-space-2);
+  --menu-divider-color: var(--my-divider);
+  --menu-divider-width: 1px;
+  --menu-backdrop-filter: none;
+  --menu-corner-shape: round;
+  --menu-scroll-mask: linear-gradient(transparent, var(--my-surface-elevated));
+
+  --prompt-background: var(--my-surface-elevated);
+  --prompt-border-color: var(--my-border);
+  --prompt-border-width: 1px;
+  --prompt-input-height: 44px;
+  --prompt-width: 700px;
+  --prompt-max-width: 82vw;
+  --prompt-max-height: 66vh;
+  --prompt-top: 12vh;
+  --prompt-backdrop-filter: none;
+
+  --suggestion-background: var(--my-surface-elevated);
+  --suggestion-backdrop-filter: none;
+
+  --popover-width: 460px;
+  --popover-height: 400px;
+  --popover-max-height: 76vh;
+  --popover-pdf-width: 620px;
+  --popover-pdf-height: 800px;
+  --popover-font-size: var(--my-font-size-base);
+
+  --flair-background: var(--my-surface-tertiary);
+  --flair-color: var(--my-text-secondary);
+}
+
+/* ==========================================================================
+ * 十九、滚动条
+ * ======================================================================== */
+body {
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb-bg: hsl(35 15% 45% / 0.22);
+  --scrollbar-active-thumb-bg: hsl(35 15% 45% / 0.42);
+  --scrollbar-width: 9px;
+  --scrollbar-height: 9px;
+  --scrollbar-radius: var(--my-radius-full);
+  --scrollbar-border-width: 2px;
+  --scrollbar-native-width: auto;
+}
+.theme-dark {
+  --scrollbar-thumb-bg: hsl(40 15% 75% / 0.18);
+  --scrollbar-active-thumb-bg: hsl(40 15% 75% / 0.36);
+}
+
+/* ==========================================================================
+ * 二十、标签 / 徽标（Tag / Pill）
+ * ======================================================================== */
+body {
+  --tag-background: rgb(var(--my-accent-rgb) / 0.11);
+  --tag-background-hover: rgb(var(--my-accent-rgb) / 0.19);
+  --tag-color: var(--my-accent);
+  --tag-color-hover: var(--my-accent-hover);
+  --tag-border-color: transparent;
+  --tag-border-color-hover: transparent;
+  --tag-border-width: 0px;
+  --tag-padding-x: 0.5em;
+  --tag-padding-y: 0.16em;
+  --tag-radius: var(--my-radius-xs);
+  --tag-size: 0.85em;
+  --tag-weight: 500;
+  --tag-decoration: none;
+  --tag-decoration-hover: none;
+  --tag-corner-shape: round;
+
+  --pill-background: var(--my-surface-hover);
+  --pill-background-hover: var(--my-surface-active);
+  --pill-border-color: var(--my-border);
+  --pill-border-color-hover: var(--my-border-strong);
+  --pill-border-width: 1px;
+  --pill-color: var(--my-text-secondary);
+  --pill-color-hover: var(--my-text-primary);
+  --pill-color-remove: var(--my-text-faint);
+  --pill-color-remove-hover: var(--my-danger);
+  --pill-padding-x: 0.5em;
+  --pill-padding-y: 0.14em;
+  --pill-radius: var(--my-radius-xs);
+  --pill-weight: 500;
+  --pill-decoration: none;
+  --pill-decoration-hover: none;
+  --pill-focus-width: 2px;
+  --pill-focus-left-adjust: -2px;
+  --pill-corner-shape: round;
+}
+
+/* ==========================================================================
+ * 二十一、嵌入内容 / 属性面板 / 分隔线 / 图片
+ * ======================================================================== */
+body {
+  --embed-background: var(--my-surface-secondary);
+  --embed-padding: var(--my-space-7);
+  --embed-border-start: 3px solid var(--my-border-strong);
+  --embed-border-end: none;
+  --embed-border-top: none;
+  --embed-border-bottom: none;
+  --embed-max-height: 4200px;
+  --embed-canvas-max-height: 400px;
+  --embed-font-style: normal;
+  --embed-block-shadow-hover: none;
+  --embed-action-color: var(--my-text-tertiary);
+  --embed-action-radius: var(--my-radius-xs);
+  --embed-actions-background: var(--my-surface-elevated);
+  --embed-actions-blur: none;
+  --embed-actions-padding: var(--my-space-2);
+  --embed-actions-radius: var(--my-radius-s);
+  --embed-actions-shadow: var(--my-shadow-s);
+
+  --metadata-background: transparent;
+  --metadata-border-color: var(--my-divider);
+  --metadata-border-width: 0;
+  --metadata-border-radius: var(--my-radius-s);
+  --metadata-divider-color: var(--my-divider);
+  --metadata-divider-color-hover: var(--my-border-strong);
+  --metadata-divider-color-focus: var(--my-accent);
+  --metadata-divider-width: 1px;
+  --metadata-gap: var(--my-space-2);
+  --metadata-padding: var(--my-space-2) 0;
+  --metadata-max-width: 100%;
+  --metadata-display-reading: block;
+  --metadata-display-editing: block;
+  --metadata-label-background: transparent;
+  --metadata-label-background-hover: var(--my-surface-hover);
+  --metadata-label-background-active: var(--my-surface-hover);
+  --metadata-label-text-color: var(--my-text-tertiary);
+  --metadata-label-text-color-hover: var(--my-text-secondary);
+  --metadata-label-font: var(--my-font-ui);
+  --metadata-label-font-size: 0.8em;
+  --metadata-label-font-weight: 600;
+  --metadata-label-width: 9em;
+  --metadata-input-background: transparent;
+  --metadata-input-background-hover: var(--my-surface-hover);
+  --metadata-input-background-active: var(--my-surface-hover);
+  --metadata-input-text-color: var(--my-text-primary);
+  --metadata-input-font: var(--my-font-text);
+  --metadata-input-font-size: 0.86em;
+  --metadata-input-height: 26px;
+  --metadata-input-padding: var(--my-space-2) var(--my-space-3);
+  --metadata-input-longtext-lines: 3;
+  --metadata-property-background: transparent;
+  --metadata-property-background-hover: var(--my-surface-hover);
+  --metadata-property-background-active: var(--my-surface-hover);
+  --metadata-property-radius: var(--my-radius-xs);
+  --metadata-property-radius-focus: var(--my-radius-xs);
+  --metadata-property-radius-hover: var(--my-radius-xs);
+  --metadata-property-box-shadow: none;
+  --metadata-property-box-shadow-focus: 0 0 0 1px var(--my-accent);
+  --metadata-property-box-shadow-hover: none;
+  --metadata-property-padding: 0;
+  --metadata-property-corner-shape: round;
+  --metadata-property-corner-shape-focus: round;
+  --metadata-property-corner-shape-hover: round;
+
+  --divider-color: var(--my-divider);
+  --divider-color-hover: var(--my-accent);
+  --divider-width: 1px;
+  --divider-width-hover: 4px;
+  --divider-vertical-height: 100%;
+
+  --hr-color: var(--my-border-strong);
+  --hr-thickness: 1px;
+
+  --image-radius: var(--my-radius-m);
+
+  --drag-ghost-background: var(--my-surface-elevated);
+  --drag-ghost-text-color: var(--my-text-primary);
+  --drag-item-background: var(--my-surface-elevated);
+  --drag-item-shadow: var(--my-shadow-l);
+}
+
+/* ==========================================================================
+ * 二十二、画布 / 关系图谱
+ * ======================================================================== */
+body {
+  --canvas-background: var(--my-surface-app);
+  --canvas-dot-pattern: var(--my-border-strong);
+  --canvas-color: 120, 120, 140;
+  --canvas-color-1: 184, 73, 58;
+  --canvas-color-2: 169, 126, 38;
+  --canvas-color-3: 141, 122, 53;
+  --canvas-color-4: 61, 127, 82;
+  --canvas-color-5: 51, 107, 118;
+  --canvas-color-6: 113, 89, 163;
+  --canvas-card-label-color: var(--my-text-tertiary);
+  --canvas-controls-icon-size: 18px;
+  --canvas-controls-icon-stroke: 1.6;
+  --canvas-controls-radius: var(--my-radius-s);
+
+  --graph-text: var(--my-text-secondary);
+  --graph-line: var(--my-border);
+  --graph-node: var(--my-text-faint);
+  --graph-node-unresolved: var(--my-text-faintest);
+  --graph-node-focused: var(--my-accent);
+  --graph-node-tag: var(--my-yanzhi-500);
+  --graph-node-attachment: var(--my-zhuqing-500);
+  --graph-controls-width: 260px;
+}
+.theme-dark {
+  --graph-node-tag: var(--my-yanzhi-300);
+  --graph-node-attachment: var(--my-zhuqing-300);
+}
+
+/* ==========================================================================
+ * 二十三、Bases（Obsidian 1.9+ 数据库视图）
+ * ======================================================================== */
+body {
+  --bases-cards-background: var(--my-surface-secondary);
+  --bases-cards-container-background: transparent;
+  --bases-cards-cover-background: var(--my-surface-tertiary);
+  --bases-cards-radius: var(--my-radius-m);
+  --bases-cards-shadow: var(--my-shadow-xs);
+  --bases-cards-shadow-hover: var(--my-shadow-m);
+  --bases-cards-border-width: 1px;
+  --bases-cards-font-size: 0.86em;
+  --bases-cards-line-height: var(--my-line-height-snug);
+  --bases-cards-corner-shape: round;
+  --bases-cards-scale: 1;
+  --bases-embed-border-color: var(--my-border);
+  --bases-embed-border-radius: var(--my-radius-m);
+  --bases-embed-border-width: 1px;
+  --bases-embed-padding: var(--my-space-6);
+  --bases-embed-width: 100%;
+  --bases-embed-transform: none;
+  --bases-filter-input-background: var(--my-surface-sunken);
+  --bases-filter-menu-width: 220px;
+  --bases-group-heading-property-color: var(--my-text-tertiary);
+  --bases-group-heading-property-size: 0.78em;
+  --bases-group-heading-property-weight: 600;
+  --bases-group-heading-property-display: block;
+  --bases-group-heading-value-size: 0.94em;
+  --bases-group-heading-value-weight: 600;
+  --bases-header-border-width: 1px;
+  --bases-header-height: 38px;
+  --bases-header-padding-start: var(--my-space-4);
+  --bases-header-padding-end: var(--my-space-4);
+  --bases-property-menu-item-radius: var(--my-radius-xs);
+  --bases-table-border-color: var(--my-border);
+  --bases-table-column-border-width: 1px;
+  --bases-table-row-border-width: 1px;
+  --bases-table-font-size: 0.88em;
+  --bases-table-row-height: 32px;
+  --bases-table-cell-edge-padding: var(--my-space-5);
+  --bases-table-cell-background-active: var(--my-surface-selected);
+  --bases-table-cell-background-selected: var(--my-surface-selected);
+  --bases-table-cell-background-disabled: var(--my-surface-sunken);
+  --bases-table-cell-radius-active: var(--my-radius-xs);
+  --bases-table-cell-radius-focus: var(--my-radius-xs);
+  --bases-table-cell-shadow-active: 0 0 0 2px var(--my-accent);
+  --bases-table-cell-shadow-focus: 0 0 0 2px var(--my-accent);
+  --bases-table-column-min-width: 100px;
+  --bases-table-column-max-width: 480px;
+  --bases-table-container-border-radius: var(--my-radius-m);
+  --bases-table-container-border-width: 1px;
+  --bases-table-header-background: var(--my-surface-secondary);
+  --bases-table-header-background-hover: var(--my-surface-hover);
+  --bases-table-header-color: var(--my-text-secondary);
+  --bases-table-header-weight: 600;
+  --bases-table-header-icon-display: flex;
+  --bases-table-header-sort-mask: linear-gradient(to left, transparent, var(--my-surface-secondary));
+  --bases-table-group-background: var(--my-surface-secondary);
+  --bases-table-group-gap: var(--my-space-4);
+  --bases-table-row-background-hover: var(--my-surface-hover);
+  --bases-table-summary-background: var(--my-surface-tertiary);
+  --bases-table-summary-background-hover: var(--my-surface-hover);
+  --bases-toolbar-badge-display: flex;
+  --bases-toolbar-label-display: flex;
+  --bases-view-padding: var(--my-space-6);
+}
+
+/* ==========================================================================
+ * 二十四、按钮
+ * ======================================================================== */
+body {
+  --button-radius: var(--my-radius-s);
+  --button-corner-shape: round;
+  --button-disabled-opacity: 0.45;
+
+  --button-primary-bg-color: var(--my-accent);
+  --button-primary-hover-bg-color: var(--my-accent-hover);
+  --button-primary-active-bg-color: var(--my-accent-active);
+  --button-primary-fg-color: var(--my-text-on-accent);
+  --button-primary-hover-fg-color: var(--my-text-on-accent);
+  --button-primary-active-fg-color: var(--my-text-on-accent);
+  --button-primary-border-color: transparent;
+  --button-primary-hover-border-color: transparent;
+  --button-primary-active-border-color: transparent;
+  --button-primary-disabled-bg-color: var(--my-surface-sunken);
+  --button-primary-disabled-fg-color: var(--my-text-faint);
+  --button-primary-disabled-border-color: transparent;
+
+  --button-secondary-bg-color: var(--my-surface-sunken);
+  --button-secondary-hover-bg-color: var(--my-surface-hover);
+  --button-secondary-active-bg-color: var(--my-surface-active);
+  --button-secondary-fg-color: var(--my-text-primary);
+  --button-secondary-hover-fg-color: var(--my-text-primary);
+  --button-secondary-active-fg-color: var(--my-text-primary);
+  --button-secondary-border-color: var(--my-border);
+  --button-secondary-hover-border-color: var(--my-border-strong);
+  --button-secondary-active-border-color: var(--my-accent);
+  --button-secondary-disabled-bg-color: var(--my-surface-sunken);
+  --button-secondary-disabled-fg-color: var(--my-text-faint);
+  --button-secondary-disabled-border-color: var(--my-border-subtle);
+}
+
+/* ==========================================================================
+ * 二十五、搜索 / 折叠 / 其他零散变量
+ * ======================================================================== */
+body {
+  --search-icon-color: var(--my-text-faint);
+  --search-icon-size: 0.9em;
+  --search-clear-button-color: var(--my-text-faint);
+  --search-clear-button-size: 0.9em;
+  --search-input-radius: var(--my-radius-s);
+  --search-input-corner-shape: round;
+  --search-result-background: var(--my-surface-hover);
+
+  --collapse-icon-color: var(--my-text-faint);
+  --collapse-icon-color-collapsed: var(--my-text-tertiary);
+
+  --inline-title-underline: none;
+  --workspace-background-translucent: hsl(0 0% 0% / 0.3);
+  --frame-left-space: 0px;
+  --frame-right-space: 0px;
+
+  --bases-embed-border-color: var(--my-border);
+  --stat-bar-height: 6px;
+  --progress-bar-height: 4px;
+  --progress-bar-color: var(--my-accent);
+
+  --corner-shape: round;
+  --border-width: 1px;
+  --blur-s: 4px;
+  --blur-m: 8px;
+  --blur-l: 16px;
+  --blur-radius-s: blur(var(--blur-s));
+  --blur-radius-m: blur(var(--blur-m));
+  --blur-radius-l: blur(var(--blur-l));
+  --blur-background: 100%;
+  --blur-brightness: 100%;
+  --blur-saturation: 100%;
+  --blur-opacity-s: 0.9;
+  --blur-opacity-m: 0.92;
+
+  --anim-duration-none: 0;
+  --anim-duration-superfast: 60ms;
+  --anim-duration-fast: var(--my-duration-fast);
+  --anim-duration-moderate: var(--my-duration-normal);
+  --anim-duration-slow: var(--my-duration-slow);
+  --anim-motion-smooth: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --anim-motion-delay: cubic-bezier(0.65, 0, 0.35, 1);
+  --anim-motion-jumpy: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  --anim-motion-swing: cubic-bezier(0, 0.55, 0.45, 1);
+}

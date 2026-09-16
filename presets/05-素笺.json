@@ -1,0 +1,19 @@
+{
+  "id": "moyun-preset-sujian",
+  "name": "素笺（极简无彩）",
+  "description": "松烟水墨灰强调色 + 隐藏功能区 + 卡片化列表，近乎单色的极简形态。适合追求零干扰的用户。",
+  "settings": {
+    "moyun@@my-tone@@light": "my-tone-songyan",
+    "moyun@@my-ui-hide-ribbon@@light": true,
+    "moyun@@my-cards@@light": true,
+    "moyun@@my-radius-scale@@light": 0.6,
+    "moyun@@my-font-size-base@@light": 16,
+    "moyun@@my-line-height-relaxed@@light": 1.85,
+    "moyun@@my-tone@@dark": "my-tone-songyan",
+    "moyun@@my-ui-hide-ribbon@@dark": true,
+    "moyun@@my-cards@@dark": true,
+    "moyun@@my-radius-scale@@dark": 0.6,
+    "moyun@@my-font-size-base@@dark": 16,
+    "moyun@@my-line-height-relaxed@@dark": 1.85
+  }
+}

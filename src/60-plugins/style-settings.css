@@ -1,0 +1,244 @@
+/* ============================================================================
+ * 墨韵 MoYun · 插件适配 ①：Style Settings 设置面板
+ * ----------------------------------------------------------------------------
+ * 为什么单独适配：Style Settings 是本主题的「控制台」，用户绝大多数个性化操作都在
+ * 这里完成。但它默认只是把原生 .setting-item 竖直堆叠，层级是扁平的——分组标题与
+ * 具体选项的视觉权重几乎相同，一屏二三十个选项时用户根本找不到出口。本文件做三件事：
+ *   ① 用「缩进 + 左侧色条」把分组层级画出来，让面板有目录感；
+ *   ② 把滑块 / 取色器 / 下拉框 / 开关在行内对齐，避免中文长描述把控件挤到第二行；
+ *   ③ 让墨韵自己的分组一眼可辨（@settings 里 id 以 group- 开头，见 00-tokens/settings.css），
+ *      用户能立刻分清「哪些是主题设置、哪些是别的插件的设置」。
+ *
+ * 依赖：00-tokens/tokens.css（语义令牌）、00-tokens/obsidian-map.css（原生变量映射）
+ * 适配：面板既可能出现在独立弹窗，也可能嵌在设置页签里，故统一以 .style-settings-container
+ *       为作用域根，绝不波及 Obsidian 原生设置页（两者都用 .setting-item，不限定作用域会互相污染）。
+ * 注意：Style Settings 没有公开稳定的 DOM 契约。凡标注「需实测」的选择器，都是依据主题社区
+ *       通行写法推断的，插件大版本升级后需要复验；未标注的部分只依赖它最稳定的类名。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、面板外壳
+ * 中文界面的「行宽」比英文更敏感：一行汉字太多，回行时容易串行。
+ * 故给面板限一个最大宽度并居中，同时把默认的贴边感换成本主题的栅格间距。
+ * ======================================================================== */
+.style-settings-container {
+  max-width: var(--my-content-width-wide);
+  margin-inline: auto;
+  padding: var(--my-space-6) var(--my-space-7) var(--my-space-10);
+  font-family: var(--my-font-ui);
+  font-size: var(--my-font-size-base);
+  line-height: var(--my-line-height-normal);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+/* 设置页签嵌在侧栏时宽度有限，此时取消居中限宽，把空间让给控件 */
+.vertical-tab-content .style-settings-container {
+  max-width: none;
+  padding-inline: var(--my-space-4);
+}
+
+/* ==========================================================================
+ * 二、选项行
+ * 原生每行都画一条上边框；一旦分组标题带了底色，线与色块叠加会显得脏。
+ * 这里改为「整行圆角 + 悬停变色」，用底色而不是线条表达行的边界。
+ * ======================================================================== */
+.style-settings-container .setting-item {
+  gap: var(--my-space-6);
+  padding: var(--my-space-5) var(--my-space-6);
+  border-top: none;
+  border-radius: var(--my-radius-s);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 标题行不是「可操作的行」，不该有悬停反馈，否则会误导用户去点它 */
+.style-settings-container .setting-item:not(.setting-item-heading):hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.style-settings-container .setting-item-name {
+  font-weight: var(--my-font-weight-medium);
+  color: var(--text-normal);
+}
+
+/* 说明文字是中文长句，行高比正文收一点才不至于散开；限宽避免一行拉满整个弹窗 */
+.style-settings-container .setting-item-description {
+  max-width: 44em;
+  color: var(--text-muted);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+  text-wrap: pretty;
+}
+
+/* 选项行统一内缩，与标题形成层级差。
+ * 说明：Style Settings 输出的是扁平列表，不会为子选项生成嵌套容器，所以层级只能靠缩进表达。 */
+.style-settings-container .setting-item:not(.setting-item-heading) {
+  margin-inline-start: var(--my-space-7);
+}
+
+/* ==========================================================================
+ * 三、分组标题层级
+ * 插件的层级信息只存在于 data-level 属性上（1 最外层，数字越大越深）。
+ * 这里把「层级」翻译成中文读者熟悉的视觉语言：色条宽度递减 + 缩进递增 + 字号递减。
+ * 需实测：承载 data-level 的类名在插件不同版本里可能是 .style-settings-heading 或
+ *         .setting-item-heading，故用 :is() 同时匹配，避免版本升级后整段失效。
+ * ======================================================================== */
+.style-settings-container :is(.setting-item-heading, .style-settings-heading) {
+  margin-block: var(--my-space-8) var(--my-space-2);
+  padding-block: var(--my-space-4);
+  border-radius: var(--my-radius-s);
+}
+
+.style-settings-container :is(.setting-item-heading, .style-settings-heading) .setting-item-name {
+  font-size: var(--my-font-size-l);
+  font-weight: var(--my-font-weight-heading);
+  color: var(--text-normal);
+}
+
+/* 一级分组：左侧 3px 强调色条 + 极淡强调色底，形成「章节封面」的观感 */
+.style-settings-container :is(.setting-item-heading, .style-settings-heading)[data-level="1"] {
+  padding-inline-start: var(--my-space-7);
+  border-inline-start: var(--my-border-width-accent) solid var(--my-accent);
+  background-color: color-mix(in srgb, var(--my-accent) 7%, transparent);
+}
+
+/* 二级分组：线条收窄、色彩退到中性，靠缩进与字号继续区分 */
+.style-settings-container :is(.setting-item-heading, .style-settings-heading)[data-level="2"] {
+  padding-inline-start: var(--my-space-6);
+  border-inline-start: var(--my-border-width-thick) solid var(--my-border-strong);
+}
+
+.style-settings-container :is(.setting-item-heading, .style-settings-heading)[data-level="2"] .setting-item-name {
+  font-size: var(--my-font-size-base);
+}
+
+/* 三级及更深：只用最弱的灰色引导线，避免面板里出现三种以上的强调色 */
+.style-settings-container :is(.setting-item-heading, .style-settings-heading)[data-level="3"] {
+  padding-inline-start: var(--my-space-6);
+  border-inline-start: var(--my-border-width) solid var(--my-border);
+}
+
+.style-settings-container :is(.setting-item-heading, .style-settings-heading)[data-level="3"] .setting-item-name {
+  font-size: var(--my-font-size-s);
+  font-weight: var(--my-font-weight-medium);
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+ * 四、墨韵自己的分组突出显示
+ * 约定：本主题的 @settings 分组 id 一律以 group- 开头（group-color / group-cjk / ...），
+ * 这是源码内的稳定契约，比依赖插件内部结构可靠得多。
+ * 加一个「墨韵」小徽标，是为了让用户明确知道这一屏的选项来自本主题——
+ * 装了多个主题/插件后，用户经常分不清改的是谁。
+ * ======================================================================== */
+.style-settings-container .setting-item-heading[data-id^="group-"] {
+  border-inline-start-color: var(--my-accent);
+  background-color: color-mix(in srgb, var(--my-accent) 7%, transparent);
+}
+
+.style-settings-container .setting-item-heading[data-id^="group-"] .setting-item-name {
+  display: flex;
+  align-items: center;
+  gap: var(--my-space-4);
+}
+
+.style-settings-container .setting-item-heading[data-id^="group-"] .setting-item-name::after {
+  content: "墨韵";
+  flex: none;
+  padding: 0 var(--my-space-4);
+  border-radius: var(--my-radius-full);
+  background-color: color-mix(in srgb, var(--my-accent) 16%, transparent);
+  color: var(--my-accent);
+  font-size: var(--my-font-size-xs);
+  font-weight: var(--my-font-weight-normal);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+ * 五、控件对齐
+ * 中文标签普遍比英文长（「正文字号」vs「Font size」），控件必须禁止被压缩，
+ * 否则滑块会被挤成一小截，用户根本拖不准。
+ * ======================================================================== */
+.style-settings-container .setting-item-control {
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--my-space-4);
+}
+
+/* 滑块：给足长度并保持两端对齐，多个滑块上下叠放时视觉上是一条直线 */
+.style-settings-container .setting-item-control input[type="range"].slider {
+  width: clamp(9em, 22vw, 15em);
+  min-width: 9em;
+}
+
+/* 数值用等宽字体 + 等宽数字：拖动时数字宽度不变，滑块不会左右抖动 */
+.style-settings-container .slider-value {
+  min-width: 3.6em;
+  font-family: var(--my-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--my-font-weight-normal);
+  color: var(--text-muted);
+  text-align: end;
+}
+
+/* 取色器：Chromium 默认色块很小且带双层描边，与主题的圆角语言冲突，故整体重绘 */
+.style-settings-container .setting-item-control input[type="color"] {
+  inline-size: 38px;
+  block-size: 24px;
+  padding: 0;
+  border: var(--my-border-width) solid var(--my-border-strong);
+  border-radius: var(--my-radius-s);
+  background: none;
+  cursor: pointer;
+}
+
+.style-settings-container .setting-item-control input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.style-settings-container .setting-item-control input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--my-radius-s) - 2px);
+}
+
+.style-settings-container .setting-item-control input[type="color"]:hover {
+  border-color: var(--my-accent);
+}
+
+/* 下拉框：中文选项长度差异大，限一个宽度区间，既不截断「青花（青蓝 · 默认）」也不撑爆版面 */
+.style-settings-container .setting-item-control select.dropdown {
+  width: auto;
+  min-width: 11em;
+  max-width: 22em;
+}
+
+/* 文本框：给一个下限，避免「自定义强调色」这类输入框只有几像素宽 */
+.style-settings-container .setting-item-control input[type="text"] {
+  min-width: 9em;
+}
+
+/* 开关：与相邻下拉框基线对齐（原生在某些行会略微上浮） */
+.style-settings-container .setting-item-control .checkbox-container {
+  align-self: center;
+}
+
+/* 面板内的按钮（重置、复制等）统一成次级按钮，不与强调色按钮抢注意力 */
+.style-settings-container .setting-item-control button:not(.mod-cta) {
+  border-radius: var(--my-radius-s);
+  color: var(--text-muted);
+}
+
+.style-settings-container .setting-item-control button:not(.mod-cta):hover {
+  color: var(--text-normal);
+}
+
+/* ==========================================================================
+ * 六、动效兜底
+ * 面板本身没有动画，只有悬停/聚焦的颜色过渡。对动效敏感的用户直接取消失效，
+ * 而不是保留一个"更快"的过渡——颜色突变更符合前庭敏感人群的预期。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .style-settings-container .setting-item,
+  .style-settings-container .setting-item-control input[type="color"] {
+    transition: none;
+  }
+}

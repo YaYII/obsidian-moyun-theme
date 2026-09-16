@@ -1,0 +1,17 @@
+{
+  "file-explorer": true,
+  "global-search": true,
+  "switcher": true,
+  "graph": true,
+  "backlink": true,
+  "canvas": true,
+  "outgoing-link": true,
+  "tag": true,
+  "properties": true,
+  "page-preview": true,
+  "outline": true,
+  "wordcount": true,
+  "command-palette": true,
+  "editor-status": true,
+  "file-recovery": true
+}

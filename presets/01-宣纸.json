@@ -1,0 +1,21 @@
+{
+  "id": "moyun-preset-xuanzhi",
+  "name": "宣纸（默认浅色）",
+  "description": "本主题的默认形态：青花强调色、无首行缩进、无两端对齐。适合绝大多数中文笔记。",
+  "settings": {
+    "moyun@@my-tone@@light": "my-tone-qinghua",
+    "moyun@@my-indent-on@@light": false,
+    "moyun@@my-justify@@light": false,
+    "moyun@@my-font-size-base@@light": 16,
+    "moyun@@my-line-height-relaxed@@light": 1.8,
+    "moyun@@my-content-width@@light": "46rem",
+    "moyun@@my-heading-serif-toggle@@light": false,
+    "moyun@@my-tone@@dark": "my-tone-qinghua",
+    "moyun@@my-indent-on@@dark": false,
+    "moyun@@my-justify@@dark": false,
+    "moyun@@my-font-size-base@@dark": 16,
+    "moyun@@my-line-height-relaxed@@dark": 1.8,
+    "moyun@@my-content-width@@dark": "46rem",
+    "moyun@@my-heading-serif-toggle@@dark": false
+  }
+}

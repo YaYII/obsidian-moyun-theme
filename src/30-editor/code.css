@@ -1,0 +1,351 @@
+/* ============================================================================
+ * 墨韵 MoYun · 编辑器内容④：代码与代码块（Code）
+ * ----------------------------------------------------------------------------
+ * 用途：行内代码微调、多行代码块外壳、语法高亮 token、复制按钮、语言标签、行号。
+ *
+ * 中文用户读代码时的两个真实痛点，本文件专门处理：
+ *   ① 中文注释被"斜体 + 极淡灰"处理，几乎不可读。西文代码注释用斜体是惯例，
+ *      但汉字没有真斜体，浏览器强行倾斜会让笔画变形；再加上低对比度的灰，
+ *      整句中文注释就糊掉了。本主题：注释一律不斜体、字距略放开、颜色不降级。
+ *   ② 代码块里的中文宽度是英文的两倍，等宽字体若不含 CJK 回退，中文会跳到
+ *      备用字体并产生"半角错位"。字体栈已在 tokens.css 里内置了等宽中文回退
+ *      （Sarasa Mono SC / 更纱等宽黑体），这里只做字号与行高的配平。
+ *
+ * 依赖：--code-*（obsidian-map.css 已映射）、--my-code-* / --my-space-* /
+ *       --my-font-mono / --my-duration-*
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、行内代码微调
+ * 基础样式在 typography.css（底色 + 边框 + 内边距），这里只补两处：
+ * ① 中文行内代码要与周围汉字对齐基线，靠 vertical-align 微调；
+ * ② 长路径/长类名要能断行，否则会把整段文字挤成"前松后挤"。
+ * ======================================================================== */
+.markdown-rendered p code,
+.markdown-rendered li code,
+.markdown-source-view.mod-cm6 .cm-inline-code {
+  vertical-align: baseline;
+  /* 行内代码略小于正文（--code-size 已由映射给定），但下限要保住可读性 */
+  line-height: inherit;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ==========================================================================
+ * 二、代码块外壳（阅读视图 pre）
+ * 取舍一：不折行（white-space: pre）+ 横向滚动。
+ *   代码的缩进本身就是语义，自动折行会把一行语句劈成两段并失去缩进层级，
+ *   比横向滚动更难读。若你的笔记以长中文注释为主、更希望折行，
+ *   把下面这条改成 white-space: pre-wrap 即可（注释里给出替代方案，
+ *   是因为这属于个人偏好，不该由主题替用户拍死）。
+ * 取舍二：行高 1.45（--my-line-height-snug），比正文 1.8 紧。
+ *   代码是"结构化的块"，行太松会让一屏只放得下 15 行。
+ * ======================================================================== */
+.markdown-rendered pre,
+.markdown-preview-view pre {
+  position: relative;
+  background-color: var(--code-background);
+  border: var(--code-border-width) solid var(--code-border-color);
+  border-radius: var(--code-radius);
+  padding: var(--my-space-6) var(--my-space-7);
+  margin-block: var(--p-spacing) calc(var(--p-spacing) * 1.2);
+  overflow: auto;
+  white-space: pre;
+  tab-size: 4;
+  line-height: var(--my-line-height-snug);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 代码块内的中文字号：等宽中文字体的字面比西文等宽字大，
+ * 统一到 --code-size 后中文会比英文"胖"一点，属正常且可读的取舍。 */
+.markdown-rendered pre code {
+  display: block;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: var(--code-normal);
+  font-family: var(--my-font-mono);
+  font-size: var(--code-size);
+  letter-spacing: var(--my-letter-spacing-code);
+  white-space: inherit;
+  word-break: normal;
+  overflow-wrap: normal;
+  text-indent: 0;
+}
+
+/* 代码块内的语法高亮不要被行内代码的底色带偏（typography 的选择器也会命中 pre code，
+ * 上面用同一层级的更晚声明覆盖掉，避免出现"块中块"的双层底色）。 */
+.markdown-rendered pre code :is(span, a) {
+  background-color: transparent;
+}
+
+/* ==========================================================================
+ * 三、实时预览的代码块
+ * CodeMirror 的代码块由三层的背景 div 绘制（bg / begin-bg / end-bg），
+ * 圆角与边框已由映射好的 --code-* 变量给出，这里只补上下留白，
+ * 让代码块与前后段落之间也有和阅读视图一样的呼吸感。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-begin {
+  padding-block-start: var(--my-space-5);
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-end {
+  padding-block-end: var(--my-space-5);
+}
+
+/* 代码块内首尾行之外的行不加额外留白，保持行间紧凑 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock + .cm-line.HyperMD-codeblock {
+  padding-block: 0;
+}
+
+/* ==========================================================================
+ * 四、语法高亮 token
+ * 阅读视图走 Prism（.token.*），实时预览走 CodeMirror（.cm-*），
+ * 两套必须一起写，否则"同一个文件在两种视图里颜色不一样"。
+ * 颜色一律取自 --code-*（它由 --my-code-* 映射而来），保证八韵换色时同步。
+ * ======================================================================== */
+.markdown-rendered :is(.token.comment, .token.prolog, .token.doctype, .token.cdata),
+.markdown-source-view.mod-cm6 :is(.cm-comment, .cm-meta) {
+  color: var(--code-comment);
+}
+
+.markdown-rendered :is(.token.keyword, .token.atrule, .token.rule, .token.important),
+.markdown-source-view.mod-cm6 :is(.cm-keyword, .cm-atom, .cm-builtin) {
+  color: var(--code-keyword);
+}
+
+.markdown-rendered :is(.token.string, .token.char, .token.attr-value, .token.regex, .token.url),
+.markdown-source-view.mod-cm6 :is(.cm-string, .cm-string-2) {
+  color: var(--code-string);
+}
+
+.markdown-rendered :is(.token.number, .token.boolean, .token.constant, .token.symbol),
+.markdown-source-view.mod-cm6 :is(.cm-number, .cm-qualifier) {
+  color: var(--code-value);
+}
+
+.markdown-rendered :is(.token.function, .token.function-name),
+.markdown-source-view.mod-cm6 :is(.cm-def, .cm-variable-2, .cm-type) {
+  color: var(--code-function);
+}
+
+.markdown-rendered :is(.token.tag, .token.selector, .token.deleted),
+.markdown-source-view.mod-cm6 .cm-tag {
+  color: var(--code-tag);
+}
+
+.markdown-rendered :is(.token.property, .token.attr-name, .token.class-name),
+.markdown-source-view.mod-cm6 :is(.cm-property, .cm-attribute, .cm-variableName) {
+  color: var(--code-property);
+}
+
+.markdown-rendered :is(.token.operator, .token.entity),
+.markdown-source-view.mod-cm6 :is(.cm-operator, .cm-variable) {
+  color: var(--code-operator);
+}
+
+.markdown-rendered :is(.token.punctuation, .token.bracket),
+.markdown-source-view.mod-cm6 .cm-bracket {
+  color: var(--code-punctuation);
+}
+
+/* 代码块中的链接与标签：保持可辨识但不刺眼（代码里出现 URL 是常态） */
+.markdown-rendered pre .token.url,
+.markdown-rendered pre :is(a.internal-link, a.external-link) {
+  color: var(--code-function);
+}
+
+/* ==========================================================================
+ * 五、复制按钮（阅读视图）
+ * Obsidian 默认"不悬停就 display:none"，本主题改成"悬停淡入"：
+ * 按钮位置固定、只在需要时浮现，避免鼠标划过代码区时按钮闪进闪出。
+ * 覆盖 display 是必要的——opacity 改不动 display: none 的元素。
+ * ======================================================================== */
+.markdown-rendered pre:not(:hover) > button.copy-code-button {
+  display: block;
+  opacity: 0;
+}
+
+.markdown-rendered button.copy-code-button {
+  position: absolute;
+  top: var(--my-space-4);
+  inset-inline-end: var(--my-space-4);
+  height: auto;
+  margin: 0;
+  padding: var(--my-space-2) var(--my-space-5);
+  border: var(--my-border-width) solid var(--my-code-border);
+  border-radius: var(--my-radius-s);
+  background-color: var(--my-surface-elevated);
+  color: var(--my-text-secondary);
+  font-family: var(--my-font-ui);
+  font-size: var(--my-font-size-xs);
+  line-height: 1.7;
+  box-shadow: var(--my-shadow-xs);
+  cursor: pointer;
+  transition: opacity var(--my-duration-normal) var(--my-ease-out),
+              color var(--my-duration-fast) var(--my-ease-out),
+              background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-rendered pre:hover > button.copy-code-button,
+.markdown-rendered pre:focus-within > button.copy-code-button {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .markdown-rendered button.copy-code-button:hover {
+    background-color: var(--my-surface-hover);
+    color: var(--my-accent);
+  }
+}
+
+/* 复制成功后的反馈（Obsidian 会把文案换成"已复制"） */
+.markdown-rendered button.copy-code-button:active {
+  background-color: var(--my-surface-active);
+}
+
+/* ==========================================================================
+ * 六、语言标签
+ * 实时预览：Obsidian 生成 .code-block-flair（可点击切换语言）。
+ * 阅读视图：本体不生成任何语言标签，这里用 pre::after + :has() 按已知语言枚举，
+ *           并且做成"平时显示语言、悬停让位给复制按钮"的交换效果——
+ *           两个控件都放右上角必然打架，交换是最省空间又不会误触的解法。
+ * 只列最常见的 8 种语言：CSS 读不到子元素的 class（attr() 只能读元素自己的
+ * 属性），每多支持一种就要多写一条规则，列太多会变成维护负担。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .code-block-flair {
+  position: absolute;
+  top: var(--my-space-3);
+  inset-inline-end: var(--my-space-5);
+  z-index: 1;
+  padding: var(--my-space-1) var(--my-space-5);
+  border-radius: var(--my-radius-full);
+  background-color: var(--my-surface-elevated);
+  color: var(--my-text-tertiary);
+  font-family: var(--my-font-mono);
+  font-size: var(--my-font-size-xs);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  opacity: 0.6;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out),
+              color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-source-view.mod-cm6 .code-block-flair:hover {
+  opacity: 1;
+  color: var(--my-accent);
+  background-color: var(--my-surface-hover);
+}
+
+/* —— 阅读视图的语言标签 —— */
+.markdown-rendered pre::after {
+  position: absolute;
+  top: var(--my-space-4);
+  inset-inline-end: var(--my-space-4);
+  padding: var(--my-space-1) var(--my-space-5);
+  border-radius: var(--my-radius-full);
+  color: var(--my-text-faintest);
+  font-family: var(--my-font-mono);
+  font-size: var(--my-font-size-xs);
+  line-height: 1.7;
+  pointer-events: none;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-rendered pre:has(> code.language-js)::after,
+.markdown-rendered pre:has(> code.language-javascript)::after { content: "JavaScript"; }
+.markdown-rendered pre:has(> code.language-ts)::after,
+.markdown-rendered pre:has(> code.language-typescript)::after { content: "TypeScript"; }
+.markdown-rendered pre:has(> code.language-python)::after,
+.markdown-rendered pre:has(> code.language-py)::after { content: "Python"; }
+.markdown-rendered pre:has(> code.language-java)::after { content: "Java"; }
+.markdown-rendered pre:has(> code.language-css)::after { content: "CSS"; }
+.markdown-rendered pre:has(> code.language-html)::after { content: "HTML"; }
+.markdown-rendered pre:has(> code.language-json)::after { content: "JSON"; }
+.markdown-rendered pre:has(> code.language-bash)::after,
+.markdown-rendered pre:has(> code.language-shell)::after,
+.markdown-rendered pre:has(> code.language-sh)::after { content: "Shell"; }
+
+/* 悬停时标签淡出，把位置让给复制按钮 */
+.markdown-rendered pre:hover::after {
+  opacity: 0;
+}
+
+/* ==========================================================================
+ * 七、行号槽
+ * 说明：Obsidian 1.13 本体不生成行号（.cm-lineNumbers 由"行号"类插件注入），
+ * 这里给出样式钩子：插件一旦启用，行号就会自动与主题配色一致，
+ * 而不是出现"插件行号是默认灰、主题文字是暖墨色"的违和感。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-lineNumbers .cm-gutterElement {
+  padding-inline: var(--my-space-4) var(--my-space-6);
+  color: var(--my-text-faintest);
+  font-family: var(--my-font-mono);
+  font-size: var(--my-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.markdown-source-view.mod-cm6 .cm-lineNumbers .cm-gutterElement.cm-activeLineGutter {
+  color: var(--my-accent);
+}
+
+/* 代码折叠槽：与行号共用同一套中性色，避免右侧数字抢视线 */
+.markdown-source-view.mod-cm6 .cm-gutters {
+  background-color: transparent;
+  border-inline-end: 0;
+  color: var(--my-text-faintest);
+}
+
+/* ==========================================================================
+ * 八、中文注释的可读性（本文件的重点）
+ * ① 不斜体：汉字强行倾斜会失真（西文注释的斜体惯例在中文里是负分）。
+ * ② 不缩小字号：注释常整句出现，缩到 0.85em 后中文笔画就糊了。
+ * ③ 字距 +0.02em：等宽中文字体的字面框很满，加一点字距能明显提升成句可读性。
+ * ④ 颜色不降级：--my-code-comment 在明暗两套配色下都保证与代码底色的对比度。
+ * ======================================================================== */
+.markdown-rendered :is(.token.comment, .token.prolog),
+.markdown-source-view.mod-cm6 .cm-comment {
+  font-style: normal;
+  font-size: inherit;
+  letter-spacing: 0.02em;
+}
+
+/* 代码块内的中文（字符串、注释）统一走等宽中文回退字体，
+ * 避免浏览器把它丢给比例字体造成"半角错位"。 */
+.markdown-rendered pre code,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock {
+  font-family: var(--my-font-mono);
+  text-autospace: none;
+}
+
+/* ==========================================================================
+ * 九、动效兜底与打印
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-rendered button.copy-code-button,
+  .markdown-rendered pre::after,
+  .markdown-source-view.mod-cm6 .code-block-flair {
+    transition: none;
+  }
+}
+
+@media print {
+  /* 打印时代码块不折行、横向滚动条不可见，因此放宽为可折行，保证内容不丢 */
+  .markdown-rendered pre {
+    overflow: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+    break-inside: avoid;
+    background-color: transparent;
+    border-color: var(--my-border);
+  }
+
+  /* 纸面上没有复制与语言标签 */
+  .markdown-rendered button.copy-code-button,
+  .markdown-rendered pre::after,
+  .markdown-source-view.mod-cm6 .code-block-flair {
+    display: none;
+  }
+}

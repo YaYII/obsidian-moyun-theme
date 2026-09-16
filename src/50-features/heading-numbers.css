@@ -1,0 +1,223 @@
+/* ============================================================================
+ * 墨韵 MoYun · 增强特性：标题自动编号 + 大纲增强（Heading Numbers）
+ * ----------------------------------------------------------------------------
+ * 用途：给阅读视图的标题追加 1. / 1.1 / 1.1.1 形式的层级编号，让长文有"书的目录感"；
+ *       同时给大纲面板加层级编号与缩进引导，两侧编号严格对应。
+ *       中文技术文档、规章制度、论文都习惯带编号，而 Markdown 原生没有。
+ *
+ * 开关：body.my-heading-numbers
+ * 依赖：纯 CSS counter（counters），零 JS、零插件。
+ *
+ * 三个必须说清楚的取舍（也是本功能最容易出错的地方）：
+ *
+ *   ① 实时预览不编号 —— 不是偷懒。
+ *      CodeMirror 采用虚拟滚动，屏幕外的行根本没有 DOM。CSS 计数器只统计
+ *      "已渲染的元素"，滚动时编号会不断跳变（刚还是 3.2，滚一下变 1.4）。
+ *      宁可只在阅读视图生效，也不给用户一个会变的假编号。
+ *
+ *   ② 折叠与嵌入的处理 ——
+ *      · 嵌入笔记（![[note]]）：每个 .markdown-rendered 都重新 counter-reset，
+ *        因此嵌入内容从 1 开始独立编号，且【不会】扰乱宿主笔记的计数器。
+ *      · 标题折叠：Obsidian 折叠用 display: none 隐藏子标题，而 display: none 的
+ *        元素不参与计数 —— 折叠一章后，后续编号会前移。这是 CSS 计数器的固有行为，
+ *        无法在 CSS 层修复（要修必须由 JS 在折叠时重算）。取舍：优先保证
+ *        "展开状态下编号绝对正确"，折叠只影响折叠期间的显示。
+ *      · 大纲面板的编号同样受折叠影响，故与正文编号在折叠态下可能短暂不一致。
+ *
+ *   ③ 只编到 h4：h5/h6 在中文文档里通常是"小标签"而非"章"，加编号反而碍眼。
+ *      需要更深层编号时把下面 h5/h6 两段取消注释即可（已写好，等价于 h4 的写法）。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、计数器初始化
+ * 作用域选 .markdown-rendered 而不是 .markdown-preview-view：
+ *   嵌入笔记的内部也是 .markdown-rendered，于是"每个渲染根各自从 1 开始"天然成立，
+ *   不需要为嵌入单独写一条隔离规则（这是这个选择唯一的、也是最重要的理由）。
+ * ======================================================================== */
+body.my-heading-numbers .markdown-rendered {
+  counter-reset: my-h1 my-h2 my-h3 my-h4 my-h5 my-h6;
+}
+
+/* ==========================================================================
+ * 二、编号生成
+ * 每级标题做两件事：给自己的计数器 +1，并把更深的计数器清零
+ *   —— 这正是"1. → 2. → 2.1 → 2.2 → 3.（3.1 消失）"这套编号语义的来源。
+ * ======================================================================== */
+body.my-heading-numbers .markdown-rendered h1 {
+  counter-increment: my-h1;
+  counter-reset: my-h2 my-h3 my-h4 my-h5 my-h6;
+}
+
+body.my-heading-numbers .markdown-rendered h2 {
+  counter-increment: my-h2;
+  counter-reset: my-h3 my-h4 my-h5 my-h6;
+}
+
+body.my-heading-numbers .markdown-rendered h3 {
+  counter-increment: my-h3;
+  counter-reset: my-h4 my-h5 my-h6;
+}
+
+body.my-heading-numbers .markdown-rendered h4 {
+  counter-increment: my-h4;
+  counter-reset: my-h5 my-h6;
+}
+
+/* h5 / h6：默认不编号。需要时取消注释（写法和 h4 完全一致）。
+body.my-heading-numbers .markdown-rendered h5 {
+  counter-increment: my-h5;
+  counter-reset: my-h6;
+}
+body.my-heading-numbers .markdown-rendered h6 {
+  counter-increment: my-h6;
+}
+*/
+
+/* —— 编号文本 —— */
+body.my-heading-numbers .markdown-rendered h1::before {
+  content: counter(my-h1) ". ";
+}
+
+body.my-heading-numbers .markdown-rendered h2::before {
+  content: counter(my-h1) "." counter(my-h2) " ";
+}
+
+body.my-heading-numbers .markdown-rendered h3::before {
+  content: counter(my-h1) "." counter(my-h2) "." counter(my-h3) " ";
+}
+
+body.my-heading-numbers .markdown-rendered h4::before {
+  content: counter(my-h1) "." counter(my-h2) "." counter(my-h3) "." counter(my-h4) " ";
+}
+
+/* ==========================================================================
+ * 三、编号的排版处理（中文场景的三个细节）
+ *   ① 编号用等宽数字（tabular-nums）：1 和 2 宽度相同时，标题文字才能对齐成一条竖线；
+ *   ② 悬挂缩进：标题折行时第二行与标题文字左对齐，而不是钻到编号下面；
+ *   ③ 编号与标题之间加 0.4em 间隙：中文没有词间空格，"1.标题"会挤在一起。
+ * ======================================================================== */
+body.my-heading-numbers .markdown-rendered :is(h1, h2, h3, h4)::before {
+  color: var(--my-accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--my-font-weight-medium);
+  margin-inline-end: 0.4em;
+  /* 编号属于"结构信息"，不应该被首行缩进推走，也不应该被选择复制时带上（见下） */
+  user-select: none;
+}
+
+/* 悬挂缩进：h1 的编号短（1.），h3/h4 的编号长（1.2.3.），缩进量分级给 */
+body.my-heading-numbers .markdown-rendered h1 { padding-inline-start: 1.9em; text-indent: -1.9em; }
+body.my-heading-numbers .markdown-rendered h2 { padding-inline-start: 2.8em; text-indent: -2.8em; }
+body.my-heading-numbers .markdown-rendered h3 { padding-inline-start: 3.7em; text-indent: -3.7em; }
+body.my-heading-numbers .markdown-rendered h4 { padding-inline-start: 4.6em; text-indent: -4.6em; }
+
+/* 四级以上编号列更长，缩进再放宽一档；同时把编号颜色压淡，建立"越深越轻"的层级 */
+body.my-heading-numbers .markdown-rendered h4::before {
+  color: var(--my-text-tertiary);
+}
+
+/* 首行缩进开关（body.my-indent-on）对标题本来就豁免，这里再显式声明一次，
+ * 防止两个开关叠加时 text-indent 被上层规则覆盖，导致编号跑出正文版心。 */
+body.my-heading-numbers.my-indent-on .markdown-rendered :is(h1, h2, h3, h4) {
+  text-indent: -1.9em;
+}
+body.my-heading-numbers.my-indent-on .markdown-rendered h2 { text-indent: -2.8em; }
+body.my-heading-numbers.my-indent-on .markdown-rendered h3 { text-indent: -3.7em; }
+body.my-heading-numbers.my-indent-on .markdown-rendered h4 { text-indent: -4.6em; }
+
+/* 标注（Callout）内部的标题：不编号。
+ * 理由：标注是"旁注"，其内部的 h3 若参与主编号会打断正文的 1.2 → 1.4 序列。 */
+body.my-heading-numbers .markdown-rendered .callout :is(h1, h2, h3, h4) {
+  padding-inline-start: 0;
+  text-indent: 0;
+}
+
+body.my-heading-numbers .markdown-rendered .callout :is(h1, h2, h3, h4)::before {
+  content: none;
+}
+
+/* ==========================================================================
+ * 四、大纲面板的层级美化
+ * 容器选择器双写（[data-type="outline"] 与 .outline-view）：
+ *   核心插件在不同版本用过的类名不一致，双写可以跨版本命中，且不会互相干扰。
+ * ======================================================================== */
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) .tree-item-self {
+  border-radius: var(--my-radius-xs);
+  padding-inline-start: var(--my-space-3);
+}
+
+/* 缩进引导线加粗一档：中文大纲条目短，靠缩进判断层级比靠文字更快 */
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) .tree-item-children {
+  --nav-indentation-guide-width: var(--my-border-width-thick);
+  --nav-indentation-guide-color: var(--my-border);
+  --indentation-guide-color: var(--my-border);
+}
+
+/* 层级配色：一级最实、越深越淡。用 .tree-item-children 的嵌套深度表达层级，
+ * 不依赖插件可能变动的 data-* 属性，跨版本更稳。 */
+body.my-heading-numbers .outline-view .tree-item-children .tree-item-inner,
+body.my-heading-numbers .workspace-leaf-content[data-type="outline"] .tree-item-children .tree-item-inner {
+  color: var(--my-text-secondary);
+  font-size: var(--my-font-size-s);
+}
+
+body.my-heading-numbers .outline-view .tree-item-children .tree-item-children .tree-item-inner,
+body.my-heading-numbers .workspace-leaf-content[data-type="outline"] .tree-item-children .tree-item-children .tree-item-inner {
+  color: var(--my-text-tertiary);
+}
+
+/* 一级条目用中号字重，与正文的一级标题呼应 */
+body.my-heading-numbers .outline-view > .tree-item > .tree-item-self .tree-item-inner,
+body.my-heading-numbers .workspace-leaf-content[data-type="outline"] > .tree-item > .tree-item-self .tree-item-inner {
+  color: var(--my-text-primary);
+  font-weight: var(--my-font-weight-medium);
+}
+
+/* ==========================================================================
+ * 五、大纲面板的层级编号（与正文编号同源同序）
+ * counters(my-outline, ".") 会自动把祖先作用域的计数值串起来，
+ * 于是得到 1 / 1.1 / 1.1.1 —— 与正文标题编号一一对应。
+ * 注意：折叠时与正文一样会"跳号"（display: none 不计数），这是同一套机制的代价。
+ * ======================================================================== */
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) {
+  counter-reset: my-outline;
+}
+
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) .tree-item-children {
+  counter-reset: my-outline;
+}
+
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) .tree-item {
+  counter-increment: my-outline;
+}
+
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) .tree-item-inner::before {
+  content: counters(my-outline, ".") " ";
+  color: var(--my-text-faintest);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.86em;
+  margin-inline-end: 0.25em;
+}
+
+/* 悬停/激活的大纲条目：编号跟着点亮，指示"你正跳到第几节" */
+body.my-heading-numbers :is(.workspace-leaf-content[data-type="outline"], .outline-view, .outline) .tree-item-self:hover .tree-item-inner::before {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 六、编号与复制
+ * ::before 生成的内容默认不进入剪贴板文本（生成内容不参与复制），
+ * 因此"复制正文标题"拿到的仍是干净的原标题——这是刻意的，无需额外处理。
+ * 但图片题注、脚注等自定义编号同样受此保护，这解释了为什么它看起来"没编号也能复制"。
+ * ======================================================================== */
+
+/* ==========================================================================
+ * 七、打印 / 导出 PDF
+ * 打印时编号必须保留（纸质文档最需要它），同时去掉编号的交互感（悬浮变色）。
+ * ======================================================================== */
+@media print {
+  body.my-heading-numbers .markdown-rendered h1 { padding-inline-start: 1.9em; text-indent: -1.9em; }
+  body.my-heading-numbers .markdown-rendered :is(h1, h2, h3, h4)::before {
+    color: inherit;
+  }
+}

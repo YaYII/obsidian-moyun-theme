@@ -1,0 +1,334 @@
+/* ============================================================================
+ * 墨韵 MoYun · 编辑器内容⑥：图片、嵌入与附件（Media & Embeds）
+ * ----------------------------------------------------------------------------
+ * 用途：图片、图片题注（可选）、内嵌笔记、内嵌 PDF、音视频、图片调整手柄。
+ *
+ * 中文文档里图片的三个特殊性（决定了本文件的取舍）：
+ *   ① 图文混排密度高。截屏、流程图、表格截图常与文字交替出现，
+ *      图片动效必须"轻"——放大幅度超过 2% 会让人产生页面在动的错觉。
+ *   ② 题注是刚需。中文技术文档习惯"图 N 说明文字"（GB 标准写法），
+ *      但 Markdown 没有题注语法，只能从 alt 取。
+ *   ③ 中文截图里字号普遍偏小，图片被版心缩放后容易糊，
+ *      因此图片永远不超过版心宽度（max-width: 100%），且不做强制放大。
+ *
+ * 依赖：--embed-* / --image-radius（obsidian-map.css 已映射）、
+ *       --my-space-* / --my-radius-* / --my-shadow-* / --my-surface-*
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、图片基础
+ * ======================================================================== */
+.markdown-rendered img,
+.markdown-preview-view img,
+.markdown-source-view.mod-cm6 .cm-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--image-radius);
+  /* 极轻的阴影：让截图与纸面之间有"贴上去"的层次，而不是浮起来 */
+  box-shadow: var(--my-shadow-xs);
+  /* 透明 PNG（很多流程图导出为透明底）需要一个可依的底色 */
+  background-color: var(--my-surface-sunken);
+  /* 中文界面里图片不应带斜体/字距等文字属性，显式复位 */
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+/* 单独成段的图片居中：只有"段落里唯一元素是图片"时才居中，
+ * 这样行内小图标（句子中间的表情/箭头图）不会被推成独立一行。 */
+.markdown-rendered p:has(> img:only-child),
+.markdown-rendered p:has(> .internal-embed.image-embed:only-child),
+.markdown-rendered p:has(> .external-embed:only-child) {
+  text-align: center;
+}
+
+.markdown-rendered p:has(> img:only-child) > img,
+.markdown-rendered p:has(> .internal-embed.image-embed:only-child) > .internal-embed {
+  display: block;
+  margin-inline: auto;
+}
+
+/* 图片尚未加载完时先占位，避免正文在图片载入瞬间跳动 */
+.markdown-rendered .internal-embed:not(.is-loaded) {
+  opacity: 0.6;
+}
+
+/* ==========================================================================
+ * 二、悬停反馈
+ * 放大 1.2% + 阴影加深一档：足以提示"这是可交互的图片（可点击放大/可拖拽）"，
+ * 又不会造成版面晃动。移动端没有 hover，用 (hover: hover) 精确隔离。
+ * ======================================================================== */
+@media (hover: hover) {
+  .markdown-rendered :is(img, .internal-embed.image-embed) {
+    transition: transform var(--my-duration-normal) var(--my-ease-out),
+                box-shadow var(--my-duration-normal) var(--my-ease-out);
+  }
+
+  .markdown-rendered img:hover {
+    transform: scale(1.012);
+    box-shadow: var(--my-shadow-m);
+  }
+}
+
+/* ==========================================================================
+ * 三、图片题注（body.my-image-caption）
+ * 实现原理与边界：
+ *   · attr() 只能读取"元素自身"的属性，而 <img> 是被替换元素、不能承载伪元素，
+ *     所以题注必须挂在包裹元素上。Obsidian 会把图片嵌入渲染成
+ *     <span class="internal-embed image-embed" alt="...">，alt 同时写在
+ *     span 与 img 上——这正是能取到题注的前提。
+ *   · 如果某处只有一个裸 <img>（没有包裹元素），CSS 无法取到它的 alt，
+ *     题注不会出现。此时改用嵌入语法 ![[图片.png|题注文字]] 即可。
+ *   · 计数用 CSS counter：编号以「每篇笔记」为单位重排（counter-reset 挂在
+ *     .markdown-rendered 上），插入一张图后无需手工改后面的编号。
+ * ======================================================================== */
+body.my-image-caption .markdown-rendered {
+  counter-reset: my-figure;
+}
+
+body.my-image-caption .markdown-preview-view :is(.image-embed, .media-embed)[alt],
+body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt] {
+  display: block;
+  text-align: center;
+  counter-increment: my-figure;
+}
+
+/* 「图 N · 」与 alt 文本分两个伪元素：
+ * 这样当 alt 为空时，前半段仍成立而不会留下一个孤零零的分隔符。 */
+body.my-image-caption .markdown-preview-view :is(.image-embed, .media-embed)[alt]::before,
+body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt]::before {
+  content: "图 " counter(my-figure) " · ";
+  color: var(--my-text-tertiary);
+  font-size: var(--my-font-size-s);
+  font-weight: var(--my-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+body.my-image-caption .markdown-preview-view :is(.image-embed, .media-embed)[alt]::after,
+body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt]::after {
+  content: attr(alt);
+  color: var(--my-text-tertiary);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+  text-wrap: balance;
+}
+
+/* 题注与图片之间的一档空隙：中文题注常是整句，贴太紧会读成图片的一部分 */
+body.my-image-caption .markdown-preview-view :is(.image-embed, .media-embed)[alt]::before,
+body.my-image-caption .markdown-rendered :is(.image-embed, .media-embed)[alt]::before {
+  margin-block-start: var(--my-space-5);
+}
+
+/* 说明：题注只在阅读视图出现。实时预览的行是 CodeMirror 的虚拟行，
+ * 在其中插入块级伪元素会干扰光标定位与行高计算（会出现点击错位），
+ * 代价大于收益，故不做。 */
+
+/* ==========================================================================
+ * 四、图片调整手柄
+ * 类名说明：Obsidian 1.13 本体并不生成 .image-resize-handle（图片尺寸调整
+ * 由插件或后续核心能力提供）。这里给出样式钩子：一旦该能力启用，
+ * 手柄自动取主题色，而不会出现"手柄是默认蓝、主题是墨青"的撞色。
+ * ======================================================================== */
+.image-resize-handle,
+.markdown-rendered .image-resize-handle {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--my-radius-full);
+  background-color: var(--my-accent);
+  border: var(--my-border-width-thick) solid var(--my-surface-elevated);
+  box-shadow: var(--my-shadow-s);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.image-resize-handle:hover {
+  background-color: var(--my-accent-hover);
+}
+
+/* ==========================================================================
+ * 五、内嵌笔记（.internal-embed / .markdown-embed）
+ * 中文长文档常把"术语表""上一节结论"整段嵌进来。视觉上必须一眼看出
+ * "这段不是我写的"——用左侧色条 + 次表面底色 + 略小字号三重区分。
+ * ======================================================================== */
+.markdown-rendered .markdown-embed,
+.markdown-source-view.mod-cm6 .markdown-embed {
+  background-color: var(--embed-background);
+  border-inline-start: var(--embed-border-start);
+  border-radius: 0 var(--my-radius-s) var(--my-radius-s) 0;
+  padding: var(--embed-padding);
+  margin-block: var(--p-spacing);
+  font-style: var(--embed-font-style);
+  transition: box-shadow var(--my-duration-normal) var(--my-ease-out);
+}
+
+.markdown-rendered .markdown-embed:hover {
+  box-shadow: var(--my-shadow-s);
+}
+
+/* 嵌入内容的字号降半档：既表明层级，也让"内嵌"与"本文"在扫读时可分 */
+.markdown-embed .markdown-rendered {
+  font-size: 0.95em;
+}
+
+/* 嵌入笔记的标题：中文文档里常用它当"小节引用"，给一档分隔线 */
+.markdown-rendered .markdown-embed-title,
+.markdown-source-view.mod-cm6 .markdown-embed-title {
+  color: var(--my-text-secondary);
+  font-weight: var(--my-font-weight-medium);
+  font-size: var(--my-font-size-s);
+  letter-spacing: 0.02em;
+  line-height: var(--my-line-height-snug);
+  padding-block-end: var(--my-space-4);
+  margin-block-end: var(--my-space-6);
+  border-block-end: var(--my-border-width) solid var(--my-divider);
+}
+
+/* 嵌入块右上角的"打开原笔记"图标：默认隐形，悬停浮现 */
+.markdown-rendered .markdown-embed-link,
+.markdown-rendered .file-embed-link {
+  color: var(--my-text-faint);
+  opacity: 0;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out),
+              color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-rendered .markdown-embed:hover .markdown-embed-link,
+.markdown-rendered .markdown-embed-link:focus-visible {
+  opacity: 1;
+}
+
+.markdown-rendered .markdown-embed-link:hover {
+  color: var(--my-accent);
+}
+
+/* 嵌入内容过长时的高度上限由 --embed-max-height 控制（已映射），
+ * 这里只保证滚动条不贴住圆角。 */
+.markdown-rendered .markdown-embed-content {
+  max-height: var(--embed-max-height);
+  overflow: auto;
+  padding-inline-end: var(--my-space-2);
+}
+
+/* 非 Markdown 附件（.file-embed）的通用卡片样式 */
+.markdown-rendered .file-embed {
+  border-radius: var(--my-radius-m);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  background-color: var(--my-surface-secondary);
+  color: var(--my-text-secondary);
+  padding: var(--my-space-6);
+}
+
+/* ==========================================================================
+ * 六、PDF / 音频 / 视频 / 外部嵌入
+ * ======================================================================== */
+.markdown-rendered .internal-embed.pdf-embed,
+.markdown-rendered .pdf-embed {
+  width: 100%;
+  border-radius: var(--my-radius-m);
+  border: var(--my-border-width) solid var(--my-border);
+  background-color: var(--my-surface-secondary);
+  overflow: hidden;
+}
+
+/* 视频：与图片同一套圆角与阴影，视觉上是"同一种素材" */
+.markdown-rendered video,
+.markdown-rendered .media-embed video,
+.markdown-rendered .external-embed video {
+  max-width: 100%;
+  border-radius: var(--image-radius);
+  box-shadow: var(--my-shadow-xs);
+  background-color: var(--my-surface-sunken);
+}
+
+/* 音频：中文播客/录音笔记常见。原生播放条很窄，撑满版心更好点按 */
+.markdown-rendered audio,
+.markdown-rendered .media-embed audio {
+  width: 100%;
+  max-width: var(--my-content-width);
+  display: block;
+  margin-inline: auto;
+  border-radius: var(--my-radius-s);
+  background-color: var(--my-surface-secondary);
+}
+
+/* 媒体嵌入容器：居中对齐，避免与正文左对齐造成的"歪" */
+.markdown-rendered :is(.media-embed, .external-embed) {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+/* 内嵌网页/iframe（外部嵌入）：给边框，明确"这是外部内容" */
+.markdown-rendered .external-embed iframe,
+.markdown-rendered iframe.external-embed {
+  max-width: 100%;
+  border-radius: var(--my-radius-m);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  background-color: var(--my-surface-primary);
+}
+
+/* ==========================================================================
+ * 七、嵌入笔记内部的排版边界
+ * 嵌入内容在自己的容器里已经有一套内边距，不应再叠加本主题的编辑器内边距
+ * （两层内边距叠加会让嵌入块中间空出一大块）。
+ * ======================================================================== */
+.markdown-embed .markdown-preview-view,
+.markdown-embed .markdown-rendered {
+  padding: 0;
+}
+
+/* 嵌入块里的图片不参与题注计数以外的缩放动效，避免悬停时整块跳动 */
+.markdown-embed .markdown-rendered img:hover {
+  transform: none;
+}
+
+/* ==========================================================================
+ * 八、打印
+ * ======================================================================== */
+@media print {
+  /* 打印时图片不跨页断开，并且去掉阴影（灰度下阴影会变成脏边） */
+  .markdown-rendered :is(img, video, .markdown-embed, .pdf-embed) {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .markdown-rendered img {
+    background-color: transparent;
+  }
+
+  /* 内嵌笔记在纸上用边框表达边界（底色不会打印出来） */
+  .markdown-rendered .markdown-embed {
+    background-color: transparent;
+    border: var(--my-border-width) solid var(--my-border);
+  }
+
+  .markdown-rendered .markdown-embed-link,
+  .markdown-rendered .image-resize-handle {
+    display: none;
+  }
+
+  .markdown-rendered .markdown-embed-content {
+    max-height: none;
+    overflow: visible;
+  }
+}
+/* ==========================================================================
+ * 动效降级
+ * 图片悬停放大、嵌入块阴影、媒体控件的高亮都带过渡；对前庭敏感的用户，这三处
+ * 的位移与亮度变化会造成不适，因此统一在系统开启「减少动态效果」时关掉。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-rendered img,
+  .markdown-source-view.mod-cm6 .cm-content img,
+  .internal-embed,
+  .external-embed,
+  .media-embed,
+  .image-resize-handle {
+    transition: none;
+  }
+
+  /* 悬停放大一并取消 —— 保留放大但不做过渡同样会突兀，直接不放大 */
+  .markdown-rendered img:hover,
+  .markdown-source-view.mod-cm6 .cm-content img:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,251 @@
+/* ============================================================================
+ * 墨韵 MoYun · 插件适配 ③：Tasks
+ * ----------------------------------------------------------------------------
+ * Tasks 插件把查询语句渲染成带「日期徽标」的任务清单，是中文用户做时间管理的核心视图。
+ * 默认样式的问题集中在徽标上：
+ *   ① 徽标的 emoji 与日期挤在一起，中文任务文本又长，眼睛很难把「日期」与「正文」分开；
+ *   ② 截止 / 计划 / 开始 / 重复 四种日期长得一模一样，用户必须逐个读日期才知道含义；
+ *   ③ 逾期任务没有任何警示，错过截止日期是这类插件最需要暴露的信息；
+ *   ④ 查询块的「解释」文本与结果混在一起，分不清哪部分是结果。
+ * 本文件用「胶囊 + 语义色」把① ② ③ 一次解决，并把查询块与结果做出层次。
+ *
+ * 依赖：00-tokens/tokens.css、00-tokens/obsidian-map.css
+ * 适配：Tasks 的查询结果同时出现在阅读视图与实时预览（实时预览里包在 CM6 嵌入块内），
+ *       故对嵌入块外壳单独做一次收口。
+ * 注意：Tasks 插件的类名（.task-due / .plugin-tasks-query-result 等）属于「事实标准」，
+ *       社区主题普遍依赖；但逾期标记与群组标题的类名各版本不完全一致，
+ *       相关选择器已标注「需实测」，并在写法上做了兜底，命中失败只会退化成原生样式。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、查询块外壳
+ * 用 :has() 只命中包含 Tasks 结果的嵌入块，避免波及其它语言的代码块。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-embed-block:has(.block-language-tasks) {
+  padding-inline: var(--my-space-4);
+  border-radius: var(--my-radius-m);
+}
+
+.block-language-tasks {
+  line-height: var(--my-line-height-normal);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+/* 「解释查询」是给排错看的，属于次要信息：用下沉底色 + 等宽字体让它明显是「附注」 */
+.plugin-tasks-query-explanation {
+  margin-block: var(--my-space-5);
+  padding: var(--my-space-5) var(--my-space-6);
+  border-inline-start: var(--my-border-width-thick) solid var(--my-border-strong);
+  border-radius: var(--my-radius-s);
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  font-family: var(--my-font-mono);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+  white-space: pre-wrap;
+}
+
+/* ==========================================================================
+ * 二、任务行
+ * 行内补一点内边距并做成圆角，悬停时整行才有「可点区域」的暗示；
+ * 中文任务文本行高保持 1.65，紧凑到 1.4 会让两行任务糊成一块。
+ * ======================================================================== */
+.plugin-tasks-query-result .task-list-item {
+  margin-block: var(--my-space-1);
+  padding: var(--my-space-2) var(--my-space-4);
+  border-radius: var(--my-radius-s);
+  line-height: var(--my-line-height-normal);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.plugin-tasks-query-result .task-list-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.plugin-tasks-query-result .task-list-item-checkbox {
+  margin-inline-end: var(--my-space-3);
+  vertical-align: middle; /* 复选框与汉字基线对齐 */
+}
+
+/* 已完成任务降噪；不加删除线——中文长句加删除线后可读性会显著下降 */
+.plugin-tasks-query-result .task-list-item:has(.task-list-item-checkbox:checked) {
+  color: var(--text-muted);
+}
+
+/* 分组标题：给结果分区一个「小节标题」的重量，比结果本身重、比正文标题轻 */
+.tasks-group-heading {
+  margin-block: var(--my-space-8) var(--my-space-4);
+  padding-block-end: var(--my-space-3);
+  border-block-end: var(--my-border-width) solid var(--my-divider);
+  color: var(--text-normal);
+  font-size: var(--my-font-size-m);
+  font-weight: var(--my-font-weight-medium);
+  line-height: var(--my-line-height-snug);
+}
+
+/* ==========================================================================
+ * 三、日期 / 重复徽标（胶囊）
+ * 设计意图：中文正文没有词间空格，徽标必须自己撑开左右呼吸位，否则会粘住汉字。
+ * 四种日期共用同一几何，只靠语义色区分，避免每类都换形状导致版面碎裂。
+ * ======================================================================== */
+.plugin-tasks-query-result :is(
+  .task-due,
+  .task-scheduled,
+  .task-start,
+  .task-created,
+  .task-done,
+  .task-cancelled,
+  .task-recurring
+) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--my-space-2);
+  margin-inline: var(--my-space-3);
+  padding: 0 var(--my-space-4);
+  border: var(--my-border-width) solid transparent;
+  border-radius: var(--my-radius-full);
+  font-size: var(--my-font-size-s);
+  font-variant-numeric: tabular-nums; /* 日期是数字串，等宽数字让多行徽标左对齐 */
+  line-height: var(--my-line-height-tight);
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+/* 截止日：最重要的一枚，用警告色。色底一律用 color-mix 稀释，保证汉字对比度 */
+.plugin-tasks-query-result .task-due {
+  background-color: color-mix(in srgb, var(--my-warning) 16%, transparent);
+  border-color: color-mix(in srgb, var(--my-warning) 34%, transparent);
+  color: var(--my-warning);
+}
+
+/* 计划日：中性偏冷，表示「我打算在这天做」 */
+.plugin-tasks-query-result .task-scheduled {
+  background-color: color-mix(in srgb, var(--my-info) 14%, transparent);
+  border-color: color-mix(in srgb, var(--my-info) 30%, transparent);
+  color: var(--my-info);
+}
+
+/* 开始日：语义上最「轻」，用低饱和的灰色胶囊，不参与抢注意力 */
+.plugin-tasks-query-result .task-start {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--my-border);
+  color: var(--text-muted);
+}
+
+/* 重复任务：与具体日期无关的属性，用强调色表示「这是一条规则」 */
+.plugin-tasks-query-result .task-recurring {
+  background-color: color-mix(in srgb, var(--my-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--my-accent) 30%, transparent);
+  color: var(--my-accent);
+}
+
+/* 创建日 / 完成日：纯记录性信息，压到最弱，避免和截止日抢读 */
+.plugin-tasks-query-result :is(.task-created, .task-done) {
+  background-color: transparent;
+  color: var(--text-faint);
+}
+
+.plugin-tasks-query-result .task-cancelled {
+  background-color: transparent;
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+
+/* 徽标内的 emoji / 图标：中文行高较大时 emoji 会偏离基线，单独校正 */
+.plugin-tasks-query-result :is(.task-due, .task-scheduled, .task-start, .task-recurring) > span:first-child {
+  line-height: 1;
+}
+
+/* ==========================================================================
+ * 四、逾期警示
+ * 需实测：Tasks 各版本对逾期任务的标记方式不同（.task-overdue / is-overdue / 只在
+ * 说明文字里提示）。这里用属性子串匹配做兜底，任何一种实现都能命中；
+ * 若插件完全不加类，则本节自然失效，不会产生副作用。
+ * ======================================================================== */
+.plugin-tasks-query-result [class*="overdue"] {
+  background-color: color-mix(in srgb, var(--my-danger) 18%, transparent);
+  border-color: color-mix(in srgb, var(--my-danger) 38%, transparent);
+  color: var(--my-danger);
+}
+
+/* 整行也标记一下：只在徽标上标红，长任务行扫读时容易漏掉 */
+.plugin-tasks-query-result .task-list-item:has([class*="overdue"]) {
+  border-inline-start: var(--my-border-width-accent) solid var(--my-danger);
+  background-color: color-mix(in srgb, var(--my-danger) 6%, transparent);
+}
+
+/* ==========================================================================
+ * 五、优先级
+ * 优先级本身是「符号」（⏫🔼🔽⏬ 或文字），再套胶囊会显得臃肿；
+ * 这里只改颜色与轻微字重，保持它作为行内标记的轻量感。
+ * 需实测：优先级类名各版本写法不一（.task-priority-highest 等），故用属性子串匹配。
+ * ======================================================================== */
+.plugin-tasks-query-result [class*="task-priority"] {
+  font-weight: var(--my-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.plugin-tasks-query-result [class*="task-priority-highest"],
+.plugin-tasks-query-result [class*="task-priority-high"] {
+  color: var(--my-danger);
+}
+
+.plugin-tasks-query-result [class*="task-priority-medium"] {
+  color: var(--my-warning);
+}
+
+.plugin-tasks-query-result [class*="task-priority-low"] {
+  color: var(--my-text-tertiary);
+}
+
+/* ==========================================================================
+ * 六、行内操作按钮与返回链接
+ * 「推迟一天」「编辑任务」这类按钮默认是裸文字，与任务文本同色，
+ * 这里做成次级按钮：悬停才显出边界，避免静态时把任务行切碎。
+ * ======================================================================== */
+.plugin-tasks-query-result :is(.tasks-backlink, .tasks-postpone, .tasks-edit) a,
+.plugin-tasks-query-result :is(.tasks-postpone, .tasks-edit) {
+  padding: 0 var(--my-space-3);
+  border-radius: var(--my-radius-xs);
+  color: var(--text-faint);
+  font-size: var(--my-font-size-s);
+  transition: color var(--my-duration-fast) var(--my-ease-out),
+              background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.plugin-tasks-query-result :is(.tasks-backlink, .tasks-postpone, .tasks-edit):hover a,
+.plugin-tasks-query-result :is(.tasks-postpone, .tasks-edit):hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* ==========================================================================
+ * 七、表格布局（Tasks 也支持 layout: table）
+ * 与 Dataview 表格保持同一套语言：同样的紧凑度、同样的表头字重。
+ * ======================================================================== */
+.block-language-tasks table {
+  font-size: 0.94em;
+  line-height: var(--my-line-height-snug);
+  border-radius: var(--my-radius-m);
+  overflow: hidden;
+}
+
+.block-language-tasks table thead th {
+  padding: var(--my-space-3) var(--my-space-6);
+  background-color: var(--table-header-background);
+  font-weight: var(--my-font-weight-medium); /* 汉字 600 以上笔画会互相挤压 */
+}
+
+.block-language-tasks table tbody td {
+  padding: var(--my-space-3) var(--my-space-6);
+}
+
+/* ==========================================================================
+ * 八、动效兜底
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .plugin-tasks-query-result .task-list-item,
+  .plugin-tasks-query-result :is(.tasks-backlink, .tasks-postpone, .tasks-edit) {
+    transition: none;
+  }
+}

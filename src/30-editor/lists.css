@@ -1,0 +1,341 @@
+/* ============================================================================
+ * 墨韵 MoYun · 编辑器内容②：列表（Lists）
+ * ----------------------------------------------------------------------------
+ * 用途：无序符号 / 有序编号 / 任务清单 / 缩进引导线 / 折叠指示器 的完整样式。
+ *
+ * 中文场景的三个特殊取舍（本文件的立身之本）：
+ *   ① 项目符号宜小不宜大：汉字是满格方块，圆点一大就与汉字"抢重"，
+ *      故符号直径保持在 0.34em 量级，只用强调色提示层级。
+ *   ② 列表项内部段落不再二次缩进：列表项已被缩进层级推入一次，项内段落再缩进，
+ *      第三层列表就会窄到放不下几个字。
+ *   ③ 完成态淡化要"淡而不糊"：用 opacity: 0.4 处理中文，细笔画汉字会直接糊掉；
+ *      改用 --my-text-faint 这一档墨色（约 45% 浓度）表达"已办"。
+ *
+ * 依赖：--list-* / --indentation-guide-* / --checkbox-* / --collapse-icon-*
+ *       （obsidian-map.css 已映射）、--my-accent / --my-space-* / --my-duration-*
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、列表基线：缩进、行距与项间距。列表行高比正文略紧（1.65 对 1.8）——
+ * 项与项之间已有 --list-spacing 的空隙，行高再放大会让十项列表拉出两屏。
+ * ======================================================================== */
+.markdown-rendered :is(ul, ol),
+.markdown-preview-view :is(ul, ol) {
+  padding-inline-start: var(--list-padding-inline-start);
+  margin-block: var(--p-spacing);
+  /* 列表整体不做两端对齐：项短，对齐会在项内制造巨大的字间空隙 */
+  text-align: start;
+}
+
+.markdown-rendered li,
+.markdown-preview-view li {
+  line-height: var(--my-line-height-normal);
+  margin-block: var(--list-spacing);
+  /* 项内首行不缩进：列表已经用符号+缩进表达了层级，再缩进会出现
+   * "符号 / 两个空格 / 文字"的三段式，中文列表里非常难看 */
+  text-indent: 0;
+  /* 长 URL、长英文标识要能断，否则撑破版心 */
+  overflow-wrap: break-word;
+}
+
+/* 项内段落：只保留项间距，不留段间距（两套间距叠加会让项之间空出一大块） */
+.markdown-rendered li > p {
+  margin-block: 0 var(--list-spacing);
+  text-indent: 0;
+}
+
+.markdown-rendered li > p:last-child { margin-block-end: 0; }
+
+/* 嵌套列表与父项之间留一点缝隙，层级才看得清 */
+.markdown-rendered li > :is(ul, ol) { margin-block: var(--list-spacing) 0; }
+
+/* 「松散列表」里的空行（Obsidian 渲染成 <p><br></p>）不应撑出额外高度 */
+.markdown-rendered li > p:has(> br:only-child) { display: none; }
+
+/* ==========================================================================
+ * 二、无序符号：用形状语言表达层级
+ * Obsidian 的符号不是 ::marker，而是注入的 <span class="list-bullet">，
+ * 由 .list-bullet:after 绘制。阅读视图里整棵列表都在 DOM 中，可以用后代 ul 的
+ * 层数表达"第几层"。形状：一层实心圆 → 二层空心圆 → 三层短横，越深越"轻"。
+ * ======================================================================== */
+.markdown-rendered .list-bullet:after,
+.markdown-preview-view .list-bullet:after {
+  width: var(--list-bullet-size);
+  height: var(--list-bullet-size);
+  border-radius: var(--list-bullet-radius);
+  background-color: var(--list-marker-color);
+  border: var(--list-bullet-border);
+  transition: transform var(--my-duration-fast) var(--my-ease-out),
+              background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 悬停父项时符号轻微放大：点符号即可折叠，给这个操作一个视觉暗示 */
+.markdown-rendered li:hover > .list-bullet:after { transform: scale(1.25); }
+
+/* 第二层：空心圆（用 inset 阴影描边，比 border 更容易与原生尺寸对齐） */
+.markdown-rendered ul ul > li > .list-bullet:after {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--list-marker-color);
+}
+
+/* 第三层：短横（高度由 --list-bullet-size 决定，宽度单独拉长） */
+.markdown-rendered ul ul ul > li > .list-bullet:after {
+  width: calc(var(--list-bullet-size) * 1.9);
+  height: 1.5px;
+  border-radius: 0;
+  background-color: var(--list-marker-color);
+}
+
+/* 第四层及更深：回到小方点，避免层级无限变形带来的维护成本 */
+.markdown-rendered ul ul ul ul > li > .list-bullet:after {
+  width: var(--list-bullet-size);
+  height: var(--list-bullet-size);
+  border-radius: 0;
+}
+
+/* 已折叠的父项：符号弱化并加一圈光环，提示"内容被收起来了" */
+.markdown-rendered li.is-collapsed > .list-bullet:after {
+  background-color: var(--list-marker-color-collapsed);
+  box-shadow: 0 0 0 3px var(--my-surface-hover);
+}
+
+/* 实时预览里没有"第几层"的类名（层级由行内的 .cm-indent 表达），符号不做分层
+ * 变形——这是 DOM 限制，不是遗漏；基础符号的尺寸与颜色已由 --list-bullet-* 映射
+ * 变量承担，这里不再重复声明，避免与 app.css 的定义互相覆盖。 */
+
+/* ==========================================================================
+ * 三、有序列表编号：一级尊重 --list-numbered-style（用户可在设置里改成
+ * decimal / lower-alpha / cjk-decimal），二、三级给字母与罗马数字回退，
+ * 避免两级都用阿拉伯数字导致层级不可辨。
+ * ======================================================================== */
+.markdown-rendered ol {
+  list-style-type: var(--list-numbered-style);
+  /* 等宽数字：否则 9. 与 10. 的标记宽度差会让整列文字左右错位 */
+  font-variant-numeric: tabular-nums;
+}
+
+.markdown-rendered ol ol { list-style-type: lower-alpha; }
+.markdown-rendered ol ol ol { list-style-type: lower-roman; }
+
+/* 公文/论文风格可换成中文编号，一行替换即可：
+ *   ol { list-style-type: cjk-ideographic; }  ol ol { list-style-type: decimal; } */
+
+.markdown-rendered li::marker {
+  color: var(--list-marker-color);
+  font-weight: var(--my-font-weight-medium);
+  /* 标记比正文小一号：中文正文里标记只需"点到为止" */
+  font-size: 0.95em;
+}
+
+/* 实时预览的有序标记是文本（.cm-formatting-list-ol），不是 ::marker */
+.markdown-source-view.mod-cm6 .cm-formatting-list-ol {
+  color: var(--list-marker-color);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+ * 四、任务清单
+ * 阅读视图：<li class="task-list-item" data-task="x"> + 真 input[type=checkbox]
+ * 实时预览：<div class="cm-line HyperMD-task-line" data-task="x"> + .task-list-label
+ * 两者都用 data-task 表达状态，因此完成态样式可以共用一套选择器。
+ * ======================================================================== */
+.markdown-rendered .task-list-item,
+.markdown-source-view.mod-cm6 .HyperMD-task-line { list-style: none; }
+
+/* 复选框与汉字基线的对齐：汉字的视觉重心比西文高，原生 top: 0.2em 在中文行里
+ * 会显得"往下掉"，微调到 0.12em（尺寸不变，仍是 --checkbox-size）。 */
+.markdown-rendered .task-list-item-checkbox {
+  position: relative;
+  top: 0.12em;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  border-radius: var(--checkbox-radius);
+  border: 1px solid var(--checkbox-border-color);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out),
+              border-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-rendered .task-list-item-checkbox:hover { border-color: var(--checkbox-border-color-hover); }
+
+.markdown-rendered .task-list-item-checkbox:checked {
+  background-color: var(--checkbox-color);
+  border-color: var(--checkbox-color);
+}
+
+/* —— 完成态：淡化而不是隐藏 ——
+ * 用墨色档位（--my-text-faint）而非 opacity：透明度会同时削弱笔画对比度，
+ * 细笔画汉字（"的""是"）会直接糊成一团灰。
+ * 末两条 :has() 分支是兜底：某些版本/插件不写 data-task 属性。 */
+.markdown-rendered li.task-list-item[data-task="x"],
+.markdown-rendered li.task-list-item[data-task="X"],
+.markdown-source-view.mod-cm6 .HyperMD-task-line[data-task="x"],
+.markdown-source-view.mod-cm6 .HyperMD-task-line[data-task="X"],
+.markdown-rendered li.task-list-item:has(> input[type="checkbox"]:checked),
+.markdown-rendered li.task-list-item:has(> p > input[type="checkbox"]:checked) {
+  color: var(--my-text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--my-text-faintest);
+  text-decoration-thickness: 1px;
+}
+
+/* 已完成的项不需要强调色符号：勾掉的事项应当往后退一步 */
+.markdown-rendered li.task-list-item[data-task="x"] .list-bullet:after,
+.markdown-rendered li.task-list-item:has(input:checked) .list-bullet:after {
+  background-color: var(--list-marker-color-collapsed);
+}
+
+/* ==========================================================================
+ * 五、缩进引导线：中文文档的层级常"三级起步"（章节 → 要点 → 子要点），
+ * 没有引导线时眼睛无法判断某一项属于哪一层。原生只有 1px 实线，
+ * 这里改成上下渐隐，让线"起于无、止于无"，不切断列表与正文的联系。
+ * ======================================================================== */
+
+/* —— 实时预览：行内的 .cm-indent 伪元素 —— */
+.markdown-source-view.mod-cm6 .cm-indent::before {
+  /* 关掉原生实线，改用渐变背景画线（背景可以渐隐，border 不能） */
+  border-inline-end: none;
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: var(--indentation-guide-width) 100%;
+  background-image: linear-gradient(to bottom,
+    transparent 0,
+    var(--indentation-guide-color) var(--my-space-5),
+    var(--indentation-guide-color) calc(100% - var(--my-space-5)),
+    transparent 100%);
+}
+
+/* 光标所在层级的引导线用强调色加粗，明确"我正在这一层写" */
+.markdown-source-view.mod-cm6 .cm-active-indent::before {
+  background-size: var(--indentation-guide-width-active) 100%;
+  background-image: linear-gradient(to bottom,
+    transparent 0,
+    var(--indentation-guide-color-active) var(--my-space-5),
+    var(--indentation-guide-color-active) calc(100% - var(--my-space-5)),
+    transparent 100%);
+}
+
+/* —— 阅读视图：Obsidian 不生成 .cm-indent，改用嵌套列表自身的背景画线 ——
+ * 嵌套 <ul>/<ol> 的左边缘正好落在父级项目符号所在的列上，于是"给嵌套列表画一条
+ * 左侧渐隐线"就等于"给每一层画引导线"，且线高天然等于列表实际高度，无需额外 DOM。
+ * 说明：background-position 用物理 left（本主题面向中文用户，LTR）；若需 RTL，
+ * 补一条 :dir(rtl) 选择器把线移到右侧即可。 */
+.markdown-rendered :is(ul, ol) :is(ul, ol) {
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: var(--indentation-guide-width) 100%;
+  background-image: linear-gradient(to bottom,
+    transparent 0,
+    var(--indentation-guide-color) var(--my-space-5),
+    var(--indentation-guide-color) calc(100% - var(--my-space-5)),
+    transparent 100%);
+}
+
+/* ==========================================================================
+ * 六、折叠指示器与「子项计数」
+ * 箭头本身做成圆形热区：悬停浮出底色，点击目标约 1.4em，手指点得中。
+ * ======================================================================== */
+.markdown-rendered .list-collapse-indicator,
+.markdown-preview-view .list-collapse-indicator {
+  color: var(--collapse-icon-color);
+  border-radius: var(--my-radius-full);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out),
+              color var(--my-duration-fast) var(--my-ease-out);
+}
+
+@media (hover: hover) {
+  .markdown-rendered .list-collapse-indicator:hover {
+    background-color: var(--my-surface-hover);
+    color: var(--my-accent);
+  }
+}
+
+.markdown-rendered li.is-collapsed > .list-collapse-indicator {
+  color: var(--collapse-icon-color-collapsed);
+}
+
+/* —— 关于「折叠时显示子项计数」——
+ * 障碍：原生折叠用 display:none，子树既不渲染也不参与计数，父级拿不到子级数量。
+ * 做法：① 覆盖 display:none，改用「零高度 + overflow:hidden + visibility:hidden」
+ * 隐藏子列表——不占位、不绘制、不可聚焦，观感与原生等价，但子树仍在 DOM 中，
+ * sibling-count() 才数得到（Chromium 138+）；② 徽标挂在子列表首个子项的 ::before，
+ * 绝对定位"浮"回父项行尾；它的包含块是被折叠项（裁剪元素的祖先），因此不会被
+ * overflow:hidden 裁掉；③ 用 @supports 探测，不支持则整条规则丢弃、折叠行为回退
+ * 到原生——渐进增强，不冒险。 */
+.markdown-preview-view .markdown-rendered li.is-collapsed,
+.markdown-rendered li.is-collapsed {
+  position: relative;
+}
+
+.markdown-preview-view li.is-collapsed > :is(ul, ol),
+.markdown-preview-view .markdown-rendered li.is-collapsed > :is(ul, ol),
+.markdown-rendered li.is-collapsed > :is(ul, ol) {
+  display: block;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+@supports (width: calc(sibling-count() * 1px)) {
+  .markdown-preview-view li.is-collapsed > :is(ul, ol) > li:first-child::before,
+  .markdown-rendered li.is-collapsed > :is(ul, ol) > li:first-child::before {
+    content: sibling-count() " 项";
+    /* 父链是 visibility: hidden，子元素显式声明 visible 即可重新可见 */
+    visibility: visible;
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    padding: 0 var(--my-space-5);
+    border-radius: var(--my-radius-full);
+    background-color: var(--my-surface-secondary);
+    color: var(--my-text-tertiary);
+    font-size: var(--my-font-size-xs);
+    line-height: 1.5;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+/* 实时预览的折叠是把行从视图里移除（不是 CSS 隐藏），没有等价的计数场景；
+ * 需要看子项数量时切到阅读视图或展开即可。 */
+
+/* ==========================================================================
+ * 七、中文专属收尾
+ * ======================================================================== */
+
+/* 标注（Callout）内的列表：容器已有内边距，列表再撑开就会顶到边缘 */
+.markdown-rendered .callout :is(ul, ol) {
+  margin-block: var(--my-space-4);
+  padding-inline-start: var(--list-padding-inline-start);
+}
+
+/* 表格单元格内的列表：空间狭窄，缩进收一半 */
+.markdown-rendered :is(td, th) :is(ul, ol) {
+  padding-inline-start: calc(var(--list-padding-inline-start) * 0.6);
+  margin-block: var(--my-space-4);
+}
+
+/* ==========================================================================
+ * 八、动效兜底与打印
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-rendered .list-bullet:after,
+  .markdown-rendered .list-collapse-indicator,
+  .markdown-rendered .task-list-item-checkbox {
+    transition: none;
+  }
+
+  /* 关掉一切形变，只保留颜色变化来传达状态 */
+  .markdown-rendered li:hover > .list-bullet:after { transform: none; }
+}
+
+@media print {
+  /* 折叠箭头在纸上没有意义 */
+  .markdown-rendered .list-collapse-indicator,
+  .markdown-preview-view .list-collapse-indicator { display: none; }
+
+  /* 引导线在灰度打印下会与文字抢对比度，去掉；列表项不跨页断开 */
+  .markdown-rendered :is(ul, ol) :is(ul, ol) { background-image: none; }
+  .markdown-rendered li { break-inside: avoid; }
+}

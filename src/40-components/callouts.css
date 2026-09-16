@@ -1,0 +1,338 @@
+/* ============================================================================
+ * 墨韵 MoYun · 通用组件：标注（Callout）
+ * ----------------------------------------------------------------------------
+ * 用途：把 Obsidian 的标注体系改造成「宣纸批注」的观感 —— 左侧一道类型色条，
+ *       底色极淡，标题靠色彩与字重（而非放大字号）建立层级。
+ *
+ * 依赖：
+ *   · obsidian-map.css 已把 27 个 --callout-* 变量接到八韵语义色上，
+ *     所以本文件只需要消费 --callout-color，不必逐个类型写死颜色；
+ *   · 令牌层：--my-space-* / --my-radius-* / --my-line-height-* / --my-ease-*。
+ *
+ * 注意事项：
+ *   ① 类型用 data-callout 别名区分（note/tip/warning…）。别名只共用分组规则，
+ *      新增自定义别名时请补进对应的组，否则会退回"默认浓度"。
+ *   ② 全部彩色均由 --callout-color 派生，因此换主题色（八韵）时标注自动跟随。
+ *   ③ 两套 DOM：阅读视图即 .callout；实时预览外层还套了 .cm-embed-block.cm-callout
+ *      控件容器，纵向节奏必须分别处理，否则两种视图的段间距会不一致。
+ *   ④ 中文场景下标注标题一律不用斜体、不进 700 字重（汉字笔画会粘连）。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、容器：局部变量集中管理"浓度 / 色条粗细 / 描边强度"
+ * 为什么用局部变量：下面要按语义分组微调 27 个别名，若每组都重写
+ * background/border，规则量会膨胀三倍且极易漏改。变量不用 --my- 前缀，
+ * 以免与令牌层混淆（令牌层才是主题级的公共契约）。
+ * ======================================================================== */
+.callout {
+  /* 底色用「与 transparent 混合」而非与纸面混合：这样标注叠在表格、
+     嵌入笔记或另一层标注上时，都能自然透出下层，不会出现一块突兀的色块。 */
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 7%, transparent);
+  --moyun-callout-line: color-mix(in oklab, var(--callout-color) 22%, transparent);
+  --moyun-callout-bar-w: var(--my-border-width-accent);
+
+  background-color: var(--moyun-callout-bg);
+  /* 只保留一圈"淡描边"，配合左色条形成标贴感；实色边框会让整页的标注像告示牌 */
+  border: var(--my-border-width) solid var(--moyun-callout-line);
+  border-inline-start: var(--moyun-callout-bar-w) solid var(--callout-color);
+  border-radius: var(--my-radius-m);
+  /* 中文标注内边距要比西文宽一档：汉字字面大，16px 的内边距才不显局促 */
+  padding: var(--my-space-7) var(--my-space-8);
+  margin-block: var(--my-space-7);
+}
+
+/* ==========================================================================
+ * 二、标题行
+ * 观察：Obsidian 默认 align-items: flex-start，西文下没问题；但中文行高 1.8、
+ * 字面又占满 em 框，图标贴顶会明显偏上。故改为居中，并给标题行一个最小高度，
+ * 让折叠箭头也有稳定的落点。
+ * ======================================================================== */
+.callout-title {
+  display: flex;
+  align-items: center;
+  gap: var(--my-space-4);
+  min-height: 1.6em;
+  line-height: var(--my-line-height-snug);
+  font-weight: var(--my-font-weight-medium);
+}
+
+/* 图标：比文字略大方可压住汉字的重心；颜色跟随类型色 */
+.callout-icon {
+  --icon-size: 1.05em;
+  color: var(--callout-color);
+  transform: translateY(0.03em);
+}
+
+/* 标题文字：类型色 + 中等字重。汉字在 500 字重下笔画清晰，700 会糊 */
+.callout-title-inner {
+  font-weight: var(--my-font-weight-medium);
+  letter-spacing: var(--my-letter-spacing-cjk);
+  line-height: var(--my-line-height-snug);
+}
+
+/* 折叠箭头：默认半透明，鼠标移到标注上才实心——降低静态噪音 */
+.callout-fold {
+  color: var(--callout-color);
+  opacity: 0.5;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out);
+}
+.callout.is-collapsible:hover .callout-fold,
+.callout-fold:hover {
+  opacity: 1;
+}
+
+/* ==========================================================================
+ * 三、内容区
+ * 关键三件事：去掉首尾子元素的多余外边距（否则标题与正文之间会空一截）、
+ * 中文段首不缩进、标题与列表在标注内收紧。
+ * ======================================================================== */
+.callout-content > :first-child {
+  margin-block-start: 0;
+}
+.callout-content > :last-child {
+  margin-block-end: 0;
+}
+
+/* 与 typography.css 的缩进豁免保持一致。
+   typography.css 只覆盖了「阅读视图 + 首行缩进已开启」这一条分支，
+   这里补上实时预览与"标注内嵌标注"两种情况，避免两处观感不一致。 */
+.callout p,
+.callout-content li p,
+.callout-content .callout p {
+  text-indent: 0;
+}
+
+/* 标注内的小标题：默认 1.6em 的上边距会把标注撑得很高，收紧到 0.8em */
+.callout-content :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: 0.9em 0.5em;
+  font-size: 1.05em;
+}
+.callout-content > :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-block-start: 0;
+}
+
+/* 列表在标注内收紧，避免"列表前空一行、列表后空一行"的松散感 */
+.callout-content > :is(ul, ol) {
+  margin-block: var(--my-space-4);
+}
+
+/* 标注内的引用块/代码块不要超出圆角，横向滚动交给容器 */
+.callout-content > pre,
+.callout-content > .table-wrapper {
+  border-radius: var(--my-radius-s);
+}
+
+/* ==========================================================================
+ * 四、类型分组：只调"浓度与性格"，颜色由 --callout-color 负责
+ * 设计原则：信息类安静、警示类醒目、引用类去掉底色（引用已有左线语义，
+ * 再铺底色就与正文引用块重复）。
+ * ======================================================================== */
+
+/* —— A 组｜信息与备忘：note / abstract / summary / tldr / info / todo ——
+ * 最常用的类型，保持默认浓度与 3px 色条，不加任何额外装饰。 */
+.callout[data-callout="note"],
+.callout[data-callout="abstract"],
+.callout[data-callout="summary"],
+.callout[data-callout="tldr"],
+.callout[data-callout="info"],
+.callout[data-callout="todo"] {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 7%, transparent);
+}
+
+/* —— B 组｜正向反馈：tip / hint / success / check / done ——
+ * 好消息不必太吵：底色降到 5%，色条收成 3px→2px，让"完成/技巧"显得轻快。 */
+.callout[data-callout="tip"],
+.callout[data-callout="hint"],
+.callout[data-callout="success"],
+.callout[data-callout="check"],
+.callout[data-callout="done"] {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 5%, transparent);
+  --moyun-callout-bar-w: var(--my-border-width-thick);
+}
+
+/* —— C 组｜疑问：question / help / faq ——
+ * 与 B 组同浓度，但标题用 650 字重强调"这里需要你回答"。 */
+.callout[data-callout="question"],
+.callout[data-callout="help"],
+.callout[data-callout="faq"] {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 5%, transparent);
+}
+
+/* —— D 组｜警示：warning / caution / attention ——
+ * 提高浓度并加粗标题，但**不加边框闪烁**——静态主题里动态警示只会造成疲劳。 */
+.callout[data-callout="warning"],
+.callout[data-callout="caution"],
+.callout[data-callout="attention"] {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 10%, transparent);
+  --moyun-callout-line: color-mix(in oklab, var(--callout-color) 32%, transparent);
+}
+
+/* —— E 组｜危险与错误：failure / fail / missing / danger / error / bug / important ——
+ * 页面里最需要"被看见"的一组：浓度最高、色条最粗。
+ * 注意 important 在映射层与 danger 同色（见 obsidian-map.css），故归入本组。 */
+.callout[data-callout="failure"],
+.callout[data-callout="fail"],
+.callout[data-callout="missing"],
+.callout[data-callout="danger"],
+.callout[data-callout="error"],
+.callout[data-callout="bug"],
+.callout[data-callout="important"] {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 12%, transparent);
+  --moyun-callout-line: color-mix(in oklab, var(--callout-color) 38%, transparent);
+  --moyun-callout-bar-w: var(--my-border-width-accent);
+}
+.callout[data-callout="failure"] .callout-title-inner,
+.callout[data-callout="fail"] .callout-title-inner,
+.callout[data-callout="missing"] .callout-title-inner,
+.callout[data-callout="danger"] .callout-title-inner,
+.callout[data-callout="error"] .callout-title-inner,
+.callout[data-callout="bug"] .callout-title-inner,
+.callout[data-callout="important"] .callout-title-inner {
+  font-weight: var(--my-font-weight-bold);
+}
+
+/* —— F 组｜引用：quote / cite ——
+ * 引用块本身已有"左侧竖线"这一通用语义，若再铺底色就与正文引用混淆。
+ * 因此去掉底色与描边，只留一道 3px 色条，标题改用衬线（书刊引文观感）。
+ * 切记不要用斜体：汉字没有真斜体，浏览器强行倾斜会破坏字形。 */
+.callout[data-callout="quote"],
+.callout[data-callout="cite"] {
+  --moyun-callout-bg: transparent;
+  --moyun-callout-line: transparent;
+  --moyun-callout-bar-w: var(--my-border-width-accent);
+  padding-inline: var(--my-space-7);
+}
+.callout[data-callout="quote"] .callout-title-inner,
+.callout[data-callout="cite"] .callout-title-inner {
+  font-family: var(--my-font-heading-serif);
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+
+/* —— G 组｜示例：example ——
+ * 用虚线色条表达"这是一段可直接套用的样板"，与实线的"结论/警示"区分开。 */
+.callout[data-callout="example"] {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 4%, transparent);
+  --moyun-callout-line: color-mix(in oklab, var(--callout-color) 26%, transparent);
+  border-inline-start-style: dashed;
+}
+
+/* ==========================================================================
+ * 五、折叠态
+ * Obsidian 折叠时会隐藏 .callout-content，但折叠箭头、标题行与悬停提示需要主题接管。
+ * ======================================================================== */
+.callout.is-collapsible > .callout-title {
+  cursor: var(--cursor);
+  user-select: none;
+}
+/* 可折叠的标注悬停时提高描边对比，暗示"这里能点" */
+.callout.is-collapsible:hover {
+  border-color: color-mix(in oklab, var(--callout-color) 45%, transparent);
+}
+/* 兜底：若某个版本用 CSS 而非内联样式隐藏内容，这条规则同样生效；
+   用 display 而非 max-height 动画，是因为中文内容高度不确定，
+   过渡到 auto 高度需要 JS 参与，静态主题不做这种脆弱的动效。 */
+.callout.is-collapsed > .callout-content {
+  display: none;
+}
+.callout.is-collapsed {
+  padding-block: var(--my-space-5);
+}
+/* 折叠后箭头朝向由 Obsidian 的 --direction 控制，这里只补上过渡 */
+.callout-fold .svg-icon {
+  transition: transform var(--my-duration-normal) var(--my-ease-out);
+}
+
+/* ==========================================================================
+ * 六、嵌套标注：用"层级递减"代替"色块堆叠"
+ * 观察：三层以上嵌套时，每层都铺底色会糊成一团。因此——
+ *   第 2 层：浓度减半 + 色条收细，与父层拉开；
+ *   第 3 层起：完全去掉底色，只留色条定位。
+ * 注意：本组规则写在类型分组之后，同特异性下靠源码顺序生效——
+ * 嵌套时"层级优先于类型"，这是刻意的取舍（深层鲜艳会喧宾夺主）。
+ * ======================================================================== */
+.callout .callout {
+  --moyun-callout-bg: color-mix(in oklab, var(--callout-color) 5%, transparent);
+  --moyun-callout-bar-w: var(--my-border-width-thick);
+  padding: var(--my-space-6) var(--my-space-7);
+  margin-block: var(--my-space-6);
+  border-radius: var(--my-radius-s);
+}
+.callout .callout .callout {
+  --moyun-callout-bg: transparent;
+  --moyun-callout-line: transparent;
+  --moyun-callout-bar-w: var(--my-border-width-thick);
+  padding-inline: var(--my-space-6);
+}
+
+/* ==========================================================================
+ * 七、实时预览（.markdown-source-view.mod-cm6）
+ * 实时预览里标注被包在 .cm-embed-block.cm-callout 控件容器中，
+ * Obsidian 把内层 .callout 的 margin 归零，所以纵向间距必须由外层给，
+ * 否则实时预览的标注会紧贴上一行，与阅读视图不一致。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-embed-block.cm-callout {
+  margin-block: var(--my-space-7);
+  padding: 0;
+  border-radius: var(--my-radius-m);
+}
+.markdown-source-view.mod-cm6 .cm-embed-block.cm-callout:first-child .callout {
+  margin-block-start: 0;
+}
+/* 源码括号（> [!note]）在实时预览未展开时应低调 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-quote .cm-formatting-quote {
+  color: var(--my-text-faintest);
+}
+
+/* ==========================================================================
+ * 八、扁平样式（设置 → 内容增强 → 扁平标注样式，对应 body.my-callout-flat）
+ * 取舍：去掉底色与描边，只留一道 3px 色条——适合"全文都是标注"的笔记，
+ * 也适合打印（省墨，且灰度打印时依然能靠色条宽度区分类型）。
+ * ======================================================================== */
+body.my-callout-flat .callout {
+  --moyun-callout-bg: transparent;
+  --moyun-callout-line: transparent;
+  --moyun-callout-bar-w: var(--my-border-width-accent);
+  background-color: transparent;
+  border: none;
+  /* 左圆角归零，否则色条会被圆角切掉一截 */
+  border-inline-start: var(--moyun-callout-bar-w) solid var(--callout-color);
+  border-radius: 0 var(--my-radius-s) var(--my-radius-s) 0;
+  padding: var(--my-space-5) var(--my-space-7);
+  margin-block: var(--my-space-6);
+}
+body.my-callout-flat .callout:hover {
+  background-color: color-mix(in oklab, var(--callout-color) 4%, transparent);
+}
+body.my-callout-flat .callout .callout {
+  padding-inline-start: var(--my-space-6);
+}
+
+/* ==========================================================================
+ * 九、打印 / 导出 PDF
+ * 纸面不需要浅色底（浅底在灰度打印后会变成一片灰），改由色条与描边承担识别。
+ * ======================================================================== */
+@media print {
+  .callout {
+    background-color: transparent;
+    border-color: color-mix(in oklab, var(--callout-color) 55%, transparent);
+    /* 标注被分页切断后，标题与正文会分落两页，读者无法对应 */
+    break-inside: avoid;
+  }
+  .callout-title-inner {
+    color: var(--my-text-primary);
+  }
+}
+
+/* ==========================================================================
+ * 十、动效兜底
+ * 标注本身没有入场动画，但折叠箭头、悬停过渡在"减少动态效果"下应当停用，
+ * 否则前庭敏感用户会感到不适。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .callout-fold,
+  .callout-fold .svg-icon,
+  .callout.is-collapsible:hover {
+    transition: none;
+  }
+}

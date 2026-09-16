@@ -1,0 +1,122 @@
+/* ============================================================================
+ * 墨韵 MoYun · 布局：状态栏与功能区
+ * ----------------------------------------------------------------------------
+ * 状态栏是"常驻但不该抢戏"的区域：信息密度高（字数、当前文件、同步状态），
+ * 因此字号要小、颜色要淡，只有悬停时才浮出来。
+ * 功能区（ribbon）是左侧竖排图标栏，属于"用熟了就几乎不看"的控件，
+ * 因此默认安静，并支持整体隐藏（body.my-ui-hide-ribbon）。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、状态栏
+ * ======================================================================== */
+
+.status-bar {
+  background-color: var(--status-bar-background);
+  border-top: var(--status-bar-border-width) solid var(--status-bar-border-color);
+  color: var(--status-bar-text-color);
+  font-size: var(--status-bar-font-size);
+  letter-spacing: 0;
+  padding-inline: var(--my-space-4);
+  gap: var(--my-space-1);
+}
+
+.status-bar-item {
+  color: var(--status-bar-text-color);
+  border-radius: var(--my-radius-xs);
+  padding: 1px var(--my-space-2);
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 状态栏条目大多可点（切换编辑/阅读模式、打开同步面板等），故给悬停反馈 */
+.status-bar-item:hover {
+  background-color: var(--my-surface-hover);
+  color: var(--my-text-primary);
+}
+
+/* 字数统计：中文用户对字数很敏感，给它是状态栏里最"实"的一项 */
+.status-bar-item.mod-clickable {
+  cursor: pointer;
+}
+
+/* ==========================================================================
+ * 二、左侧功能区（ribbon）
+ * ======================================================================== */
+
+.workspace-ribbon.mod-left {
+  background-color: var(--ribbon-background);
+  border-right: var(--my-border-width) solid var(--my-border-subtle);
+}
+
+.workspace-ribbon.mod-left.is-collapsed {
+  border-right-color: transparent;
+}
+
+/* 功能区图标按钮：方角、悬停淡底。竖排图标之间留出足够间距，避免误点 */
+.side-dock-ribbon-action {
+  color: var(--icon-color);
+  border-radius: var(--my-radius-s);
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.side-dock-ribbon-action:hover {
+  background-color: var(--my-surface-hover);
+  color: var(--icon-color-hover);
+}
+
+.side-dock-ribbon-action.is-active {
+  color: var(--my-accent);
+  background-color: rgb(var(--my-accent-rgb) / 0.10);
+}
+
+/* 功能区底部的设置按钮：与其他图标区分开（它在最底部，且是"出口"） */
+.workspace-ribbon.mod-left .side-dock-ribbon-action:last-child {
+  margin-bottom: var(--my-space-3);
+}
+
+/* ==========================================================================
+ * 三、隐藏功能区（body.my-ui-hide-ribbon）
+ * 追求极简界面时开启。隐藏后左侧不留任何空隙，避免出现一条"空白竖条"。
+ * ======================================================================== */
+
+body.my-ui-hide-ribbon .workspace-ribbon.mod-left {
+  display: none;
+}
+
+body.my-ui-hide-ribbon .workspace-ribbon.mod-left.is-collapsed {
+  border-right: none;
+}
+
+/* 功能区隐藏后，左侧栏需要补回被占用的宽度，否则会出现错位 */
+body.my-ui-hide-ribbon .workspace-split.mod-left-split {
+  margin-inline-start: 0;
+}
+
+/* ==========================================================================
+ * 四、窗口控制与滚动指示
+ * ======================================================================== */
+
+/* 右下角的滚动指示器（部分主题会画） */
+.status-bar .scroll-indicator {
+  color: var(--my-text-faint);
+}
+
+/* 同步状态徽标：正常时安静，有冲突时才需要跳出来 */
+.status-bar-item.mod-sync-status.is-error,
+.status-bar-item.mod-sync-status.mod-error {
+  color: var(--my-danger);
+}
+
+/* ==========================================================================
+ * 五、动效降级
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .status-bar-item,
+  .side-dock-ribbon-action {
+    transition: none;
+  }
+}

@@ -1,0 +1,389 @@
+/* @settings
+
+name: 墨韵 MoYun
+id: moyun
+settings:
+  # ==========================================================================
+  # 一、配色
+  # ==========================================================================
+  -
+    id: group-color
+    title: "🎨 配色"
+    description: 选择强调色与整体色调。切换后立即生效，无需重启 Obsidian。
+    type: heading
+    level: 1
+    collapsed: true
+  -
+    id: my-tone
+    title: 主题色（八韵）
+    description: 八种取自中国传统色的强调色，均已按对比度标准校准。
+    type: class-select
+    allowEmpty: false
+    default: my-tone-qinghua
+    options:
+      -
+        label: 青花（青蓝 · 默认）
+        value: my-tone-qinghua
+      -
+        label: 朱砂（中国红）
+        value: my-tone-zhusha
+      -
+        label: 竹青（竹叶绿）
+        value: my-tone-zhuqing
+      -
+        label: 藤紫（紫藤）
+        value: my-tone-tengzi
+      -
+        label: 秋香（橄榄黄）
+        value: my-tone-qiuxiang
+      -
+        label: 黛青（深青绿）
+        value: my-tone-daiqing
+      -
+        label: 胭脂（胭脂粉）
+        value: my-tone-yanzhi
+      -
+        label: 松烟（水墨灰 · 极简）
+        value: my-tone-songyan
+
+  # ==========================================================================
+  # 二、中文排版
+  # ==========================================================================
+  -
+    id: group-cjk
+    title: "🀄 中文排版"
+    description: 本主题的核心。以下选项专为中文阅读优化，英文主题通常不提供。
+    type: heading
+    level: 1
+    collapsed: false
+  -
+    id: my-indent-on
+    title: 首行缩进两字
+    description: 中文正文段落首行缩进 2 个汉字宽度。列表、引用、代码、表格、公式与图片段落会自动豁免。
+    type: class-toggle
+    default: false
+  -
+    id: my-justify
+    title: 两端对齐
+    description: 让正文左右边缘齐平。中文方块字效果好，但中西文混排时可能产生字间空隙，可按需开启。
+    type: class-toggle
+    default: false
+  -
+    id: my-no-autospace
+    title: 关闭中西文自动间距
+    description: "默认开启。在中文与英文、数字之间自动插入约 1/8 全角间隙（CSS Text 4 原生能力，零 JS、不改动原文）。仅在与其他排版方案冲突时才需要关闭。"
+    type: class-toggle
+    default: false
+
+  # ==========================================================================
+  # 三、字体
+  # ==========================================================================
+  -
+    id: group-font
+    title: "🔤 字体"
+    description: 留空则使用主题内置的中文优先字体栈（自动按系统已有字体回退）。
+    type: heading
+    level: 1
+    collapsed: true
+  -
+    id: my-font-text
+    title: 正文字体
+    description: 建议使用可变字重的现代中文字体，如 霞鹜文楷、思源黑体、更纱黑体、HarmonyOS Sans。
+    type: variable-text
+    default: '"LXGW WenKai Screen", "霞鹜文楷屏幕阅读版", "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "Sarasa Gothic SC", "更纱黑体 SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+  -
+    id: my-font-heading
+    title: 标题字体
+    description: 留空或与正文相同即为「黑体标题」；改为衬线字体（思源宋体 / 宋体）可获得书籍排版观感。
+    type: variable-text
+    default: '"LXGW WenKai Screen", "霞鹜文楷屏幕阅读版", "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "Sarasa Gothic SC", "更纱黑体 SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+  -
+    id: my-heading-serif-toggle
+    title: 标题改用衬线字体
+    description: 开启后标题使用宋体/思源宋体，正文保持黑体——经典书刊排版组合。
+    type: class-toggle
+    default: false
+  -
+    id: my-font-mono
+    title: 代码字体
+    description: 等宽字体，建议包含中文等宽回退（更纱等宽黑体 / Maple Mono）。
+    type: variable-text
+    default: '"Maple Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Sarasa Mono SC", "更纱等宽黑体", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace'
+  -
+    id: my-font-size-base
+    title: 正文字号
+    description: 中文正文推荐 16px 起步；长期阅读可调至 17–18px。
+    type: variable-number-slider
+    default: 16
+    min: 12
+    max: 24
+    step: 1
+    format: px
+
+  # ==========================================================================
+  # 四、行距与版心
+  # ==========================================================================
+  -
+    id: group-layout
+    title: "📐 行距与版心"
+    type: heading
+    level: 1
+    collapsed: true
+  -
+    id: my-line-height-relaxed
+    title: 正文行高
+    description: 中文汉字密度高，行高 1.8 是舒适区；1.5 以下会明显拥挤。
+    type: variable-number-slider
+    default: 1.8
+    min: 1.2
+    max: 2.4
+    step: 0.05
+  -
+    id: my-p-spacing-setting
+    title: 段落间距
+    description: 段与段之间的距离（相对字号）。开启首行缩进时可适当减小。
+    type: variable-number-slider
+    default: 0.85
+    min: 0
+    max: 2
+    step: 0.05
+    format: em
+  -
+    id: my-content-width
+    title: 正文行宽
+    description: 中文一行 30～40 字最易阅读（约 46rem）。过宽会导致换行时找不到下一行开头。
+    type: variable-text
+    default: 46rem
+  -
+    id: my-letter-spacing-cjk
+    title: 中文字距
+    description: "推荐保持 0。字距会在每行最后一个字之后也追加空隙，调大后右边缘不再平齐；汉字本身等宽，加大字距只会显得松散。"
+    type: variable-number-slider
+    default: 0
+    min: -0.02
+    max: 0.08
+    step: 0.005
+    format: em
+
+  # ==========================================================================
+  # 五、界面细节
+  # ==========================================================================
+  -
+    id: group-ui
+    title: "🖥 界面细节"
+    type: heading
+    level: 1
+    collapsed: true
+  -
+    id: my-ui-compact
+    title: 紧凑文件树
+    description: 缩小侧栏条目高度与间距，同屏显示更多文件。
+    type: class-toggle
+    default: false
+  -
+    id: my-ui-hide-ribbon
+    title: 隐藏左侧功能区图标栏
+    description: 追求极简界面时开启；可用快捷键 Ctrl/Cmd+P 调出命令面板替代。
+    type: class-toggle
+    default: false
+  -
+    id: my-ui-center-tabs
+    title: 标签页标题居中
+    type: class-toggle
+    default: false
+  -
+    id: my-ui-no-titlebar
+    title: 隐藏笔记内的大标题
+    description: 正文首个 H1 已在正文中，隐藏编辑器顶部重复显示的标题。
+    type: class-toggle
+    default: false
+  -
+    id: my-radius-scale
+    title: 圆角大小
+    description: 控制按钮、卡片、弹窗的圆角。0 为直角（更严肃），1.4 为圆润。
+    type: variable-number-slider
+    default: 1
+    min: 0
+    max: 2
+    step: 0.1
+    format: '×'
+
+  # ==========================================================================
+  # 六、内容增强
+  # ==========================================================================
+  -
+    id: group-enhance
+    title: "✨ 内容增强"
+    description: 以下均为可选特性，按需开启。
+    type: heading
+    level: 1
+    collapsed: true
+  -
+    id: my-rainbow-folders
+    title: 彩虹文件夹
+    description: 顶层文件夹图标使用不同颜色，快速区分领域。
+    type: class-toggle
+    default: false
+  -
+    id: my-heading-numbers
+    title: 标题自动编号
+    description: 为阅读视图中的标题追加 1. / 1.1 / 1.1.1 形式的层级编号。
+    type: class-toggle
+    default: false
+  -
+    id: my-heading-underline
+    title: 标题下划装饰
+    description: 为 H1/H2 添加细下划线，强化章节分界。
+    type: class-toggle
+    default: false
+  -
+    id: my-image-caption
+    title: 图片编号与题注
+    description: 图片下方显示"图 N"样式题注（读取图片 alt 文本）。
+    type: class-toggle
+    default: false
+  -
+    id: my-cards
+    title: 卡片化笔记列表
+    description: 把文件列表、搜索结果显示为卡片。
+    type: class-toggle
+    default: false
+  -
+    id: my-immersive-by-default
+    title: 沉浸模式（淡化格式符号）
+    description: 源码模式下淡化 # 、** 等 Markdown 符号，鼠标悬停行恢复显示。
+    type: class-toggle
+    default: false
+  -
+    id: my-callout-flat
+    title: 扁平标注样式
+    description: 标注（Callout）改用左侧色条 + 无边框的轻量样式。
+    type: class-toggle
+    default: false
+
+  # ==========================================================================
+  # 七、高级
+  # ==========================================================================
+  -
+    id: group-advanced
+    title: "⚙️ 高级"
+    type: heading
+    level: 1
+    collapsed: true
+  -
+    id: my-hr-style
+    title: 分隔线样式
+    description: 正文中 --- 的呈现方式。
+    type: variable-select
+    default: 细线
+    options:
+      -
+        label: 细线（默认）
+        value: 细线
+      -
+        label: 粗线
+        value: 粗线
+      -
+        label: 渐变淡出
+        value: 渐变淡出
+      -
+        label: 双线
+        value: 双线
+*/
+
+/* ==========================================================================
+ * 设置项的样式落点
+ * ----------------------------------------------------------------------------
+ * Style Settings 会把类加到 body、把变量写到 body 上，此处把它们接到令牌层。
+ * ======================================================================== */
+
+/* —— 中西文自动间距：默认开启，仅在用户显式关闭时停用 ——
+ * 关键事实（经真实渲染实测）：Chromium / Firefox / Safari 都把 text-autospace
+ * 的初始值实现成了 no-autospace（偏离规范的 normal 取值），因此【必须显式声明】
+ * 才会生效；也不能写成"加了类才开启"——那样没打开设置面板的用户会静默失效。 */
+body.my-no-autospace .markdown-rendered,
+body.my-no-autospace .markdown-source-view.mod-cm6 .cm-content,
+body.my-no-autospace .markdown-preview-view {
+  text-autospace: no-autospace;
+}
+
+/* —— 紧凑标点（可选的标点挤压替代方案）——
+ * 实测：text-spacing-trim 依赖字体的 chws 特性，而思源黑体 / Noto Sans CJK
+ * 只有 halt / palt，没有 chws，所以该属性在当前主流中文字体下【解析成功但零效果】。
+ * 因此提供一个基于 halt 的替代开关：它会把全角标点压成半角，版面立刻紧凑，
+ * 代价是句号、顿号的形态变窄。属于风格选择，默认不开。 */
+body.my-compact-punct .markdown-rendered,
+body.my-compact-punct .markdown-source-view.mod-cm6 .cm-content {
+  font-feature-settings: "halt" 1;
+}
+
+/* —— 着重号（中文传统的强调方式，替代伪斜体）——
+ * 中文字体普遍没有真斜体，浏览器强行倾斜会让字形失真，故用句下着重号。 */
+body.my-emphasis-dot .markdown-rendered em,
+body.my-emphasis-dot .markdown-rendered i {
+  text-emphasis: dot;
+  text-emphasis-position: under right;
+  -webkit-text-emphasis: dot;
+}
+
+/* —— 标题衬线开关 ——
+ * 只改「选择位」，不改令牌定义本身：--my-font-heading 在 tokens.css 里已经写成
+ * var(--my-font-heading-choice, var(--my-font-text))。 */
+body.my-heading-serif-toggle {
+  --my-font-heading-choice: var(--my-font-heading-serif);
+}
+
+/* —— 段落间距：设置项写 --my-p-spacing-setting，此处接入 Obsidian 的 --p-spacing —— */
+body {
+  --p-spacing: calc(var(--my-p-spacing-setting, 0.85) * 1em);
+}
+
+/* —— 圆角：只做「Obsidian 原生变量 ← 主题令牌」的映射。
+ * 圆角基准值与 --my-radius-scale 的乘算已在 tokens.css 内完成，此处不再重复
+ * 定义主题令牌本身，避免同一令牌出现两个主人。 */
+body {
+  --button-radius: var(--my-radius-s);
+  --input-radius: var(--my-radius-s);
+  --modal-radius: var(--my-radius-l);
+  --menu-radius: var(--my-radius-m);
+  --callout-radius: var(--my-radius-m);
+  --tag-radius: var(--my-radius-xs);
+  --checkbox-radius: var(--my-radius-xs);
+}
+
+/* —— 紧凑文件树 —— */
+body.my-ui-compact {
+  --nav-item-padding: 2px 6px 2px 8px;
+  --nav-item-margin-bottom: 0;
+  --nav-item-size: 0.82em;
+  --nav-item-children-padding-start: var(--my-space-3);
+  --nav-item-children-margin-start: 4px;
+}
+
+/* —— 隐藏功能区 —— */
+body.my-ui-hide-ribbon .workspace-ribbon.mod-left {
+  display: none;
+}
+body.my-ui-hide-ribbon .workspace-ribbon.mod-left.is-collapsed {
+  border-right: none;
+}
+
+/* —— 标签页标题居中 —— */
+body.my-ui-center-tabs .workspace-tab-header-inner-title {
+  text-align: center;
+  justify-content: center;
+}
+
+/* —— 隐藏笔记内大标题 —— */
+body.my-ui-no-titlebar .inline-title {
+  display: none;
+}
+
+/* —— 沉浸模式默认开启 —— */
+body.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-formatting {
+  opacity: 0.28;
+  transition: opacity var(--my-duration-normal) var(--my-ease-out);
+}
+body.my-immersive-by-default .markdown-source-view.mod-cm6 .cm-line:hover .cm-formatting {
+  opacity: 1;
+}

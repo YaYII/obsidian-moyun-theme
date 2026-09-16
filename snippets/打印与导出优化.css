@@ -1,0 +1,82 @@
+/* ============================================================================
+ * 墨韵 MoYun · 片段：打印与导出 PDF 优化
+ * ----------------------------------------------------------------------------
+ * 主题本体已包含基础的 @media print 规则（去掉背景色、避免分页断行）。
+ * 本片段补充的是【纸面排版】层面的优化，适合需要把笔记导出成正式文档的场景。
+ * ========================================================================== */
+
+@media print {
+  /* 1. 页边距：中文 A4 文档的常规页边距（上下 2.54cm，左右 3.17cm 是 Word 默认，
+   *    中文公文则上下 3.7cm / 左右 2.8cm）。此处取折中的通用值。 */
+  @page {
+    margin: 2.5cm 2.8cm;
+  }
+
+  /* 2. 正文用宋体族：印刷场景下宋体的可读性优于黑体 */
+  .markdown-rendered {
+    font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", serif;
+    font-size: 11pt;
+    line-height: 1.8;
+    color: #000;
+  }
+
+  /* 3. 标题用黑体，与正文形成字体对比（印刷上比字重对比更清晰） */
+  .markdown-rendered h1,
+  .markdown-rendered h2,
+  .markdown-rendered h3,
+  .markdown-rendered h4 {
+    font-family: "Source Han Sans SC", "Noto Sans CJK SC", "SimHei", "Microsoft YaHei", sans-serif;
+    color: #000;
+    /* 标题后面不要立刻分页 */
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  /* 4. 中文印刷惯例：正文首行缩进两字，段间不留空行 */
+  .markdown-rendered p {
+    text-indent: 2em;
+    margin-block-end: 0;
+  }
+
+  /* 5. 代码与表格：等宽字体在小字号下要够清楚，表格线要实 */
+  .markdown-rendered pre,
+  .markdown-rendered code {
+    font-size: 9.5pt;
+    line-height: 1.55;
+    border: 0.5pt solid #999;
+    background: #f6f6f6 !important;
+  }
+
+  .markdown-rendered table {
+    font-size: 9.5pt;
+    border-collapse: collapse;
+  }
+
+  .markdown-rendered th,
+  .markdown-rendered td {
+    border: 0.5pt solid #666;
+    padding: 4pt 6pt;
+  }
+
+  /* 6. 标注在打印时只需左侧色条，底色打印出来是灰块，反而干扰阅读 */
+  .callout {
+    background: transparent !important;
+    border-inline-start-width: 3pt !important;
+  }
+
+  /* 7. 交互元素不应出现在纸上 */
+  .callout-fold,
+  .collapse-indicator,
+  .copy-code-button,
+  .edit-block-button {
+    display: none !important;
+  }
+
+  /* 8. 链接：打印后无法点击，因此把地址显式打出来 */
+  .markdown-rendered a.external-link::after {
+    content: " ⟨" attr(href) "⟩";
+    font-size: 0.85em;
+    color: #555;
+    word-break: break-all;
+  }
+}

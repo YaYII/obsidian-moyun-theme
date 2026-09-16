@@ -1,0 +1,32 @@
+# 构建产物：theme.css 由 build.mjs 生成。
+# 仓库中保留一份，便于用户直接下载；若希望不提交产物，取消下面注释。
+# theme.css
+
+node_modules/
+.pnpm-store/
+
+# 验证台输出（截图与报告属本地验收产物）
+tools/preview/out/
+
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Obsidian 运行时状态（演示库只保留主题相关配置）
+demo-vault/.obsidian/workspace.json
+demo-vault/.obsidian/workspace-mobile.json
+demo-vault/.obsidian/cache/
+
+*.log
+.code-review/
+
+# ── 不随主题分发的参考资料 ──────────────────────────────────────────────
+# docs/reference/*-app.css 是从 Obsidian 安装包（obsidian.asar）中提取的专有样式表。
+# Obsidian 是闭源商业软件，完整样式表属其版权资源，不能随本开源主题一起分发。
+# 贡献者可用 node tools/extract-obsidian-reference.mjs 从本机自行提取，仅供本地开发参考。
+docs/reference/obsidian-app.css
+
+# 本机安装主题时的配置备份（含个人插件列表，不应公开）
+.install-backup/

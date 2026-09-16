@@ -1,0 +1,23 @@
+{
+  "id": "moyun-preset-zhujian",
+  "name": "竹简（书刊排版）",
+  "description": "衬线标题 + 首行缩进两字 + 两端对齐，最接近纸质书刊的观感。适合长篇阅读与出版前校对。",
+  "settings": {
+    "moyun@@my-tone@@light": "my-tone-zhuqing",
+    "moyun@@my-indent-on@@light": true,
+    "moyun@@my-justify@@light": true,
+    "moyun@@my-heading-serif-toggle@@light": true,
+    "moyun@@my-font-size-base@@light": 17,
+    "moyun@@my-line-height-relaxed@@light": 1.95,
+    "moyun@@my-content-width@@light": "42rem",
+    "moyun@@my-heading-underline@@light": false,
+    "moyun@@my-tone@@dark": "my-tone-zhuqing",
+    "moyun@@my-indent-on@@dark": true,
+    "moyun@@my-justify@@dark": true,
+    "moyun@@my-heading-serif-toggle@@dark": true,
+    "moyun@@my-font-size-base@@dark": 17,
+    "moyun@@my-line-height-relaxed@@dark": 1.95,
+    "moyun@@my-content-width@@dark": "42rem",
+    "moyun@@my-heading-underline@@dark": false
+  }
+}

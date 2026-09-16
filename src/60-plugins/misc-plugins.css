@@ -1,0 +1,299 @@
+/* ============================================================================
+ * 墨韵 MoYun · 插件适配 ⑥：其它常用插件（通用美化策略为主）
+ * ----------------------------------------------------------------------------
+ * 插件有上千个，逐个枚举类名既不可能也不可持续。本文件因此以通用策略为主：
+ *   策略一：利用 Obsidian 给每个渲染块的公共前缀 .block-language-<语言>。任何插件只要
+ *           注册了 code block 处理器，输出容器就带这个前缀，用属性子串匹配即可一次覆盖
+ *           绝大多数插件，不需要知道它的具体类名。
+ *   策略二：用 :where() 把通用规则的权重归零。构建按文件名字母序拼接，样式结果不应依赖
+ *           这个顺序；归零后 dataview.css / tasks.css 等专门章节永远能覆盖通用层。
+ *   策略三：能用结构选择器（table / thead / button）就不用类名——结构是 HTML 标准，
+ *           不会随插件升级消失。
+ * 具体插件只写有把握的类名，没把握的一律注明「需在插件环境实测」——编造的选择器比没有
+ * 样式更糟，后来维护的人会以为这里有覆盖。
+ *
+ * 依赖：00-tokens/tokens.css、00-tokens/obsidian-map.css
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、通用渲染块容器
+ * 插件内容默认紧贴正文边界，与主题「纸面 + 留白」的语言不符。统一给一点内边距与圆角，
+ * 让插件块像是贴在纸面上的一块内容，而不是从别的应用里抠出来的。
+ * ======================================================================== */
+:where([class*="block-language-"]) {
+  margin-block: var(--my-space-4);
+  padding-inline: var(--my-space-2);
+  border-radius: var(--my-radius-m);
+  line-height: var(--my-line-height-normal);
+  letter-spacing: var(--my-letter-spacing-cjk);
+}
+
+/* 插件块内部的表格 / 图片 / 代码 / 画布：统一圆角与限宽，避免一个页面里出现三种圆角语言。
+ * 用 :where() 保证 dataview.css 等专门文件的表格样式永远胜出。 */
+:where([class*="block-language-"]) :where(table, img, pre, canvas, svg) {
+  max-width: 100%;
+  border-radius: var(--my-radius-s);
+}
+
+:where([class*="block-language-"]) :where(svg, img) {
+  height: auto;
+}
+
+/* 插件生成的按钮常常还是浏览器默认样式（灰色、直角、Arial），与 Obsidian 脱节。
+ * 不用 !important：若某插件用更高权重定义了按钮，那是它的设计意图，应当尊重。 */
+:where([class*="block-language-"]) :where(button, .button-default, .button-plugin) {
+  padding: var(--my-space-3) var(--my-space-6);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-s);
+  background-color: var(--interactive-normal);
+  color: var(--text-normal);
+  font-family: var(--my-font-ui);
+  font-size: var(--my-font-size-s);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+:where([class*="block-language-"]) :where(button, .button-default, .button-plugin):hover {
+  background-color: var(--interactive-hover);
+}
+
+/* ==========================================================================
+ * 二、Calendar 日历插件
+ * 该插件把配色集中在一组 --color-* 自定义属性上（由插件自身定义，主题只覆盖数值），
+ * 这是最稳的适配点：不必碰它的内部结构。需在插件环境实测：若插件大版本改掉这组变量名，
+ * 覆盖会整体失效，此时只剩结构样式生效——不会错乱，只是颜色回到插件默认。
+ * ======================================================================== */
+.calendar {
+  --color-background-heading: transparent;
+  --color-background-day: transparent;
+  --color-background-day-hover: var(--background-modifier-hover);
+  --color-background-day-active: var(--my-accent);
+  --color-background-day-today: color-mix(in srgb, var(--my-accent) 14%, transparent);
+  --color-dot: var(--my-accent);
+  --color-arrow: var(--text-muted);
+  --color-text-title: var(--text-normal);
+  --color-text-heading: var(--text-muted);
+  --color-text-day: var(--text-normal);
+  --color-text-today: var(--my-accent);
+
+  padding: var(--my-space-3);
+  border-radius: var(--my-radius-m);
+  font-family: var(--my-font-ui);
+  font-size: var(--my-font-size-s);
+}
+
+/* 日期全是数字，等宽数字可避免 1 与 8 宽度不一导致的左右抖动 */
+.calendar :where(td, th, .day, .dow, .week-num) {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.calendar .day {
+  border-radius: var(--my-radius-s);
+  line-height: var(--my-line-height-tight);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 今天用强调色文字，选中日用实心强调色底；两者可同时存在（今天恰好被选中） */
+.calendar .day.today {
+  color: var(--my-accent);
+  font-weight: var(--my-font-weight-medium);
+}
+
+.calendar .day.active {
+  background-color: var(--my-accent);
+  color: var(--my-text-on-accent);
+}
+
+/* 相邻月的日期压暗，明确「这些不属于本月」 */
+.calendar .day.adjacent-month {
+  color: var(--text-faintest);
+}
+
+/* 导航条用结构选择器（button）而非类名，插件改类名也不受影响 */
+.calendar-nav button {
+  border-radius: var(--my-radius-s);
+  color: var(--text-muted);
+}
+
+.calendar-nav button:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* ==========================================================================
+ * 三、Charts 图表插件
+ * 图表由 canvas 绘制，CSS 无法深入；能做也该做的是「画框」——给容器一个与主题一致的
+ * 底色与圆角，让图表像纸面上的一张插图。
+ * ======================================================================== */
+.block-language-chart {
+  padding: var(--my-space-6);
+  border: var(--my-border-width) solid var(--my-border-subtle);
+  border-radius: var(--my-radius-m);
+  background-color: var(--background-secondary);
+}
+
+/* 插件用内联 width/height 写死画布尺寸，只有 !important 能覆盖内联样式；
+ * 不加则窄侧栏下图表会溢出正文。 */
+.block-language-chart canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  margin-inline: auto;
+}
+
+/* ==========================================================================
+ * 四、Admonition 提示块插件
+ * 它与原生 Callout 常在同一篇笔记里混用，两套视觉必须统一，否则读者会以为是两种东西。
+ * 原生 Callout 已由 obsidian-map.css 的 --callout-* 统一，这里对齐关键几何：
+ * 同样的左侧色条、同样的圆角与内边距。
+ * 需在插件环境实测：Admonitions 会把当前类型的颜色写进 --admonition-color 一类的自定义
+ * 属性（版本间命名有差异），故用回退链兜底到主题强调色。
+ * ======================================================================== */
+.admonition {
+  padding: var(--my-space-6) var(--my-space-7);
+  border: var(--my-border-width) solid
+    color-mix(in srgb, var(--admonition-color, var(--my-accent)) 30%, transparent);
+  border-inline-start: var(--my-border-width-accent) solid var(--admonition-color, var(--my-accent));
+  border-radius: var(--my-radius-m);
+  background-color: color-mix(in srgb, var(--admonition-color, var(--my-accent)) 8%, transparent);
+  font-family: var(--my-font-text);
+  line-height: var(--my-line-height-normal);
+}
+
+.admonition-title {
+  color: var(--admonition-color, var(--my-accent));
+  font-size: var(--my-font-size-base);
+  font-weight: var(--my-font-weight-medium); /* 汉字过粗会糊，标题 500 已足够区分 */
+  line-height: var(--my-line-height-snug);
+}
+
+/* 中文标题紧贴图标会显得局促，补一点间距 */
+.admonition-title :where(svg, .admonition-icon) {
+  margin-inline-end: var(--my-space-3);
+}
+
+/* 折叠态只剩标题，收紧底部内边距，避免留出一条空带 */
+.admonition.is-collapsed {
+  padding-block: var(--my-space-4);
+}
+
+/* ==========================================================================
+ * 五、Iconize / Icon Folder 图标
+ * 这类插件把 emoji 或 SVG 插进文件名、文件夹名里，默认缺两样东西：与文字的基线对齐，
+ * 以及与后一个字之间的间距——中文没有词间空格，图标会直接贴在汉字上。
+ * 需在插件环境实测：.iconize-folder-icon 在部分版本不存在，但基于 .nav-folder-title 的
+ * 结构选择器已覆盖侧栏绝大多数情况。
+ * ======================================================================== */
+.iconize-icon,
+.iconize-icon-in-link,
+.iconize-folder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: 0.25em;
+  vertical-align: -0.12em; /* 目测校准：SVG 图标的可视重心略高于文字基线 */
+  line-height: 1;
+}
+
+/* 侧栏图标只用 0.3em 间距并走基线居中，否则会与缩进引导线错位 */
+.nav-file-title .iconize-icon,
+.nav-folder-title .iconize-icon {
+  margin-inline-end: 0.3em;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+ * 六、Advanced Tables（表格编辑器工具栏）
+ * 实时预览的表格由 Obsidian 原生 .cm-table-widget 渲染（类名稳定），插件在其上加工具栏。
+ * 需在插件环境实测：.table-editor__toolbar / __toolbar-button 为社区通行写法，
+ * 插件内部可能换名；即使失效，表格本身的外观仍由 .cm-table-widget 一节统一。
+ * ======================================================================== */
+.cm-table-widget {
+  border-radius: var(--my-radius-m);
+}
+
+.cm-table-widget :where(table) {
+  font-size: 0.94em;
+  line-height: var(--my-line-height-snug);
+}
+
+.table-editor__toolbar {
+  gap: var(--my-space-2);
+  padding: var(--my-space-2) var(--my-space-4);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-s);
+  background-color: var(--background-secondary);
+  box-shadow: var(--my-shadow-s);
+}
+
+.table-editor__toolbar-button {
+  border-radius: var(--my-radius-xs);
+  color: var(--text-muted);
+}
+
+.table-editor__toolbar-button:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* ==========================================================================
+ * 七、其余插件
+ * ======================================================================== */
+
+/* —— Full Calendar：.fc 及其后代是 FullCalendar 的公开 API，跨版本稳定 —— */
+.fc {
+  font-family: var(--my-font-ui);
+  color: var(--text-normal);
+}
+
+.fc .fc-button {
+  border-radius: var(--my-radius-s);
+  box-shadow: none;
+}
+
+/* FullCalendar 用内联样式写「今日」底色，只能以 !important 覆盖 */
+.fc .fc-day-today {
+  background-color: color-mix(in srgb, var(--my-accent) 10%, transparent) !important;
+}
+
+.fc .fc-event {
+  border: none;
+  border-radius: var(--my-radius-xs);
+  padding: 1px var(--my-space-2);
+  font-size: var(--my-font-size-xs);
+  line-height: var(--my-line-height-tight);
+}
+
+/* —— Heatmap Calendar：需在插件环境实测 .heatmap-calendar-* 类名 —— */
+.heatmap-calendar-graph {
+  padding: var(--my-space-4);
+  border-radius: var(--my-radius-m);
+  background-color: var(--background-secondary);
+}
+
+.heatmap-calendar-boxes :where(li) {
+  border-radius: var(--my-radius-xs);
+}
+
+/* —— Buttons：只按 .block-language-button 结构定位，不对按钮类名作假设 —— */
+.block-language-button :where(button) {
+  box-shadow: var(--my-shadow-xs);
+}
+
+/* —— 无需（也不应）适配的插件 ——
+ * Pandoc / QuickAdd / Templater 的界面完全复用原生弹窗、下拉与输入框，已由
+ * obsidian-map.css 的 --modal-* / --input-* / --dropdown-* 统一。
+ * Longform 增加的是侧栏结构（复用原生 .nav-file-title）与编辑器叶，排版走原生
+ * .markdown-rendered（见 10-foundation/typography.css）；若其后续版本引入自有
+ * .longform-* 类名，需按实测结果再补。
+ * Zotero Integration 的内容来自用户自定义模板，无稳定公共类名，交给上面的通用策略。
+ * 同目录另有：style-settings / dataview / tasks / kanban / excalidraw-canvas。 */
+
+/* ==========================================================================
+ * 八、动效兜底
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  :where([class*="block-language-"]) :where(button, .button-default, .button-plugin),
+  .calendar .day {
+    transition: none;
+  }
+}

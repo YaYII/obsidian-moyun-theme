@@ -1,0 +1,324 @@
+/* ============================================================================
+ * 墨韵 MoYun · 增强特性：阅读增强杂项（Reading Extras）
+ * ----------------------------------------------------------------------------
+ * 本文件收拢那些"不大到能独立成模块、但少了就明显不够用"的阅读体验补丁：
+ *
+ *   ① 阅读进度条      —— 用 CSS 滚动驱动动画实现（真进度，非估算）
+ *   ② 目标高亮渐隐    —— .is-flashing 从"一坨高亮黄"改成柔和强调色渐隐
+ *   ③ 搜索命中高亮    —— 搜索结果、命令面板、文档内搜索三处统一
+ *   ④ 空状态          —— 搜索无结果等界面不再是一行小灰字
+ *   ⑤ 区块分隔装饰    —— hr 与文档末尾的收束符（"页面边界"的可靠实现）
+ *   ⑥ 六色高亮        —— .my-hl-red/green/blue/pink/purple/gray
+ *   ⑦ 键盘按键 kbd    —— 内容区的细节补强（基础样式见 10-foundation）
+ *
+ * 开关：
+ *   body.my-reading-progress  —— 阅读进度条（滚动驱动动画，需 Chromium 115+）
+ *   其余项为"读起来更舒服"的默认增强，跟随主题常驻，无需开关。
+ *   六色高亮是"用到才生效"的类，不加类就完全不存在。
+ *
+ * 关于"进度条"的技术说明：
+ *   纯 CSS 在过去确实做不出真实进度，但 Chromium 已支持滚动驱动动画
+ *   （animation-timeline: scroll()），进度可以精确表达为
+ *   滚动位置 / 可滚动距离，随滚动实时线性映射到宽度——这是真进度，不是估算。
+ *   已用 @supports 门控：不支持的引擎上整条进度线不会出现（而不是错误地常显）。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、阅读进度条
+ * 关键设计：
+ *   · 静态值先写成 scale: 0 1（不可见），动画只在滚动时间线激活时接管；
+ *     这样"时间线未激活/不支持"的场景下不会露出半截线；
+ *   · position: sticky 而不是 fixed：fixed 会横跨整个窗口（压住侧栏），
+ *     sticky 只贴在当前阅读面板的顶部，多面板并排时各自显示各自的进度；
+ *   · 负外边距抵消 2px 高度，滚动区内容不会因此下移（对排版零影响）。
+ * ======================================================================== */
+@supports (animation-timeline: scroll()) {
+  body.my-reading-progress .markdown-preview-view::before,
+  body.my-reading-progress .markdown-source-view.mod-cm6 .cm-scroller::before {
+    content: "";
+    display: block;
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 6;
+    block-size: 2px;
+    inline-size: 100%;
+    margin-block-end: -2px;
+    background-color: var(--my-accent);
+    border-radius: var(--my-radius-full);
+    transform-origin: 0 50%;
+    scale: 0 1;
+    pointer-events: none;      /* 永不拦截点击，否则顶部 2px 的链接点不到 */
+    animation: my-reading-progress linear both;
+    animation-timeline: scroll(self block);
+  }
+
+  @keyframes my-reading-progress {
+    from { scale: 0 1; }
+    to   { scale: 1 1; }
+  }
+}
+
+/* 减少动效偏好：进度条本质是"随滚动变化的图形"。
+ * 它不产生自主运动，但既然用户要求减少动效，直接不显示是最干净的选择。 */
+@media (prefers-reduced-motion: reduce) {
+  body.my-reading-progress .markdown-preview-view::before,
+  body.my-reading-progress .markdown-source-view.mod-cm6 .cm-scroller::before {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+ * 二、目标高亮（.is-flashing）：从"高亮块"改为"柔和强调 + 光环渐隐"
+ * Obsidian 本体的写法是 background-color: var(--text-highlight-bg) !important;
+ * 【本文件不使用 !important】：改为就近覆盖 --text-highlight-bg 变量本身。
+ *   变量是 obsidian-map.css 定义在 body 上的，元素级覆盖优先级更高，
+ *   因此无需与被 !important 声明的属性正面冲突——这是本主题处理"外来强制样式"的
+ *   统一手法：改写它的输入，而不是覆盖它的输出。
+ * ======================================================================== */
+.is-flashing {
+  --text-highlight-bg: color-mix(in oklab, var(--my-accent) 26%, transparent);
+
+  /* 本体开启了 mix-blend-mode（默认 multiply），叠在深色底上会发灰；
+   * 我们用的是透明强调色，需要正常混合才透亮。 */
+  mix-blend-mode: normal;
+  border-radius: var(--my-radius-xs);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  animation: my-flash-ring 1.5s var(--my-ease-out) 1 both;
+}
+
+/* 光环：从"明确的一次性提示"渐隐到"安静的落点"，比常亮的高亮块更不打扰阅读 */
+@keyframes my-flash-ring {
+  from { box-shadow: 0 0 0 3px color-mix(in oklab, var(--my-accent) 42%, transparent); }
+  to   { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* 实时预览里 .is-flashing 落在整行上，需要一点内边距才不像"糊了一条" */
+.markdown-source-view.mod-cm6 .cm-line.is-flashing {
+  border-radius: var(--my-radius-xs);
+  padding-inline: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-flashing {
+    animation: none;
+    box-shadow: 0 0 0 var(--my-border-width) color-mix(in oklab, var(--my-accent) 45%, transparent);
+  }
+}
+
+/* ==========================================================================
+ * 三、命令面板与快速切换的关键字高亮
+ * 说明：全局搜索面板里的 .search-result-file-matched-text 由
+ *       src/20-layout/sidebar.css 统一负责（搜索结果面板属于侧栏布局），
+ *       本文件不再重复声明，避免同一属性出现两个主人。
+ * ======================================================================== */
+
+/* 命令面板 / 快速切换的关键字高亮 */
+.suggestion-item .suggestion-highlight {
+  color: var(--my-accent);
+  font-weight: var(--my-font-weight-medium);
+  background-color: color-mix(in oklab, var(--my-accent) 12%, transparent);
+  border-radius: var(--my-radius-xs);
+}
+
+/* 搜索面板里的"命中计数"等信息文字：降低存在感，让命中内容先被看到 */
+.search-info-more-matches,
+.search-result-file-match-destination-file {
+  color: var(--my-text-faint);
+}
+
+/* ==========================================================================
+ * 四、空状态（搜索无结果、图谱无节点、Bases 空表…）
+ * 空状态的问题不是"难看"，而是"用户不确定是没结果还是程序卡了"。
+ * 处理方式：给一个明确的边界框 + 居中排布，让它看起来是"结论"而不是"残留文本"。
+ * ======================================================================== */
+.search-empty-state {
+  margin-block: var(--my-space-8);
+  padding: var(--my-space-9) var(--my-space-7);
+  border: var(--my-border-width) dashed var(--my-border);
+  border-radius: var(--my-radius-m);
+  background-color: var(--background-secondary);
+  color: var(--my-text-tertiary);
+  text-align: center;
+  line-height: var(--my-line-height-relaxed);
+}
+
+/* 其它面板的空状态（最近文件、标签、反向链接等）统一观感 */
+.empty-state-message,
+.workspace-leaf-content .pane-empty {
+  color: var(--my-text-faint);
+  text-align: center;
+  padding-block: var(--my-space-8);
+  line-height: var(--my-line-height-relaxed);
+}
+
+/* 空状态里的操作提示（如有）用强调色，给出"下一步"而不是只宣告"没有" */
+.search-empty-state a,
+.pane-empty a {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 五、区块分隔装饰
+ * 定位：替代"阅读进度条之外的第二选择"。这里只做 CSS 能可靠做到的事
+ *      —— 给"区块边界"一个明确的视觉收束，不做任何假进度。
+ * 注意：hr 的线型本身由「设置 → 分隔线样式」（--my-hr-style）决定，
+ *       本文件【不参与】线的样式，只在线上加一个居中小菱形作为视觉落点，
+ *       因此四种线型（细线/粗线/渐变/双线）都能与它共存。
+ * ======================================================================== */
+.markdown-rendered hr {
+  position: relative;
+  overflow: visible;
+  /* 间距（margin-block）归 src/10-foundation/reset.css 统一负责，
+   * 此处只声明 ::after 装饰所需的定位上下文，避免两个主人争同一个属性。 */
+}
+
+.markdown-rendered hr::after {
+  content: "◆";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.6em;
+  line-height: 1;
+  color: var(--my-text-faintest);
+  background-color: var(--background-primary);
+  padding-inline: var(--my-space-4);
+}
+
+/* 文档末尾的收束符：阅读到底时给一个明确的"结束"，而不是突然空掉。
+ * 只挂在最后一个区块之后，不参与正文流，不影响任何间距计算。 */
+.markdown-rendered > .markdown-preview-section > div:last-child::after,
+.markdown-rendered.markdown-preview-view .markdown-preview-sizer > div:last-child::after {
+  content: "";
+  display: block;
+  inline-size: 5rem;
+  margin: var(--my-space-10) auto var(--my-space-8);
+  border-block-start: var(--my-border-width) solid var(--my-divider);
+}
+
+/* 说明：脚注区的样式由 src/30-editor/blockquote.css 统一负责（含"脚注"小标题、
+ * 分隔线、上标序号），本文件不再重复声明，避免同一属性出现两个主人。 */
+
+/* ==========================================================================
+ * 六、六色高亮（配合 ==文字== 或 <mark class="my-hl-red">文字</mark>）
+ * 色源说明：
+ *   green / blue / pink / purple / gray 直接用标记专用令牌 --my-mark-*；
+ *   "红"在色板里没有单独一档（--my-mark-pink 是胭脂粉，色相偏离正红），
+ *   故用语义危险色 --my-danger 等比淡化得到——同样是语义令牌，不写死颜色，
+ *   并且换主题色/切明暗模式时会跟着变，不会成为孤儿色。
+ * box-decoration-break: clone 让跨行高亮在两行上都有圆角与内边距（中文长句常跨行）。
+ * ======================================================================== */
+.my-hl-red,
+.my-hl-green,
+.my-hl-blue,
+.my-hl-pink,
+.my-hl-purple,
+.my-hl-gray {
+  color: inherit;
+  padding: 0.08em 0.22em;
+  border-radius: var(--my-radius-xs);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.my-hl-red    { background-color: color-mix(in oklab, var(--my-danger) 32%, transparent); }
+.my-hl-green  { background-color: var(--my-mark-green); }
+.my-hl-blue   { background-color: var(--my-mark-blue); }
+.my-hl-pink   { background-color: var(--my-mark-pink); }
+.my-hl-purple { background-color: var(--my-mark-purple); }
+.my-hl-gray   { background-color: var(--my-mark-gray); }
+
+/* 额外送一个黄色（== 的默认色），让六个类的手感一致，方便用户统一改色 */
+.my-hl-yellow { background-color: var(--my-mark-yellow); }
+
+/* 暗色模式：底色叠在深墨上会显得更"闷"，把 alpha 提一档补偿；
+ * 只提高透明度，不换色相，因此高亮语义（红/绿/蓝…）保持不变。 */
+body.theme-dark .my-hl-red    { background-color: color-mix(in oklab, var(--my-danger) 40%, transparent); }
+body.theme-dark .my-hl-green  { background-color: color-mix(in oklab, var(--my-success) 34%, transparent); }
+body.theme-dark .my-hl-blue   { background-color: color-mix(in oklab, var(--my-info) 34%, transparent); }
+
+/* 高亮落在加粗/链接/表格里时保持圆角一致，不因上下文改变观感 */
+.markdown-rendered strong :is(mark, .my-hl-red, .my-hl-green, .my-hl-blue, .my-hl-pink, .my-hl-purple, .my-hl-gray),
+.markdown-rendered td :is(mark, .my-hl-red, .my-hl-green, .my-hl-blue, .my-hl-pink, .my-hl-purple, .my-hl-gray) {
+  border-radius: var(--my-radius-xs);
+}
+
+/* ==========================================================================
+ * 七、键盘按键 kbd（内容区细节；基础"实体按键"观感见 10-foundation/typography.css）
+ * 这里补四件基础样式没覆盖的事：
+ *   ① 组合键连排（Ctrl + C）需要间隙与连接符；
+ *   ② 数字/字母等宽，组合键长度才不会跳；
+ *   ③ 按下时的位移反馈（真实按键手感，仅鼠标操作时有意义）；
+ *   ④ 表格、标注、标题内的小尺寸适配——不缩小会撑破单元格。
+ * ======================================================================== */
+.markdown-rendered kbd {
+  display: inline-block;
+  min-inline-size: 1.6em;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: var(--my-line-height-snug);
+  vertical-align: baseline;
+}
+
+/* 组合键：两个 kbd 相邻时补一个 + 号与间隙（<kbd>Ctrl</kbd><kbd>C</kbd>） */
+.markdown-rendered kbd + kbd {
+  margin-inline-start: var(--my-space-4);
+}
+
+.markdown-rendered kbd + kbd::before {
+  content: "+";
+  position: absolute;
+  transform: translateX(calc(-1 * var(--my-space-4) - 0.35em));
+  color: var(--my-text-faintest);
+  font-weight: var(--my-font-weight-normal);
+}
+
+/* 按下反馈：位移 1px + 去掉投影，模拟键帽下沉 */
+.markdown-rendered kbd:active {
+  transform: translateY(1px);
+  border-bottom-width: var(--my-border-width);
+  box-shadow: none;
+  transition: none;
+}
+
+/* 表格单元格与标注里的按键：整体缩一档，避免撑高行 */
+.markdown-rendered td kbd,
+.markdown-rendered th kbd,
+.markdown-rendered .callout kbd {
+  font-size: 0.74em;
+  padding: 0.1em 0.32em;
+  min-inline-size: 1.4em;
+}
+
+/* 暗色模式：键帽底色比正文底更深一档才有"立体键帽"感（用色相混合而非写死色值） */
+body.theme-dark .markdown-rendered kbd {
+  background: color-mix(in oklab, var(--my-surface-tertiary) 82%, var(--my-text-primary));
+}
+
+/* 实时预览里的 kbd（源码模式下的行内代码块会渲染为 cm-inline-code，
+ * 但用户手写的 <kbd> 会作为 HTML 嵌入渲染，这里给同样的内边距） */
+.markdown-source-view.mod-cm6 kbd {
+  font-family: var(--my-font-mono);
+  font-size: 0.82em;
+  padding: 0.14em 0.42em;
+  border: var(--my-border-width) solid var(--my-border-strong);
+  border-bottom-width: var(--my-border-width-thick);
+  border-radius: var(--my-radius-xs);
+  background: var(--my-surface-secondary);
+}
+
+/* ==========================================================================
+ * 八、动效兜底
+ * kbd 的按下位移与高亮动画在减少动效偏好下取消；静态反馈（阴影/描边）保留。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-rendered kbd:active {
+    transform: none;
+  }
+  .is-flashing {
+    animation: none;
+  }
+}

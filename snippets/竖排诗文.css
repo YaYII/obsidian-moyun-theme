@@ -1,0 +1,57 @@
+/* ============================================================================
+ * 墨韵 MoYun · 片段：中文竖排诗文
+ * ----------------------------------------------------------------------------
+ * 用法：把本文件放进 .obsidian/snippets/ 并启用，然后给笔记的 frontmatter 加
+ *       cssclasses: my-vertical
+ *
+ * 可靠范围（重要）：竖排只在【阅读视图】与【导出 PDF】下可靠。
+ * 实时预览的 CodeMirror 对 writing-mode 支持不完整，光标定位与选区会错乱，
+ * 这是编辑器层面的限制，CSS 无法修复，因此本片段不尝试作用于编辑模式。
+ * ========================================================================== */
+
+.my-vertical .markdown-preview-view,
+.my-vertical .markdown-rendered {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  /* 竖排时「行高」实际控制的是列间距，「字距」控制的是字与字的上下距离，
+   * 两个轴的语义互换，因此数值需要单独调，不能沿用横排的经验值。 */
+  line-height: 2.1;
+  letter-spacing: 0.06em;
+  max-height: 78vh;
+  margin-inline: auto;
+  /* 中文竖排传统上从右向左阅读，标点需要悬挂在字框外 */
+  text-spacing-trim: space-first;
+  text-autospace: normal;
+}
+
+/* 竖排下的标点：句号、逗号应贴在字的右上角（Unicode 竖排形式），
+ * 现代字体通常自带 vert / vrt2 特性，显式开启可避免个别字体回退到横排字形。 */
+.my-vertical .markdown-rendered {
+  font-feature-settings: "vert" 1, "vrt2" 1;
+}
+
+/* 标题在竖排里居中会显得突兀，改为置顶并略作留白 */
+.my-vertical .markdown-rendered h1,
+.my-vertical .markdown-rendered h2 {
+  margin-block: 0 1.2em;
+  margin-inline: 0;
+  letter-spacing: 0.1em;
+}
+
+/* 段落不缩进：竖排的段落界限靠列间距已经很清楚，再缩进会破坏列对齐 */
+.my-vertical .markdown-rendered p {
+  text-indent: 0;
+  margin-block-end: 1.2em;
+}
+
+/* 图片在竖排里会撑破列宽，限制尺寸 */
+.my-vertical .markdown-rendered img {
+  max-height: 60vh;
+  max-width: none;
+}
+
+/* 编辑器区域保持横排（见文件头说明），但给一个提示性的右边框，
+ * 让用户知道这篇笔记在阅读视图里是竖排的。 */
+.my-vertical .markdown-source-view.mod-cm6 .cm-scroller {
+  border-inline-end: 2px solid color-mix(in oklab, var(--my-accent) 35%, transparent);
+}

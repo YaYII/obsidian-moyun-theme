@@ -1,0 +1,18 @@
+# 由外部提供的 CSS 变量白名单
+# ---------------------------------------------------------------------------
+# 这些变量不在 src/ 中定义，而是在运行时由 Obsidian 本体、Style Settings 插件
+# 或用户的 CSS 片段写入。构建校验时应当视为"已定义"，否则会误报。
+#
+# 用法：一行一个变量名，# 开头为注释。
+
+# —— Obsidian 本体定义、主题只读不写的变量 ——
+--my-shadow-color
+
+# —— 由用户 CSS 片段或高级用法提供（留作扩展点）——
+--my-hr-color
+--my-hr-thickness
+
+# —— Style Settings 的动态 id（默认值缺失时由 @settings 自动登记）——
+--my-accent-custom
+--my-p-spacing-setting
+--my-radius-scale

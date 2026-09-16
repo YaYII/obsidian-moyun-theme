@@ -1,0 +1,310 @@
+/* ============================================================================
+ * 墨韵 MoYun · 组件：按钮与表单控件
+ * ----------------------------------------------------------------------------
+ * 表单控件的问题在于"状态不可见"：用户不确定按钮还没点上、输入框还没聚焦、
+ * 这个开关是开还是关。本文件把每个控件的四种状态都做出明确区分：
+ *     常态（安静）→ 悬停（微亮）→ 聚焦（强调色描边）→ 禁用（低透明度）
+ * 中文场景的两个额外考量：
+ *   ① 输入框要够高（中文字符在过矮的框里会显得被压扁）；
+ *   ② 按钮文字不能过粗（汉字在 600 以上字重的小字号下会糊）。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、按钮
+ * ======================================================================== */
+
+button,
+.btn {
+  font-family: var(--my-font-ui);
+  font-weight: var(--my-font-weight-medium);
+  letter-spacing: 0;
+  border-radius: var(--button-radius);
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    border-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out),
+    box-shadow var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* —— 次要按钮（默认）—— */
+button:not(.mod-cta):not(.mod-warning):not(.mod-destructive),
+.btn:not(.mod-cta):not(.mod-warning):not(.mod-destructive) {
+  background-color: var(--button-secondary-bg-color);
+  color: var(--button-secondary-fg-color);
+  border: var(--my-border-width) solid var(--button-secondary-border-color);
+}
+
+button:not(.mod-cta):not(.mod-warning):not(.mod-destructive):hover,
+.btn:not(.mod-cta):not(.mod-warning):not(.mod-destructive):hover {
+  background-color: var(--button-secondary-hover-bg-color);
+  border-color: var(--button-secondary-hover-border-color);
+  color: var(--button-secondary-hover-fg-color);
+}
+
+button:not(.mod-cta):not(.mod-warning):not(.mod-destructive):active,
+.btn:not(.mod-cta):not(.mod-warning):not(.mod-destructive):active {
+  background-color: var(--button-secondary-active-bg-color);
+  border-color: var(--button-secondary-active-border-color);
+}
+
+/* —— 主按钮（.mod-cta）——强调色实底，页面里最重要的那个动作 */
+button.mod-cta,
+.btn.mod-cta {
+  background-color: var(--button-primary-bg-color);
+  color: var(--button-primary-fg-color);
+  border: var(--my-border-width) solid var(--button-primary-border-color);
+  font-weight: var(--my-font-weight-medium);
+}
+
+button.mod-cta:hover,
+.btn.mod-cta:hover {
+  background-color: var(--button-primary-hover-bg-color);
+  color: var(--button-primary-hover-fg-color);
+}
+
+button.mod-cta:active,
+.btn.mod-cta:active {
+  background-color: var(--button-primary-active-bg-color);
+  transform: translateY(0.5px);
+}
+
+/* —— 危险按钮（删除等不可逆操作）—— */
+button.mod-warning,
+button.mod-destructive,
+.btn.mod-warning,
+.btn.mod-destructive {
+  background-color: rgb(var(--my-danger-rgb) / 0.12);
+  color: var(--my-danger);
+  border: var(--my-border-width) solid rgb(var(--my-danger-rgb) / 0.42);
+}
+
+button.mod-warning:hover,
+button.mod-destructive:hover,
+.btn.mod-warning:hover,
+.btn.mod-destructive:hover {
+  background-color: rgb(var(--my-danger-rgb) / 0.20);
+  border-color: var(--my-danger);
+}
+
+/* —— 禁用态：所有按钮统一处理 —— */
+button:disabled,
+.btn:disabled,
+button.is-disabled {
+  opacity: var(--button-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* —— 聚焦态：键盘可达性。用 outline 而非 box-shadow，避免被 overflow 裁掉 —— */
+button:focus-visible,
+.btn:focus-visible,
+.clickable-icon:focus-visible {
+  outline: 2px solid var(--my-accent);
+  outline-offset: 1px;
+}
+
+/* ==========================================================================
+ * 二、文本输入框与文本域
+ * ======================================================================== */
+
+input[type='text'],
+input[type='search'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='date'],
+input[type='datetime-local'],
+textarea {
+  font-family: var(--my-font-ui);
+  font-size: var(--font-ui-small);
+  letter-spacing: 0;
+  background-color: var(--input-text-bg-color);
+  color: var(--input-text-fg-color);
+  border: var(--my-border-width) solid var(--input-unfocused-border-color);
+  border-radius: var(--input-radius);
+  padding: var(--input-padding);
+  transition:
+    border-color var(--my-duration-fast) var(--my-ease-out),
+    background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+input[type='text']:hover,
+input[type='search']:hover,
+textarea:hover {
+  border-color: var(--input-hover-border-color);
+}
+
+/* 聚焦：强调色描边 + 一层柔和光晕。光晕用 box-shadow 实现，不会影响布局 */
+input[type='text']:focus,
+input[type='search']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+input[type='number']:focus,
+textarea:focus {
+  border-color: var(--input-focus-border-color);
+  box-shadow: 0 0 0 3px rgb(var(--my-accent-rgb) / 0.16);
+  outline: none;
+}
+
+/* 占位文字：中文占位文字往往较长（"输入搜索关键词…"），给足对比度 */
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder-color);
+  letter-spacing: 0;
+}
+
+/* 文本域：中文写作需要更宽松的行高 */
+textarea {
+  line-height: var(--my-line-height-normal);
+  min-height: 4.5em;
+}
+
+/* ==========================================================================
+ * 三、下拉框
+ * ======================================================================== */
+
+select,
+.dropdown {
+  font-family: var(--my-font-ui);
+  font-size: var(--font-ui-small);
+  background-color: var(--dropdown-background);
+  color: var(--my-text-primary);
+  border: var(--my-border-width) solid var(--my-border);
+  border-radius: var(--my-radius-s);
+  padding: var(--dropdown-padding);
+  transition: background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+select:hover,
+.dropdown:hover {
+  background-color: var(--dropdown-background-hover);
+  border-color: var(--my-border-strong);
+}
+
+select:focus,
+.dropdown:focus {
+  border-color: var(--my-accent);
+  box-shadow: 0 0 0 3px rgb(var(--my-accent-rgb) / 0.16);
+  outline: none;
+}
+
+/* ==========================================================================
+ * 四、开关（Toggle）
+ * 开关的"开/关"必须一眼可辨，因此开启态用强调色实底 + 白色滑块，
+ * 关闭态用低对比灰底 + 浅色滑块。
+ * ======================================================================== */
+
+.checkbox-container {
+  background-color: var(--my-border-strong);
+  border-radius: var(--my-radius-full);
+  transition: background-color var(--my-duration-normal) var(--my-ease-out);
+}
+
+.checkbox-container:hover {
+  background-color: var(--my-text-faint);
+}
+
+.checkbox-container.is-enabled {
+  background-color: var(--my-accent);
+}
+
+.checkbox-container.is-enabled:hover {
+  background-color: var(--my-accent-hover);
+}
+
+.checkbox-container::after {
+  background-color: var(--my-control-thumb);
+  border-radius: var(--my-radius-full);
+  box-shadow: var(--my-shadow-xs);
+  transition: transform var(--my-duration-normal) var(--my-ease-spring);
+}
+
+/* 聚焦可达性 */
+.checkbox-container:focus-visible {
+  outline: 2px solid var(--my-accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+ * 五、滑块（Range）
+ * ======================================================================== */
+
+input[type='range'] {
+  background-color: transparent;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: var(--slider-track-height);
+  background-color: var(--slider-track-background);
+  border-radius: var(--my-radius-full);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--slider-thumb-width);
+  height: var(--slider-thumb-height);
+  margin-top: calc((var(--slider-track-height) - var(--slider-thumb-height)) / 2);
+  background-color: var(--slider-thumb-background);
+  border: none;
+  border-radius: var(--my-radius-full);
+  box-shadow: var(--my-shadow-s);
+  transition:
+    transform var(--my-duration-fast) var(--my-ease-out),
+    background-color var(--my-duration-fast) var(--my-ease-out);
+}
+
+input[type='range']:hover::-webkit-slider-thumb {
+  background-color: var(--slider-thumb-background-hover);
+  transform: scale(1.12);
+}
+
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+
+/* ==========================================================================
+ * 六、搜索输入框
+ * ======================================================================== */
+
+.search-input-container input.search-input {
+  border-radius: var(--search-input-radius);
+}
+
+.search-input-container .search-input-clear-button {
+  color: var(--search-clear-button-color);
+}
+
+.search-input-container .search-input-clear-button:hover {
+  color: var(--my-text-primary);
+}
+
+/* ==========================================================================
+ * 七、复选框（表单里的原生 checkbox，区别于任务列表）
+ * ======================================================================== */
+
+input[type='checkbox'] {
+  accent-color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 八、动效降级
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .btn,
+  input,
+  textarea,
+  select,
+  .dropdown,
+  .checkbox-container,
+  input[type='range']::-webkit-slider-thumb {
+    transition: none;
+  }
+  button.mod-cta:active {
+    transform: none;
+  }
+  input[type='range']:hover::-webkit-slider-thumb,
+  input[type='range']:active::-webkit-slider-thumb {
+    transform: none;
+  }
+}

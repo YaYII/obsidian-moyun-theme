@@ -1,0 +1,137 @@
+/* ============================================================================
+ * 墨韵 MoYun · 增强特性：彩虹文件夹（Rainbow Folders）
+ * ----------------------------------------------------------------------------
+ * 用途：把文件浏览器「顶层文件夹」的图标与名称染成八种柔和色相，让知识领域一眼可辨。
+ *       这是 AnuPpuccin / Blue Topaz 用户呼声最高的功能之一；对中文用户尤为实用
+ *       ——中文文件夹名短（2~4 字），色相比文字更快的识别通道。
+ *
+ * 开关：body.my-rainbow-folders（Style Settings → 内容增强 → 彩虹文件夹）
+ * 依赖：--color-red/orange/yellow/green/cyan/blue/purple/pink
+ *       （Obsidian 原生色，obsidian-map.css 已接管，随明暗模式自动切换档位）
+ *
+ * 设计取舍（三条，都是踩过坑之后的决定）：
+ *   ① 只染「顶层」文件夹。深层文件夹一律保持中性色——若全层级染色，侧栏会变成
+ *      一锅调色盘，反而丢掉「快速区分领域」的意义（这正是与 Blue Topaz 的差异）。
+ *   ② 绝不使用 !important 硬覆盖图标颜色。Obsidian 的导航项配色全部经由
+ *      --nav-item-color / --nav-collapse-icon-color 系列变量下发，把变量就近写在
+ *      该 .nav-folder-title 上即可，级联干净，悬停/选中态也不会失效。
+ *   ③ 色相统一在 oklab 空间与正文色混合：暗色模式下自动提亮、亮色模式下自动压深，
+ *      既保证对比度，又不写死任何一个颜色值（改强调色/换模式都不需要改本文件）。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、八色相调色板
+ * 色相顺序按「冷暖交替」排列（红→橙→黄→绿→青→蓝→紫→粉），
+ * 相邻文件夹的色差最大化，扫一眼就能分开。
+ * 变量名对用户公开：写一段 CSS 片段即可整体改色（例如改成莫兰迪低饱和版本）。
+ * ======================================================================== */
+body.my-rainbow-folders {
+  --folder-color-1: color-mix(in oklab, var(--color-red)    88%, var(--my-text-primary));
+  --folder-color-2: color-mix(in oklab, var(--color-orange) 86%, var(--my-text-primary));
+  --folder-color-3: color-mix(in oklab, var(--color-yellow) 82%, var(--my-text-primary));
+  --folder-color-4: color-mix(in oklab, var(--color-green)  88%, var(--my-text-primary));
+  --folder-color-5: color-mix(in oklab, var(--color-cyan)   88%, var(--my-text-primary));
+  --folder-color-6: color-mix(in oklab, var(--color-blue)   88%, var(--my-text-primary));
+  --folder-color-7: color-mix(in oklab, var(--color-purple) 88%, var(--my-text-primary));
+  --folder-color-8: color-mix(in oklab, var(--color-pink)   88%, var(--my-text-primary));
+}
+
+/* ==========================================================================
+ * 二、顶层文件夹的色相分配
+ * 选择器锚点：.nav-folder.mod-root > .nav-folder-children > .nav-folder
+ *   —— 第一层子选择器锁定「仓库根」，第二个锁定「根的直接子文件夹」，
+ *      再深的层级因为不是 mod-root 的直接子项而天然落空，无需 :not() 兜底。
+ *
+ * 为什么用 nth-child 而不是 data-path 前缀：
+ *   主题无法预知用户会建什么文件夹名，按 data-path 前缀只能靠用户手写映射。
+ *   nth-child 按「同胞位置」分配，新建文件夹会自动获得一个未使用的位置色；
+ *   Obsidian 默认「文件夹置顶 + 名称排序」，位置是稳定的。
+ *   需要固定色相的用户可以走第五节的手动钩子（data-path 前缀），两者可混用。
+ * ======================================================================== */
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 1) { --folder-color: var(--folder-color-1); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 2) { --folder-color: var(--folder-color-2); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 3) { --folder-color: var(--folder-color-3); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 4) { --folder-color: var(--folder-color-4); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 5) { --folder-color: var(--folder-color-5); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 6) { --folder-color: var(--folder-color-6); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 7) { --folder-color: var(--folder-color-7); }
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder:nth-child(8n + 8) { --folder-color: var(--folder-color-8); }
+
+/* ==========================================================================
+ * 三、颜色落点：把色相就近写成导航变量
+ * 关键点：这里【不是】在覆盖 Obsidian 的样式，而是在定义变量。
+ *   未指定色相的文件夹（深层、或用户自己写的规则未命中）会回退到主题原生色，
+ *   于是「深层文件夹保持中性」这条规则不需要额外写一条排除选择器。
+ * 回退值刻意选用 --my-text-secondary / --nav-item-color 系列的默认出处，
+ * 保证未染色路径与开启彩虹之前的观感【完全一致】，零回归。
+ * ======================================================================== */
+body.my-rainbow-folders .nav-folder-title {
+  /* 常态：色相与正文色混合 82%，避免纯色相过于抢眼（中文文件名信息密度高，颜色是辅助） */
+  --nav-item-color: color-mix(in oklab, var(--folder-color, var(--my-text-secondary)) 82%, var(--my-text-secondary));
+  /* 悬停/选中：回到满饱和色相，给出「我点的是这一行」的即时反馈 */
+  --nav-item-color-hover: var(--folder-color, var(--my-text-primary));
+  --nav-item-color-active: var(--folder-color, var(--my-accent));
+  /* 折叠箭头单独一套变量，展开态比折叠态更亮一档 */
+  --nav-collapse-icon-color: var(--folder-color, var(--my-text-faint));
+  --nav-collapse-icon-color-collapsed: var(--folder-color, var(--my-text-tertiary));
+  /* 悬停底色也用色相极淡地铺一层，卡片化的彩虹文件夹需要底色呼应 */
+  --nav-item-background-hover: color-mix(in oklab, var(--folder-color, var(--my-text-secondary)) 10%, transparent);
+  font-weight: var(--my-font-weight-medium);
+}
+
+/* 文件夹名右侧的「条目数」徽标（.nav-folder-tag / .tree-item-flair）跟着淡染，
+ * 但保持弱对比，避免抢过文件名本身。 */
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder > .nav-folder-title .tree-item-flair {
+  color: color-mix(in oklab, var(--folder-color) 55%, var(--my-text-faint));
+}
+
+/* ==========================================================================
+ * 四、展开 / 折叠的图标表现
+ * 折叠态：箭头淡化 + 轻微收拢，暗示「这里面还有东西，但现在是关着的」。
+ * 展开态：箭头满色，与文件夹名同色，形成一组视觉整体。
+ * 这里用 opacity 而不是换色，理由：换色会在悬停时与 --nav-item-color-hover 打架，
+ * 而透明度是可叠加的，任何状态下都不会把颜色改错。
+ * ======================================================================== */
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder > .nav-folder-title .nav-folder-collapse-indicator {
+  color: var(--folder-color);
+  opacity: 0.82;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out),
+              transform var(--my-duration-normal) var(--my-ease-spring);
+}
+
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder.is-collapsed > .nav-folder-title .nav-folder-collapse-indicator {
+  opacity: 0.5;
+  transform: scale(0.9);
+}
+
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder > .nav-folder-title:hover .nav-folder-collapse-indicator {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 折叠时给整行加一条左侧色条：不占位（用 inset box-shadow，不触发重排），
+ * 且只在折叠态出现，展开时有子项可看，不需要额外指示。 */
+body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder.is-collapsed > .nav-folder-title {
+  box-shadow: inset var(--my-border-width-accent) 0 0 0 var(--folder-color);
+  border-start-start-radius: var(--my-radius-xs);
+  border-end-start-radius: var(--my-radius-xs);
+}
+
+/* ==========================================================================
+ * 五、手动色相钩子（进阶）
+ * 想给某个具体文件夹固定色相（不受位置影响），在自己的 CSS 片段里写：
+ *   body.my-rainbow-folders .nav-folder-title[data-path^="01-项目"] { --folder-color: var(--folder-color-6); }
+ * 由于第三节的规则对【所有】.nav-folder-title 生效，data-path 钩子对深层文件夹同样有效，
+ * 也就是「自动配色为主 + 手动指定为辅」，无需修改本文件。
+ * ======================================================================== */
+
+/* ==========================================================================
+ * 六、动效兜底
+ * 关闭动效偏好时去掉箭头的缩放过渡，只保留颜色与透明度的瞬时切换。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  body.my-rainbow-folders .nav-folder.mod-root > .nav-folder-children > .nav-folder > .nav-folder-title .nav-folder-collapse-indicator {
+    transition: none;
+    transform: none;
+  }
+}

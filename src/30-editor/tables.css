@@ -1,0 +1,268 @@
+/* ============================================================================
+ * 墨韵 MoYun · 编辑器内容③：表格（Tables）
+ * ----------------------------------------------------------------------------
+ * 用途：阅读视图 <table> 与实时预览 .cm-table-widget 的统一表格样式。
+ *
+ * 中文表格的三个设计判断：
+ *   ① 不要内部竖线。中文表格多在写"参数/说明/结论"，竖线与汉字笔画争夺
+ *      视觉注意力，还会把本来就不宽的列挤得更窄。本主题只保留表头横线与
+ *      极轻的行分隔，观感接近中文排版传统的「三线表」。
+ *   ② 内边距要比英文主题大一倍。英文表格 4px/8px 就够，汉字有字面框，
+ *      贴边会显得"字被挤在格子里"。这里用 10px/16px。
+ *   ③ 斑马纹极轻（3% 浓度）且打在偶数行。表头下方第一行若带底色，
+ *      表头与首行会糊成一片；所以底色从第二行开始。
+ *
+ * 依赖：--table-*（obsidian-map.css 已映射）、--my-space-* / --my-radius-* /
+ *       --my-border-subtle / --my-accent
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、表格容器与横向滚动
+ * 难点：阅读视图里表格没有包裹元素（实时预览才有 .table-wrapper），
+ * 而 <table> 自身默认不是滚动容器，列一多就会撑破版心、正文被迫横向滚动。
+ * 做法：让 table 变成块级滚动容器。border-collapse 是可继承属性，
+ * 内部的匿名表格盒子会继承它，所以单元格边框仍然是合并的，观感不变。
+ * ======================================================================== */
+.markdown-rendered table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  margin-block: var(--p-spacing) calc(var(--p-spacing) * 1.25);
+  border: var(--table-border-width) solid var(--table-border-color);
+  border-radius: var(--my-radius-m);
+  border-collapse: collapse;
+  /* 表格里的数字必须等宽：中文说明列里的 1 与 10 若宽度不同，整列看上去是歪的 */
+  font-variant-numeric: tabular-nums;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 表格内滚动条的滚动留白，避免最后一列贴住滚动条 */
+.markdown-rendered table::-webkit-scrollbar {
+  height: 8px;
+}
+
+/* ==========================================================================
+ * 二、表头
+ * 底色沿用 --table-header-background（语义上属于第二层表面），
+ * 字重取 600 而不是 700：汉字 700 会糊，600 已足够与正文区分。
+ * ======================================================================== */
+.markdown-rendered thead > tr > th {
+  background-color: var(--table-header-background);
+  color: var(--table-header-color);
+  font-family: var(--table-header-font);
+  font-size: var(--table-header-size);
+  font-weight: var(--table-header-weight);
+  /* 中文表头给一点字距，汉字在底色块上会显得比正文更挤 */
+  letter-spacing: 0.02em;
+  /* 禁止对中文表头用 uppercase（无效）与斜体（汉字失真） */
+  font-style: normal;
+  text-transform: none;
+  border-block-end: var(--table-header-border-width) solid var(--table-header-border-color);
+  border-inline: none;
+  padding-block: var(--my-space-5);
+  vertical-align: middle;
+}
+
+/* 表头首尾格与圆角对齐：表头底色不该溢出到表格圆角之外 */
+.markdown-rendered thead > tr > th:first-child {
+  border-start-start-radius: calc(var(--my-radius-m) - 1px);
+}
+
+.markdown-rendered thead > tr > th:last-child {
+  border-start-end-radius: calc(var(--my-radius-m) - 1px);
+}
+
+/* 表头悬停：提示该列可点（Obsidian 支持点击表头排序/选择列） */
+@media (hover: hover) {
+  .markdown-rendered thead > tr > th:hover {
+    background-color: var(--table-header-background-hover);
+  }
+}
+
+/* ==========================================================================
+ * 三、单元格：内边距、对齐与列宽
+ * ======================================================================== */
+.markdown-rendered :is(td, th) {
+  border: 0;
+  border-block-end: 1px solid var(--my-border-subtle);
+  /* 中文字面框需要呼吸空间：10px 纵向 / 16px 横向 */
+  padding: var(--my-space-5) var(--my-space-7);
+  /* 最小列宽用 em 而不是 ch：ch 按数字 0 的宽度算，
+   * 一个汉字约等于 2ch，用 ch 会让中文列窄到只剩两三个字。 */
+  min-width: 5.5em;
+  /* 最大行宽：约 24 个汉字换行，超过就需要来回找行首 */
+  max-width: 24em;
+  vertical-align: var(--table-cell-vertical-alignment);
+  line-height: var(--table-line-height);
+  /* 单元格里的中文同样要避头尾与智能断词 */
+  line-break: strict;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.markdown-rendered td {
+  font-size: var(--table-text-size);
+  color: var(--table-text-color);
+}
+
+/* 最后一行不画分隔线：外框已经收边，再加一条线会出现"双线" */
+.markdown-rendered tbody > tr:last-child > td {
+  border-block-end: none;
+}
+
+/* 单元格里的段落：去掉段间距与首行缩进（空间有限，缩进会挤掉一整行） */
+.markdown-rendered :is(td, th) p {
+  margin-block: 0;
+  text-indent: 0;
+}
+
+/* 单元格内的首个元素去掉上边距，末个元素去掉下边距，避免格子被撑高 */
+.markdown-rendered :is(td, th) > :first-child {
+  margin-block-start: 0;
+}
+
+.markdown-rendered :is(td, th) > :last-child {
+  margin-block-end: 0;
+}
+
+/* ==========================================================================
+ * 四、斑马纹与悬停
+ * 浓度控制在 3% 上下（用已映射的 --table-row-alt-background），
+ * 目的是"帮助横向追行"，不是"装饰"。行一深，中文正文的对比度就掉了。
+ * ======================================================================== */
+.markdown-rendered tbody > tr:nth-child(odd) {
+  background-color: var(--table-background);
+}
+
+.markdown-rendered tbody > tr:nth-child(even) {
+  background-color: var(--table-row-alt-background);
+}
+
+/* 悬停整行高亮：横向阅读长表格时，这一行是最重要的定位线索 */
+@media (hover: hover) {
+  .markdown-rendered tbody > tr:hover {
+    background-color: var(--table-row-background-hover);
+  }
+
+  .markdown-rendered tbody > tr:nth-child(even):hover {
+    background-color: var(--table-row-alt-background-hover);
+  }
+}
+
+/* 单元格被选中/编辑时的高亮，沿用主题的选区色 */
+.markdown-rendered :is(td, th).is-selected,
+.markdown-rendered :is(td, th):focus-visible {
+  background-color: var(--table-selection);
+  outline: none;
+  box-shadow: inset 0 0 0 var(--table-selection-border-width) var(--table-selection-border-color);
+}
+
+/* ==========================================================================
+ * 五、列宽与"数字列右对齐"
+ * 纯 CSS 无法判断一列是否是数字列（没有 :is-number() 这种选择器），
+ * 因此这里给三种可用的做法，按推荐程度排序：
+ *   ① Markdown 语法对齐（推荐）：| ---: | 会渲染成 [align="right"]，
+ *      本主题尊重该属性（含"右对齐 + 等宽数字"两个正确行为）；
+ *   ② 整表开关：给笔记加 cssclass my-table-numeric，则每行最后一列右对齐，
+ *      适合"名称 + 数值"这类两列表；
+ *   ③ 所有单元格统一 tabular-nums（已在上面的 table 规则里生效），
+ *      即使左对齐，数字的个位/十位也会在同一条竖线上。
+ * 注意：不要用 :last-child 处理多列表，会把说明列也推到右边。
+ * ======================================================================== */
+.markdown-rendered :is(th, td)[align="right"] {
+  text-align: end;
+}
+
+.markdown-rendered :is(th, td)[align="center"] {
+  text-align: center;
+}
+
+.markdown-rendered :is(th, td)[align="left"] {
+  text-align: start;
+}
+
+.my-table-numeric .markdown-rendered :is(th, td):last-child {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 表注（HTML 表格可写 <caption>）：中文文档习惯把表注放在表上方 */
+.markdown-rendered table caption {
+  caption-side: top;
+  text-align: start;
+  padding: var(--my-space-4) var(--my-space-2);
+  color: var(--my-text-tertiary);
+  font-size: var(--my-font-size-s);
+  line-height: var(--my-line-height-snug);
+}
+
+/* ==========================================================================
+ * 六、实时预览的表格组件（.cm-table-widget）
+ * app.css 为了让 contenteditable 单元格好定位，把 th/td 的 padding 压成了 0。
+ * 本主题补回与阅读视图一致的内边距——否则同一个表格切换视图时会"抖一下"
+ * （列宽、行高全变），这是双视图主题最容易忽略的一致性细节。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-table-widget .table-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+  padding-block-end: var(--my-space-2);
+}
+
+.markdown-source-view.mod-cm6 .cm-table-widget :is(th, td) {
+  padding: var(--my-space-5) var(--my-space-7);
+  min-width: 5.5em;
+  border-block-end: 1px solid var(--my-border-subtle);
+  font-variant-numeric: tabular-nums;
+  line-break: strict;
+}
+
+.markdown-source-view.mod-cm6 .cm-table-widget thead :is(th, td) {
+  background-color: var(--table-header-background);
+  font-weight: var(--table-header-weight);
+  letter-spacing: 0.02em;
+  border-block-end: var(--table-header-border-width) solid var(--table-header-border-color);
+}
+
+/* 实时预览里正在编辑的单元格：给一层极淡的强调色底，指明"光标在这一格" */
+.markdown-source-view.mod-cm6 .cm-table-widget .cm-line.cm-active,
+.markdown-source-view.mod-cm6 .cm-table-widget :is(th, td):focus-within {
+  background-color: var(--my-surface-hover);
+}
+
+/* 表格拖拽手柄（调整列宽/移动行）与"新增行"按钮，统一为主题强调色 */
+.markdown-source-view.mod-cm6 .cm-table-widget .table-drag-handle,
+.markdown-source-view.mod-cm6 .cm-table-widget .drag-handle {
+  color: var(--table-drag-handle-color);
+  background-color: var(--table-drag-handle-background);
+  border-radius: var(--table-selection-border-radius);
+}
+
+/* ==========================================================================
+ * 七、打印：中文报告里表格经常跨页，必须让表头在每一页重现
+ * ======================================================================== */
+@media print {
+  .markdown-rendered table {
+    display: table;
+    width: 100%;
+    overflow: visible;
+    border-radius: 0;
+    break-inside: auto;
+  }
+
+  .markdown-rendered thead {
+    display: table-header-group;
+  }
+
+  .markdown-rendered tr {
+    break-inside: avoid;
+  }
+
+  /* 灰度打印时斑马纹会变成脏灰块，去掉；改用行分隔线 */
+  .markdown-rendered tbody > tr:nth-child(even) {
+    background-color: transparent;
+  }
+
+  .markdown-rendered :is(td, th) {
+    border-block-end: 1px solid var(--my-border);
+  }
+}

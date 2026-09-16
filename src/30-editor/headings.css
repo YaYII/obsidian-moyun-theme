@@ -1,0 +1,320 @@
+/* ============================================================================
+ * 墨韵 MoYun · 编辑器内容①：标题体系（Headings）
+ * ----------------------------------------------------------------------------
+ * 用途：统一 H1~H6 在【阅读视图】与【实时预览】两套 DOM 下的层级表达。
+ *
+ * 设计立场（为什么这样写）：
+ *   ① 层级靠「呼吸感 + 字重 + 墨色浓度」建立，不靠字号。
+ *      西文主题习惯把 h1 拉到 2.4em，在中文里一行只装得下 8 个汉字，
+ *      标题会变成"占地方的巨字"，反而削弱信息密度。本主题 H1 上限 1.9em。
+ *   ② 汉字没有真斜体、笔画密度又高：字重一过 700，横竖撇捺就粘连成墨块。
+ *      故最高只到 650（--my-font-weight-heading），低层级反而降到 500。
+ *   ③ 两套 DOM 的差异必须一次写全：阅读视图用 margin 做节奏（块级盒子），
+ *      实时预览只能用 padding（CodeMirror 的行是行盒，margin 会被行定位吃掉）。
+ *      写了阅读视图忘了实时预览，用户切换视图就会看到"标题间距突然变了"。
+ *
+ * 依赖：--my-font-heading / --my-font-weight-* / --my-text-* / --p-spacing
+ * 可选：body.my-heading-underline（下划装饰）、body.my-heading-numbers（自动编号）
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、标题基线：字族、字距、断行
+ * 说明：typography.css 只覆盖到 .markdown-rendered 的 h1~h3 与 .markdown-preview-view
+ *       的 h1~h3，h4~h6 与实时预览侧是空的。这里补齐并把两套 DOM 合并为一条规则，
+ *       避免"改了阅读视图忘了实时预览"这类经典漏改。
+ * ======================================================================== */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6),
+.markdown-preview-view :is(h1, h2, h3, h4, h5, h6),
+.markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3,
+  .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) {
+  font-family: var(--my-font-heading);
+  font-weight: var(--my-font-weight-heading);
+  /* 汉字是等宽方块，正字距会把标题拉成"散字"；0 是最稳的标题字距 */
+  letter-spacing: 0;
+  /* 中文避头尾：标题折行时行首不出现 。，、）》」等 */
+  line-break: strict;
+  /* 标题折成两行时自动平衡两行长度，避免"第一行很长、第二行两个字" */
+  text-wrap: balance;
+  text-indent: 0;
+}
+
+/* ==========================================================================
+ * 二、层级手段之一：墨色浓度
+ * 为什么用颜色而不是字号：中文标题的字号差一旦超过 1.25 倍就会显得"空洞"，
+ * 而颜色浓度差可以在字号几乎不变的前提下把层级说清楚，同时保持版面匀净。
+ * 浓度阶梯：H1/H2/H3 用主墨色 → H4/H5 用次墨色 → H6 用三级墨色（灰色小标题）。
+ * 注意：不覆写 --h1-color..--h6-color（那是 obsidian-map.css 的映射职责），
+ *       直接对元素声明 color，避免两处定义打架。
+ * ======================================================================== */
+.markdown-rendered :is(h1, h2, h3),
+.markdown-preview-view :is(h1, h2, h3),
+.markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3) {
+  color: var(--my-text-primary);
+}
+
+.markdown-rendered :is(h4, h5),
+.markdown-preview-view :is(h4, h5),
+.markdown-source-view.mod-cm6 :is(.HyperMD-header-4, .HyperMD-header-5) {
+  color: var(--my-text-secondary);
+}
+
+/* H6 是"最小号标题"：字重回到正文级，靠字距与灰色区分。
+ * 中文不用 uppercase（对汉字无效）也不用斜体（汉字会失真）。 */
+
+/* ==========================================================================
+ * 三、层级手段之二：字重
+ * 650 = 汉字可变字重字体的"半粗"，笔画仍清晰可分；
+ * 500 = 四级/五级标题降为中等字重，与正文的 400 拉开但不喧哗；
+ * 400 = 六级标题与正文同重，仅靠颜色与字距区分。
+ * ======================================================================== */
+.markdown-rendered :is(h1, h2, h3),
+.markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3) {
+  font-weight: var(--my-font-weight-heading);
+}
+
+.markdown-rendered :is(h4, h5),
+.markdown-source-view.mod-cm6 :is(.HyperMD-header-4, .HyperMD-header-5) {
+  font-weight: var(--my-font-weight-medium);
+}
+
+.markdown-rendered h6,
+.markdown-source-view.mod-cm6 .HyperMD-header-6 {
+  font-weight: var(--my-font-weight-normal);
+}
+
+/* ==========================================================================
+ * 四、层级手段之三：呼吸感（间距）
+ * 阅读视图用 margin（块级盒子），实时预览用 padding（CodeMirror 的行盒）。
+ * 原则：标题上方留白 > 下方留白，让标题"贴着自己的正文"，而不是悬在中间。
+ * ======================================================================== */
+
+/* —— 阅读视图：连续的同级标题（如两个 H2 相邻）间距收窄 ——
+ * 中文笔记里常用"空标题"做分节标记，若保持 1.8em 的段前距，版面会碎成一片。 */
+.markdown-rendered :is(h2, h3, h4, h5, h6) + :is(h2, h3, h4, h5, h6) {
+  margin-block-start: 0.9em;
+}
+
+/* —— 实时预览：CodeMirror 的行盒不能用 margin 撑开（会被其他行的定位覆盖），
+ * 官方自己也是用 padding-top 做标题节奏的，这里沿用同一机制并把力度调大。 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header {
+  padding-block-start: calc(var(--p-spacing) * 2.2);
+  padding-block-end: calc(var(--p-spacing) * 0.45);
+}
+
+/* 文档第一行就是标题时不该有巨大的上边距（否则打开笔记先看到一片空白） */
+.markdown-source-view.mod-cm6 .cm-content > .cm-line.HyperMD-header:first-child {
+  padding-block-start: var(--p-spacing);
+}
+
+/* 连续标题之间同样收窄，保持与阅读视图一致的观感 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header + .cm-line.HyperMD-header {
+  padding-block-start: calc(var(--p-spacing) * 1.1);
+}
+
+/* 一/二级标题给更多上方留白：它们是"章节"的分界，需要更强的视觉停顿 */
+.markdown-source-view.mod-cm6 :is(.cm-line.HyperMD-header-1, .cm-line.HyperMD-header-2) {
+  padding-block-start: calc(var(--p-spacing) * 2.8);
+}
+
+/* ==========================================================================
+ * 五、锚点、跳转与定位
+ * 双击大纲 / 点击内链跳转到标题时，标题会顶到视口最上沿并被标签栏遮住，
+ * 用 scroll-margin 预留出安全距离（不改动任何布局属性）。 */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-block-start: 4.5rem;
+}
+
+/* 跳转落点高亮：用 inset 阴影画左侧色条 + 淡底色，二者都不改变盒子尺寸，
+ * 所以高亮出现的瞬间正文不会跳动（这是很多主题"跳一下就抖"的根因）。 */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6):target {
+  /* 直接由强调色调出淡底：语义明确，且不依赖中间令牌的解释 */
+  background-color: color-mix(in srgb, var(--my-accent) 12%, transparent);
+  box-shadow: inset var(--my-border-width-accent) 0 0 0 var(--my-accent);
+  border-radius: var(--my-radius-xs);
+  padding-inline: var(--my-space-4);
+  margin-inline-start: calc(var(--my-space-4) * -1);
+}
+
+/* ==========================================================================
+ * 六、标题内的行内元素：中文标题里嵌英文/代码/标签是常态，需单独配平，
+ * 否则等宽字母与标签胶囊会显得比汉字大一圈。
+ * ======================================================================== */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) :is(a.internal-link, a.external-link) {
+  color: inherit;
+  text-decoration: none;
+  border-block-end: 1px dotted var(--my-border-strong);
+}
+
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) :is(a.internal-link, a.external-link):hover {
+  color: var(--my-accent);
+  border-block-end-color: var(--my-accent);
+}
+
+/* 标题中的行内代码降一档字号并去掉底色：保留底色会让标题看起来很脏 */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) code {
+  font-size: 0.82em;
+  background-color: transparent;
+  border-color: transparent;
+  color: inherit;
+}
+
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) .tag {
+  font-size: 0.7em;
+  vertical-align: 0.08em;
+}
+
+/* ==========================================================================
+ * 七、折叠箭头与标题锚点：阅读视图的箭头由 Obsidian 注入标题内部
+ * （.heading-collapse-indicator），实时预览在行首折叠槽里
+ * （.cm-fold-indicator .collapse-indicator）。默认几乎隐形，悬停才浮现——
+ * 否则满屏箭头会抢走正文注意力。
+ * ======================================================================== */
+.markdown-rendered .heading-collapse-indicator,
+.markdown-preview-view .heading-collapse-indicator {
+  color: var(--my-text-faintest);
+  opacity: 0;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out),
+              color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6):hover > .heading-collapse-indicator,
+.markdown-rendered .heading-collapse-indicator:focus-visible {
+  opacity: 1;
+}
+
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6):hover > .heading-collapse-indicator:hover {
+  color: var(--my-accent);
+}
+
+/* 已折叠的标题：箭头常亮并转为强调色，明确告诉用户"这里被收起来了" */
+.markdown-rendered .is-collapsed > .heading-collapse-indicator,
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6).is-collapsed > .heading-collapse-indicator {
+  opacity: 0.85;
+  color: var(--my-accent);
+}
+
+/* 实时预览的折叠槽：平时不可见，悬停在槽上才出现 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header .cm-fold-indicator .collapse-indicator {
+  color: var(--my-text-faintest);
+}
+
+.markdown-source-view.mod-cm6 .cm-fold-indicator:hover .collapse-indicator,
+.markdown-source-view.mod-cm6 .cm-fold-indicator.is-collapsed .collapse-indicator {
+  color: var(--my-accent);
+  opacity: 1;
+}
+
+/* ==========================================================================
+ * 八、可选特性 A：标题下划装饰（body.my-heading-underline）
+ * 实现取舍：用 background-image 画线，而不是 ::after 或 border-bottom。
+ *   ① border-bottom 会撑开盒子，标题与正文的距离被改变；
+ *   ② ::after 在实时预览里是插进 CodeMirror 行盒的块级盒子，会打乱行高与折叠槽定位；
+ *   ③ background-image 只影响绘制层，两个视图共用一条规则，行为完全一致。
+ * H1 画满宽细线并向右渐隐（像墨迹收笔）；H2 只画一小段强调色短线做章节标记。
+ * ======================================================================== */
+body.my-heading-underline .markdown-rendered h1,
+body.my-heading-underline .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 {
+  padding-block-end: 0.35em;
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 1px;
+  background-image: linear-gradient(to right,
+    var(--my-border) 0%,
+    var(--my-border) 62%,
+    transparent 100%);
+}
+
+body.my-heading-underline .markdown-rendered h2,
+body.my-heading-underline .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 {
+  padding-block-end: 0.3em;
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 2px;
+  /* 2.6em 的短横：长度约等于两个半汉字，两端不收圆角，像毛笔的一顿 */
+  background-image: linear-gradient(to right,
+    color-mix(in srgb, var(--my-accent) 55%, transparent) 0 2.6em,
+    transparent 2.6em);
+}
+
+/* 笔记顶部的大标题（inline title）等价于 H1，一并加线，否则标题区会"半截有线下半截没有" */
+body.my-heading-underline .markdown-source-view.mod-cm6 .inline-title,
+body.my-heading-underline .markdown-preview-view .inline-title {
+  padding-block-end: 0.35em;
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 1px;
+  background-image: linear-gradient(to right,
+    var(--my-border) 0%,
+    var(--my-border) 62%,
+    transparent 100%);
+}
+
+/* ==========================================================================
+ * 九、标题自动编号 —— 实现已移交
+ * ----------------------------------------------------------------------------
+ * 标题编号（body.my-heading-numbers）的【唯一实现】在：
+ *     src/50-features/heading-numbers.css
+ * 该模块覆盖 h1~h4、含大纲面板联动，并在文件头写明三处取舍（实时预览不编号、
+ * 折叠态计数前移、h5/h6 默认不编号）。
+ *
+ * 此处刻意不再保留第二份实现。同一个属性若有"两个主人"，最终表现会取决于文件
+ * 拼接顺序，是主题里最难排查的一类问题 —— 构建期的冲突检查器会把这类情况报出来。
+ * ======================================================================== */
+
+/* 嵌入笔记内的编号独立成篇（每个 .markdown-rendered 各自 reset），
+ * 这与"引用一段外部笔记时它保持自己的章节号"的直觉一致。 */
+
+/* ==========================================================================
+ * 十、笔记顶端的大标题与嵌入笔记标题
+ * 大标题是"整篇的封面"，比正文 H1 大一档是合理的；
+ * 但汉字放大后字重必须降下来，否则一屏墨块。
+ * ======================================================================== */
+.markdown-preview-view .inline-title,
+.markdown-source-view.mod-cm6 .inline-title {
+  font-family: var(--my-font-heading);
+  font-weight: var(--my-font-weight-heading);
+  letter-spacing: 0;
+  line-height: var(--my-line-height-tight);
+  color: var(--my-text-primary);
+  text-wrap: balance;
+}
+
+/* 嵌入笔记里的小标题降一档字号，让"内嵌的内容"与"当前笔记的正文"区分开 */
+.markdown-embed .markdown-rendered :is(h1, h2) { font-size: 1.25em; }
+.markdown-embed .markdown-rendered :is(h3, h4, h5, h6) { font-size: 1.05em; }
+
+/* ==========================================================================
+ * 十一、动效兜底与打印
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-rendered .heading-collapse-indicator,
+  .markdown-source-view.mod-cm6 .cm-fold-indicator .collapse-indicator {
+    transition: none;
+  }
+}
+
+@media print {
+  /* 打印时标题绝不与正文分开在两页；纸面上也没有交互，箭头与跳转高亮一律不出现 */
+  .markdown-rendered :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid-page;
+    break-inside: avoid;
+    scroll-margin-block-start: 0;
+  }
+
+  .markdown-rendered .heading-collapse-indicator {
+    display: none;
+  }
+
+  .markdown-rendered :is(h1, h2, h3, h4, h5, h6):target {
+    background-color: transparent;
+    box-shadow: none;
+    padding-inline: 0;
+    margin-inline-start: 0;
+  }
+
+  /* 打印时下划线改为实色：渐变在部分打印驱动的灰度化下会断成虚线 */
+  body.my-heading-underline .markdown-rendered :is(h1, h2) {
+    background-image: none;
+    border-block-end: 1px solid var(--my-border-strong);
+  }
+}

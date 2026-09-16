@@ -1,0 +1,19 @@
+{
+  "id": "moyun-preset-moye",
+  "name": "墨夜（默认深色）",
+  "description": "夜间阅读形态：黛青强调色、正文用宣纸色（暖白而非纯白）护眼。",
+  "settings": {
+    "moyun@@my-tone@@light": "my-tone-daiqing",
+    "moyun@@my-indent-on@@light": false,
+    "moyun@@my-justify@@light": false,
+    "moyun@@my-font-size-base@@light": 17,
+    "moyun@@my-line-height-relaxed@@light": 1.9,
+    "moyun@@my-content-width@@light": "44rem",
+    "moyun@@my-tone@@dark": "my-tone-daiqing",
+    "moyun@@my-indent-on@@dark": false,
+    "moyun@@my-justify@@dark": false,
+    "moyun@@my-font-size-base@@dark": 17,
+    "moyun@@my-line-height-relaxed@@dark": 1.9,
+    "moyun@@my-content-width@@dark": "44rem"
+  }
+}

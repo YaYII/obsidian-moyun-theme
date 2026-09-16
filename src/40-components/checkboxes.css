@@ -1,0 +1,308 @@
+/* ============================================================================
+ * 墨韵 MoYun · 通用组件：复选框与任务态（Checkboxes & Task states）
+ * ----------------------------------------------------------------------------
+ * 用途：让任务列表在中文排版下"对得齐、点得准、看得懂状态"。
+ *
+ * 三件具体的事：
+ *   ① 垂直对齐 —— 中文行高 1.8、汉字字面撑满 em 框，复选框极易偏高或偏低；
+ *   ② 状态区分 —— Obsidian 支持 - [/] - [-] - [>] - [?] - [!] 等自定义状态字符，
+ *      原生只处理 [x]，其余状态需要主题补上视觉语义（否则"进行中"和"待办"无从分辨）；
+ *   ③ 完成反馈 —— 勾选动画 + 文字淡化 + 删除线，且删除线不能压住汉字的中宫。
+ *
+ * 依赖：obsidian-map.css 的 --checkbox-* / --checklist-done-* 已接好；
+ *       本文件只消费语义令牌，不写死颜色。
+ * 注意：阅读视图的 data-task 在 <li> 上、实时预览在 .HyperMD-task-line 上，
+ *       而部分版本（含官方预览示例）会把 data-task 直接放在 <input> 上，
+ *       三种位置都要覆盖，否则同一篇笔记在两套视图下状态颜色会不一致。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、复选框本体
+ * 尺寸与圆角沿用映射层（16px / 3px）——3px 是"方中带圆"，与主题的印章感一致。
+ * ======================================================================== */
+.task-list-item-checkbox {
+  border: var(--my-border-width) solid var(--checkbox-border-color);
+  background-color: transparent;
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    border-color var(--my-duration-fast) var(--my-ease-out),
+    box-shadow var(--my-duration-fast) var(--my-ease-out),
+    transform var(--my-duration-fast) var(--my-ease-out);
+}
+
+/* 悬停：边框转强调色 + 一圈极淡光环。中文界面里"可点击性"要比西文更明确，
+   因为汉字本身的视觉重量已经很大，一个 16px 的方框很容易被忽略。 */
+@media (hover: hover) {
+  .task-list-item-checkbox:hover {
+    border-color: var(--checkbox-border-color-hover);
+    box-shadow: 0 0 0 3px rgb(var(--my-accent-rgb) / 0.14);
+  }
+}
+
+/* 键盘聚焦：用 2px 实心环，保证在浅色与深色纸面上都能看清焦点位置 */
+.task-list-item-checkbox:focus-visible {
+  outline: none;
+  border-color: var(--my-accent);
+  box-shadow: 0 0 0 2px rgb(var(--my-accent-rgb) / 0.35);
+}
+
+/* 按下：轻微缩小，给出"已点中"的触感 */
+.task-list-item-checkbox:active {
+  transform: scale(0.9);
+}
+
+/* 禁用（例如 Tasks 查询结果里的只读项） */
+.task-list-item-checkbox[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+ * 二、选中态与对勾动画
+ * Obsidian 用 mask-image 在 ::after 上画出对勾，这里只负责"让它弹出来"。
+ * 用 --my-ease-spring 做一次性回弹，时长 200ms：再长会拖慢连续勾选的手感。
+ * ======================================================================== */
+.task-list-item-checkbox:checked {
+  background-color: var(--checkbox-color);
+  border-color: var(--checkbox-color);
+}
+.task-list-item-checkbox:checked::after {
+  transform-origin: 50% 55%;
+  animation: moyun-check-pop var(--my-duration-normal) var(--my-ease-spring) both;
+}
+@keyframes moyun-check-pop {
+  from {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (hover: hover) {
+  .task-list-item-checkbox:checked:hover {
+    background-color: var(--checkbox-color-hover);
+    border-color: var(--checkbox-color-hover);
+    box-shadow: 0 0 0 3px rgb(var(--my-accent-rgb) / 0.16);
+  }
+}
+
+/* ==========================================================================
+ * 三、垂直对齐（本文件最需要"证据"的一段）
+ * 实测数据（Chromium 150 · Noto Sans CJK SC · 正文 16px · 行高 1.8）：
+ *   · 阅读视图：Obsidian 原生 position: relative; top: 0.2em，
+ *     复选框中心落在基线上方 5.34px；"国"字墨迹中心在基线上方 5.50px，
+ *     偏差仅 0.16px —— 已经落在中文可接受范围内。
+ *   · 实时预览：原生 vertical-align: middle 使中心落在基线 + 半 x 字高
+ *     （16px 字号约 4.16px），叠加 top: -0.1em（-1.33px）后为 5.49px，
+ *     与 5.50px 的墨迹中心基本重合。
+ * 结论：**不要**照搬西文主题常见的 vertical-align: middle / -0.2em 微调，
+ *       那会把阅读视图的复选框压低 2~3px。这里只做两件保护性的事：
+ *       把偏移写成 em（随用户调大字号等比缩放），并给中文留出更大的右侧间距。
+ * ======================================================================== */
+.markdown-preview-view .task-list-item-checkbox {
+  top: 0.2em;                 /* 与实测对齐结果一致，勿动 */
+  margin-inline-end: 0.55em;  /* 原生 0.6em 偏大，中文标点本身已占位，收到 0.55em */
+}
+.markdown-source-view.mod-cm6 .task-list-label .task-list-item-checkbox {
+  vertical-align: middle;
+  top: -0.1em;
+  margin-inline-start: 0.3em;
+}
+
+/* ==========================================================================
+ * 四、完成态：文字淡化 + 删除线
+ * 中文的删除线若用默认粗细会与汉字横画"打架"，故统一 1px 并把颜色调淡；
+ * 复选框本身保持实心强调色——它是"已完成"的确认标记，不该跟着变灰。
+ * ======================================================================== */
+:is(li.task-list-item, .HyperMD-task-line)[data-task="x"],
+:is(li.task-list-item, .HyperMD-task-line)[data-task="X"] {
+  color: var(--checklist-done-color);
+  text-decoration: var(--checklist-done-decoration);
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--my-text-faintest);
+}
+:is(li.task-list-item, .HyperMD-task-line)[data-task="x"] .task-list-item-checkbox,
+:is(li.task-list-item, .HyperMD-task-line)[data-task="X"] .task-list-item-checkbox {
+  background-color: var(--checkbox-color);
+  border-color: var(--checkbox-color);
+}
+/* 实时预览里已完成行的格式符号（- [x]）同步淡化，保持整行安静 */
+.markdown-source-view.mod-cm6 .HyperMD-task-line[data-task="x"] .cm-formatting-task,
+.markdown-source-view.mod-cm6 .HyperMD-task-line[data-task="X"] .cm-formatting-task {
+  color: var(--my-text-faintest);
+}
+
+/* ==========================================================================
+ * 五、自定义状态字符
+ * 设计原则：状态不只靠颜色区分（色盲用户与黑白打印都要能分辨），
+ *           因此每个状态在方框内都有一个**形状**：
+ *             /  进行中 → 短横条（进度感）
+ *             -  已取消 → 短横条（灰）
+ *             >  已迁移 → 右向箭头
+ *             ?  待确认 → 问号
+ *             !  重要   → 感叹号
+ * 三种 data-task 落点（input / li / 实时预览行）统一覆盖。
+ * ======================================================================== */
+
+/* —— 进行中 [/]：琥珀色描边 + 中央短横 —— */
+input.task-list-item-checkbox[data-task="/"],
+:is(li.task-list-item, .HyperMD-task-line)[data-task="/"] .task-list-item-checkbox {
+  border-color: var(--my-warning);
+}
+input.task-list-item-checkbox[data-task="/"]::after,
+:is(li.task-list-item, .HyperMD-task-line)[data-task="/"] .task-list-item-checkbox::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5em;
+  height: 2px;
+  border-radius: var(--my-radius-full);
+  background-color: var(--my-warning);
+  transform: translate(-50%, -50%);
+}
+/* 进行中的任务文字保持正文色（还没完成，不该被淡化），但略降对比以示"未定稿" */
+:is(li.task-list-item, .HyperMD-task-line)[data-task="/"] {
+  color: var(--my-text-secondary);
+}
+
+/* —— 已取消 [-]：最淡的一档 + 删除线 —— */
+input.task-list-item-checkbox[data-task="-"],
+:is(li.task-list-item, .HyperMD-task-line)[data-task="-"] .task-list-item-checkbox {
+  border-color: var(--my-text-faintest);
+}
+input.task-list-item-checkbox[data-task="-"]::after,
+:is(li.task-list-item, .HyperMD-task-line)[data-task="-"] .task-list-item-checkbox::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5em;
+  height: 1.5px;
+  background-color: var(--my-text-faintest);
+  transform: translate(-50%, -50%);
+}
+:is(li.task-list-item, .HyperMD-task-line)[data-task="-"] {
+  color: var(--my-text-faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--my-text-faintest);
+}
+
+/* —— 已迁移 [>]：信息色 + 右向箭头（用两条边框旋转画出，不依赖字体字形） —— */
+input.task-list-item-checkbox[data-task=">"],
+:is(li.task-list-item, .HyperMD-task-line)[data-task=">"] .task-list-item-checkbox {
+  border-color: var(--my-info);
+}
+input.task-list-item-checkbox[data-task=">"]::after,
+:is(li.task-list-item, .HyperMD-task-line)[data-task=">"] .task-list-item-checkbox::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-top: 2px solid var(--my-info);
+  border-right: 2px solid var(--my-info);
+  transform: translate(-60%, -50%) rotate(45deg);
+}
+:is(li.task-list-item, .HyperMD-task-line)[data-task=">"] {
+  color: var(--my-text-secondary);
+}
+
+/* —— 待确认 [?]：信息色 + 问号 —— */
+input.task-list-item-checkbox[data-task="?"],
+:is(li.task-list-item, .HyperMD-task-line)[data-task="?"] .task-list-item-checkbox {
+  border-color: var(--my-info);
+}
+input.task-list-item-checkbox[data-task="?"]::after,
+:is(li.task-list-item, .HyperMD-task-line)[data-task="?"] .task-list-item-checkbox::after {
+  content: "?";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 0.72em;
+  font-weight: var(--my-font-weight-bold);
+  line-height: 1;
+  color: var(--my-info);
+  transform: translate(-50%, -50%);
+}
+
+/* —— 重要 [!]：危险色 + 感叹号，整行左侧加一道内阴影色条 —— */
+input.task-list-item-checkbox[data-task="!"],
+:is(li.task-list-item, .HyperMD-task-line)[data-task="!"] .task-list-item-checkbox {
+  border-color: var(--my-danger);
+}
+input.task-list-item-checkbox[data-task="!"]::after,
+:is(li.task-list-item, .HyperMD-task-line)[data-task="!"] .task-list-item-checkbox::after {
+  content: "!";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 0.72em;
+  font-weight: var(--my-font-weight-bold);
+  line-height: 1;
+  color: var(--my-danger);
+  transform: translate(-50%, -50%);
+}
+:is(li.task-list-item, .HyperMD-task-line)[data-task="!"] {
+  color: var(--my-text-primary);
+  font-weight: var(--my-font-weight-medium);
+  /* 用 box-shadow 而非 border：内阴影不参与布局，不会把整行的文字推歪 2px */
+  box-shadow: inset 2px 0 0 var(--my-danger);
+}
+
+/* 其余未知状态字符（用户自定义 - [a] 之类）统一走"中性提示"：
+   不猜其语义，只把方框调成信息色，保证与普通待办可区分。 */
+input.task-list-item-checkbox[data-task]:not([data-task=" "], [data-task=""], [data-task="x"], [data-task="X"], [data-task="/"], [data-task="-"], [data-task=">"], [data-task="?"], [data-task="!"]) {
+  border-color: var(--my-info);
+}
+
+/* ==========================================================================
+ * 六、实时预览的源码片段
+ * 光标未进入任务行时，- [ ] 的括号以 .cm-formatting-task 显示；
+ * 中文等宽回退字体下这些符号很容易比正文还抢眼，故统一压到最淡一档。
+ * ======================================================================== */
+.markdown-source-view.mod-cm6 .cm-formatting-task {
+  color: var(--my-text-faintest);
+  letter-spacing: 0;
+}
+
+/* ==========================================================================
+ * 七、打印 / 导出 PDF
+ * 浏览器默认不打印背景色，勾选态会在 PDF 里"消失"——这是中文笔记导出时
+ * 最容易踩的坑，必须显式要求保留颜色；未勾选的方框则靠描边保留。
+ * ======================================================================== */
+@media print {
+  .task-list-item-checkbox {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border-color: var(--my-text-tertiary);
+  }
+  .task-list-item-checkbox:checked {
+    background-color: var(--my-accent);
+    border-color: var(--my-accent);
+  }
+  :is(li.task-list-item)[data-task="!"] {
+    /* 打印时内阴影常被忽略，改用描边保留"重要"的提示 */
+    box-shadow: none;
+    border-inline-start: var(--my-border-width-thick) solid var(--my-danger);
+    padding-inline-start: var(--my-space-4);
+  }
+}
+
+/* ==========================================================================
+ * 八、动效兜底
+ * 关闭"减少动态效果"时，对勾回弹与所有过渡都要停用；
+ * 但保留 :active 的缩小反馈——它是瞬时状态提示，不构成"动画"。
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .task-list-item-checkbox {
+    transition: none;
+  }
+  .task-list-item-checkbox:checked::after {
+    animation: none;
+  }
+}

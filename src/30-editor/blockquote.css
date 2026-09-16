@@ -1,0 +1,326 @@
+/* ============================================================================
+ * 墨韵 MoYun · 编辑器内容⑤：引用 / 标注基础 / 数学公式 / 脚注
+ * ----------------------------------------------------------------------------
+ * 用途：blockquote（含嵌套）、标注容器（Callout）的几何基础、数学公式块、脚注区。
+ *
+ * 中文排版的头号取舍：引用块不用斜体。
+ *   西文用 italic 表示"这是别人的话"，但汉字没有真斜体——浏览器是把字形
+ *   做倾斜变换，宋体的横画会变成斜线、楷体的顿笔会被拉断。中文出版界的
+ *   惯例是改用【左侧竖线 + 字号或颜色降一档 + 缩进】来表达引述。
+ *   本文件据此把 blockquote 及其中所有子元素的 font-style 归零；
+ *   typography.css 已经把 <em> 处理成"变色 + 中等字重"，两者叠加不冲突。
+ *
+ * 依赖：--blockquote-* / --callout-*（obsidian-map.css 已映射）、
+ *       --my-quote / --my-space-* / --my-radius-* / --my-text-*
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、引用块主体
+ * 左侧色条用 --blockquote-border-*（已映射），底色默认透明——
+ * 中文长引用（如整段政策原文）带底色会显得"糊在纸上"，
+ * 留白 + 色条已经足够表达引述关系。
+ * ======================================================================== */
+.markdown-rendered blockquote,
+.markdown-preview-view blockquote {
+  /* 关键：汉字不用斜体 */
+  font-style: normal;
+  background-color: var(--blockquote-background-color);
+  border-inline-start: var(--blockquote-border-thickness) solid var(--blockquote-border-color);
+  border-radius: 0 var(--my-radius-s) var(--my-radius-s) 0;
+  color: var(--blockquote-color);
+  padding: var(--my-space-4) var(--my-space-8);
+  margin-block: var(--p-spacing);
+  /* 引用内部行高比正文略紧一档（1.65），但仍比西文主题松 */
+  line-height: var(--my-line-height-normal);
+  /* 中文避头尾与寡行控制：引用段落短，更容易出现孤字 */
+  line-break: strict;
+  text-wrap: pretty;
+  text-indent: 0;
+}
+
+/* 引用块内所有元素一律不斜体（含 <em>/<i>：typography 已把它们改成变色，
+ * 这里只保证"斜"这个动作不会出现） */
+.markdown-rendered blockquote :is(p, li, span, div, strong, em, i, a),
+.markdown-preview-view blockquote :is(p, li, span, div, strong, em, i, a) {
+  font-style: normal;
+}
+
+/* 引用内的段落：去掉段间距的重复叠加，保留半档 */
+.markdown-rendered blockquote p {
+  margin-block: 0 var(--my-space-5);
+}
+
+.markdown-rendered blockquote > p:last-child,
+.markdown-rendered blockquote > :last-child {
+  margin-block-end: 0;
+}
+
+/* 引用里的首个块级子元素不留上边距，避免"色条比文字高出一截" */
+.markdown-rendered blockquote > :first-child {
+  margin-block-start: 0;
+}
+
+/* ==========================================================================
+ * 二、嵌套引用：用"墨色浓度"分层，不换颜色
+ * 中文文档里引用套引用常见于"引述某人转述某人"。若每层换一种颜色，
+ * 三层之后就会变成调色板；用同一色相逐层减淡，层级清楚且不喧哗。
+ * 同时逐层收窄内边距——否则三层嵌套后正文只剩几个字宽。
+ * ======================================================================== */
+.markdown-rendered blockquote blockquote {
+  border-inline-start-color: color-mix(in srgb, var(--my-quote) 45%, transparent);
+  background-color: color-mix(in srgb, var(--my-quote) 4%, transparent);
+  margin-block: var(--my-space-5);
+  padding-inline-start: var(--my-space-7);
+}
+
+.markdown-rendered blockquote blockquote blockquote {
+  border-inline-start-color: color-mix(in srgb, var(--my-quote) 28%, transparent);
+  background-color: transparent;
+  padding-inline-start: var(--my-space-6);
+}
+
+/* 四层及更深：色条退到极淡，靠缩进表达层级，不再叠加背景 */
+.markdown-rendered blockquote blockquote blockquote blockquote {
+  border-inline-start-color: var(--my-border);
+  padding-inline-start: var(--my-space-5);
+}
+
+/* 实时预览的引用是逐行的（每行一个 .cm-line.HyperMD-quote），
+ * 没有真正的嵌套块，因此只保证：不斜体、行内格式符弱化。 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-quote {
+  font-style: normal;
+  color: var(--blockquote-color);
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-quote .cm-formatting-quote {
+  color: var(--my-text-faintest);
+}
+
+/* ==========================================================================
+ * 三、引用块里的行内元素
+ * 引用中的链接/代码若沿用正文样式，会因为底色叠加显得很脏（引用本身有色条）。
+ * ======================================================================== */
+.markdown-rendered blockquote :is(a.internal-link, a.external-link) {
+  color: var(--my-accent);
+  text-decoration: none;
+  border-block-end: 1px dotted color-mix(in srgb, var(--my-accent) 45%, transparent);
+}
+
+.markdown-rendered blockquote :is(a.internal-link, a.external-link):hover {
+  border-block-end-color: var(--my-accent);
+}
+
+.markdown-rendered blockquote code {
+  background-color: color-mix(in srgb, var(--my-text-primary) 6%, transparent);
+  border-color: transparent;
+}
+
+/* ==========================================================================
+ * 四、标注容器（Callout）的几何基础
+ * 职责边界：颜色与图标由 --callout-* 一族变量负责（见 obsidian-map.css），
+ * 本文件只负责「容器的形状与呼吸」——圆角、内边距、标题排版、折叠箭头。
+ * 这样换肤时只需要改一处，也不会出现两个模块互相覆盖同一个属性的混战。
+ * ======================================================================== */
+.markdown-rendered .callout,
+.markdown-source-view.mod-cm6 .callout {
+  border-radius: var(--callout-radius);
+  padding: var(--callout-padding);
+  margin-block: var(--p-spacing);
+  /* 标注内中文行高略紧：容器已有内边距，再松就"空"了 */
+  line-height: var(--my-line-height-normal);
+  line-break: strict;
+}
+
+.markdown-rendered .callout-title,
+.markdown-source-view.mod-cm6 .callout-title {
+  font-weight: var(--callout-title-weight);
+  font-size: var(--callout-title-size);
+  letter-spacing: 0.01em;
+  line-height: var(--my-line-height-snug);
+}
+
+/* 标题与内容之间的一档空隙：中文标注标题常是整句（"注意：xxx"），
+ * 与正文贴死会读成一段。 */
+.markdown-rendered .callout-title + .callout-content {
+  margin-block-start: var(--my-space-4);
+}
+
+.markdown-rendered .callout-content > :first-child {
+  margin-block-start: 0;
+}
+
+.markdown-rendered .callout-content > :last-child {
+  margin-block-end: 0;
+}
+
+/* 标注内的引用块：容器已有边界，色条再加重就是"框中框中的框" */
+.markdown-rendered .callout blockquote {
+  margin-block: var(--my-space-4);
+  padding-inline-start: var(--my-space-6);
+  border-inline-start-width: var(--my-border-width-thick);
+}
+
+/* 标注折叠箭头：与标题同色、悬停才明显 */
+.markdown-rendered .callout-fold {
+  color: var(--my-text-tertiary);
+  transition: color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.markdown-rendered .callout-fold:hover {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 五、数学公式
+ * 公式字号要比正文大一档：数学符号的视觉重心（x-height）低于汉字，
+ * 同字号下公式会显得比周围文字小。行间公式再额外给上下内边距。
+ * ======================================================================== */
+.markdown-rendered mjx-container {
+  font-size: 1.05em;
+  line-height: var(--my-line-height-normal);
+}
+
+/* 行内公式：左右留出一点空隙，避免 $x$ 紧贴汉字 */
+.markdown-rendered mjx-container:not([display="true"]) {
+  padding-inline: 0.1em;
+  vertical-align: baseline;
+}
+
+/* 行间公式：居中 + 上下留白 + 过长时横向滚动（不折行，折行会破坏公式结构） */
+.markdown-rendered mjx-container[display="true"],
+.markdown-rendered .math-block,
+.markdown-rendered .math-block > mjx-container {
+  display: block;
+  text-align: center;
+  margin-block: var(--p-spacing);
+  padding-block: var(--my-space-6);
+  padding-inline: var(--my-space-4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-indent: 0;
+}
+
+/* 公式编号（右侧 (1) 之类）在中文文档里常与公式同行，保持右对齐 */
+.markdown-rendered .math-block mjx-container[display="true"] {
+  margin-inline: auto;
+}
+
+/* 实时预览的公式块已有 1em 上下内边距，这里只补横向留白与滚动 */
+.markdown-source-view.mod-cm6 .math-block > mjx-container {
+  padding-inline: var(--my-space-4);
+  text-align: center;
+}
+
+/* ==========================================================================
+ * 六、脚注
+ * 中文文档的脚注区习惯带一个小标题，且编号要足够大可读
+ * （上标数字若按西文惯例缩到 0.6em，中文读者几乎看不清）。
+ * ======================================================================== */
+.markdown-rendered .footnotes {
+  margin-block-start: var(--my-space-11);
+  font-size: 0.92em;
+  color: var(--my-text-secondary);
+  line-height: var(--my-line-height-normal);
+}
+
+/* 脚注区的分隔线：用极淡的分隔色，避免与正文的横线（hr）混淆 */
+.markdown-rendered .footnotes > hr {
+  border: 0;
+  border-block-start: var(--my-border-width) solid var(--my-divider);
+  margin-block: 0 var(--my-space-6);
+}
+
+/* 脚注区小标题：中文出版物的习惯，使读者一眼认出这是注释区 */
+.markdown-rendered .footnotes::before {
+  content: "脚注";
+  display: block;
+  margin-block-end: var(--my-space-5);
+  color: var(--my-text-faint);
+  font-size: var(--my-font-size-xs);
+  letter-spacing: 0.12em;
+  user-select: none;
+}
+
+.markdown-rendered .footnotes :is(ol, ul) {
+  padding-inline-start: var(--my-space-9);
+}
+
+.markdown-rendered .footnotes li {
+  margin-block: var(--my-space-4);
+  line-height: var(--my-line-height-normal);
+}
+
+/* 脚注序号（引用点）：上标 + 强调色 + 等宽数字 */
+.markdown-rendered .footnote-ref {
+  vertical-align: super;
+  font-size: 0.74em;
+  line-height: 0;
+  padding-inline: 0.15em;
+  color: var(--my-accent);
+  font-weight: var(--my-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.markdown-rendered .footnote-ref:hover {
+  color: var(--my-accent-hover);
+}
+
+/* 返回正文的箭头：默认很淡，悬停才亮 */
+.markdown-rendered .footnote-backref {
+  color: var(--my-text-faintest);
+  text-decoration: none;
+  margin-inline-start: var(--my-space-3);
+}
+
+.markdown-rendered .footnote-backref:hover {
+  color: var(--my-accent);
+}
+
+/* 从引用点跳进脚注时，被跳转的那一条高亮（不改布局，避免列表跳动） */
+.markdown-rendered .footnotes li:target {
+  background-color: color-mix(in srgb, var(--my-accent) 10%, transparent);
+  border-radius: var(--my-radius-xs);
+}
+
+/* 实时预览里的脚注源码（[^1] 与定义行）保持强调色但不过度显眼 */
+.markdown-source-view.mod-cm6 :is(.cm-hmd-footnote, .cm-hmd-footnote-url-title) {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 七、动效兜底与打印
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-rendered .callout-fold {
+    transition: none;
+  }
+}
+
+@media print {
+  /* 打印时引用块用左侧实线表达（灰度下色条会变成浅灰块） */
+  .markdown-rendered blockquote {
+    background-color: transparent;
+    border-inline-start-color: var(--my-border-strong);
+    break-inside: avoid;
+  }
+
+  .markdown-rendered .callout {
+    break-inside: avoid;
+  }
+
+  /* 公式在纸上不滚动，超宽时缩排而不是裁掉 */
+  .markdown-rendered mjx-container[display="true"] {
+    overflow: visible;
+    break-inside: avoid;
+  }
+
+  .markdown-rendered .footnotes {
+    break-before: auto;
+  }
+
+  .markdown-rendered .footnotes::before {
+    content: "";
+    display: none;
+  }
+}

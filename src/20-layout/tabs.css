@@ -1,0 +1,172 @@
+/* ============================================================================
+ * 墨韵 MoYun · 布局：标签页与标题栏
+ * ----------------------------------------------------------------------------
+ * 标签页的设计难点是【消除"断层"】。Obsidian 默认给激活标签页一种底色、给标签栏
+ * 另一种底色，两者与下方内容区的第三种底色常常对不齐，视觉上出现横向断层。
+ *
+ * 墨韵的做法：让「激活标签页」的底色 === 「内容区纸面」的底色，并去掉它两侧的
+ * 描边，使标签页在视觉上真正"连通"到下方内容；未激活标签页则保持中间层底色、
+ * 略微降低文字不透明度，形成"在后面"的暗示。
+ * ========================================================================== */
+
+/* ==========================================================================
+ * 一、标签栏容器
+ * ======================================================================== */
+
+.workspace-tab-header-container {
+  background-color: var(--tab-container-background);
+  border-bottom: var(--my-border-width) solid var(--my-border-subtle);
+  padding-inline: var(--my-space-2);
+  gap: var(--my-space-1);
+  /* 标签栏作为窗口拖拽区（无边框模式下） */
+  -webkit-app-region: drag;
+}
+
+/* 主区与侧栏的标签栏底色需要区分：主区用主区底色，避免与纸面产生断层 */
+.workspace-split.mod-root .workspace-tab-header-container {
+  background-color: var(--my-surface-secondary);
+}
+
+/* 标签本身不能是拖拽区，否则无法点击 */
+.workspace-tab-header,
+.workspace-tab-header-inner,
+.workspace-tab-header-inner-close-button {
+  -webkit-app-region: no-drag;
+}
+
+/* ==========================================================================
+ * 二、单个标签页
+ * ======================================================================== */
+
+.workspace-tab-header {
+  background-color: transparent;
+  color: var(--tab-text-color);
+  border-radius: var(--my-radius-s) var(--my-radius-s) 0 0;
+  transition:
+    background-color var(--my-duration-fast) var(--my-ease-out),
+    color var(--my-duration-fast) var(--my-ease-out);
+}
+
+.workspace-tab-header:hover {
+  background-color: var(--my-surface-hover);
+  color: var(--tab-text-color-active);
+}
+
+/* 激活标签页：底色与纸面一致，从而与下方内容区连通 */
+.workspace-tab-header.is-active {
+  background-color: var(--my-surface-primary);
+  color: var(--tab-text-color-focused-active);
+}
+
+/* 激活标签页去掉外描边，只靠底色区分——这是"消断层"的关键一步 */
+.workspace-tab-header.is-active .workspace-tab-header-inner {
+  border: none;
+  box-shadow: none;
+}
+
+/* 顶部指示条：给激活标签页一条强调色细线，作为额外的定位信号。
+ * 之所以放顶部而不放底部，是因为底部要与纸面"无缝连通"。 */
+.workspace-tab-header.is-active::before {
+  content: '';
+  position: absolute;
+  inset-inline: 22%;
+  top: 0;
+  height: 2px;
+  border-radius: var(--my-radius-full);
+  background-color: var(--my-accent);
+}
+
+/* 主区最后一个标签页右侧的空白区域：点它可以新建标签页，给一点悬停反馈 */
+.workspace-tab-header-container-inner {
+  gap: var(--my-space-1);
+}
+
+/* ==========================================================================
+ * 三、标签标题与关闭按钮
+ * ======================================================================== */
+
+.workspace-tab-header-inner-title {
+  font-size: var(--tab-font-size);
+  font-weight: var(--tab-font-weight);
+  letter-spacing: 0;
+  /* 中文标题截断时的省略号位置略作内缩，避免贴边 */
+  padding-inline-end: var(--my-space-1);
+}
+
+/* 关闭按钮默认隐藏，只在悬停该标签页时出现 —— 减少视觉噪声。
+ * 但激活标签页始终显示，因为用户最可能想关掉当前页。 */
+.workspace-tab-header-inner-close-button {
+  opacity: 0;
+  transition: opacity var(--my-duration-fast) var(--my-ease-out);
+  border-radius: var(--my-radius-xs);
+}
+
+.workspace-tab-header:hover .workspace-tab-header-inner-close-button,
+.workspace-tab-header.is-active .workspace-tab-header-inner-close-button {
+  opacity: 1;
+}
+
+.workspace-tab-header-inner-close-button:hover {
+  background-color: var(--my-surface-hover);
+}
+
+/* 有未保存改动 / 未读状态时的圆点指示 */
+.workspace-tab-header.is-active .workspace-tab-header-inner-icon {
+  color: var(--my-accent);
+}
+
+/* ==========================================================================
+ * 四、标题居中开关（body.my-ui-center-tabs）
+ * ======================================================================== */
+
+body.my-ui-center-tabs .workspace-tab-header-inner-title {
+  text-align: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+ * 五、标题栏（无边框窗口的自绘标题栏）
+ * ======================================================================== */
+
+.titlebar {
+  background-color: var(--titlebar-background);
+  border-bottom: var(--titlebar-border-width) solid var(--titlebar-border-color);
+  color: var(--titlebar-text-color);
+  font-weight: var(--titlebar-text-weight);
+}
+
+.titlebar-text {
+  color: var(--titlebar-text-color);
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0;
+}
+
+/* 窗口不聚焦时整体降低对比，让"当前窗口"一目了然 */
+body.is-blurred .titlebar-text,
+body.is-blurred .workspace-tab-header.is-active .workspace-tab-header-inner-title {
+  color: var(--my-text-tertiary);
+}
+
+/* ==========================================================================
+ * 六、标签页切换器（Ctrl+Tab）
+ * ======================================================================== */
+
+.mod-tab-switcher .modal,
+.tab-switcher {
+  background-color: var(--my-surface-elevated);
+}
+
+.tab-switcher-menubar {
+  background-color: var(--my-surface-secondary);
+  border-bottom: var(--my-border-width) solid var(--my-border);
+}
+
+/* ==========================================================================
+ * 七、动效降级
+ * ======================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .workspace-tab-header,
+  .workspace-tab-header-inner-close-button {
+    transition: none;
+  }
+}

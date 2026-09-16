@@ -1,0 +1,23 @@
+{
+  "id": "moyun-preset-qiuxiang",
+  "name": "秋香（暖调沉浸）",
+  "description": "秋香色强调 + 紧凑文件树 + 沉浸模式，界面元素退到背景，只留文字。适合夜间长文写作。",
+  "settings": {
+    "moyun@@my-tone@@light": "my-tone-qiuxiang",
+    "moyun@@my-indent-on@@light": false,
+    "moyun@@my-justify@@light": false,
+    "moyun@@my-ui-compact@@light": true,
+    "moyun@@my-immersive-by-default@@light": true,
+    "moyun@@my-font-size-base@@light": 17,
+    "moyun@@my-line-height-relaxed@@light": 1.9,
+    "moyun@@my-content-width@@light": "48rem",
+    "moyun@@my-tone@@dark": "my-tone-qiuxiang",
+    "moyun@@my-indent-on@@dark": false,
+    "moyun@@my-justify@@dark": false,
+    "moyun@@my-ui-compact@@dark": true,
+    "moyun@@my-immersive-by-default@@dark": true,
+    "moyun@@my-font-size-base@@dark": 17,
+    "moyun@@my-line-height-relaxed@@dark": 1.9,
+    "moyun@@my-content-width@@dark": "48rem"
+  }
+}
