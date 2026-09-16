@@ -2,6 +2,59 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.7] - 2026-09-16
+
+### 修复：Mermaid 图里的文字变成隐形字（用户报告）
+
+用户反馈「mermaid 相关的图，里面的文字都显示不清了，应该是文字和背景颜色相同」。
+查下去发现是三个独立缺陷叠在一起，任何一个单独存在都足以让文字消失：
+
+1. **只覆盖了 `fill`，没覆盖 `color`。** Mermaid 注入的关键一条是
+   `#mermaid-1 .label text, #mermaid-1 span, #mermaid-1 p { fill:#333; color:#333 }`。
+   SVG 的 `<text>` 吃 `fill`，`foreignObject` 里的 HTML 标签吃 `color` ——
+   只改一个，另一半仍是 Mermaid 的 `#333`。
+2. **Obsidian 不切换 Mermaid 的明暗主题。** 从 `obsidian.asar` 提取到的真实初始化参数只有
+   `themeVariables: { fontFamily: 'var(--font-mermaid)' }`，没有 `theme` ——
+   哪怕深色模式，Mermaid 用的仍是自己的浅色变量。
+3. **Obsidian 会给深色下的 Mermaid SVG 加反相滤镜：**
+   `.theme-dark .mermaid > svg { filter: invert(100%) hue-rotate(180deg) saturate(1.25) }`。
+   那是给「不做深色适配的图」的兜底；主题既然已经逐色接管，再反相一次就全部翻过来 ——
+   深色节点底被反成刺眼白块，浅色文字被反成深色文字压在刚变白的块上。
+
+修法与设计调整（按用户指出的方向：**Mermaid 的图主要是线与文字，背景是透明的**）：
+
+| 项 | 原做法 | 现做法 |
+|---|---|---|
+| 画布 | 铺一层面板底色 | 透明，图形直接落在笔记纸面上 |
+| 节点 | 填充抬升层（自造底色） | 只留强调色轮廓，填充用纸面色（不透明，可挡住穿过的连线） |
+| 子图 | 米黄底 + 边框 | 透明 + 虚线轮廓，视觉层级低于节点 |
+| 文字 | 只改 fill | `fill` 与 `color` 一起改，并覆盖 text/tspan/span/p/div 全部载体 |
+| 边标签 | 只有文字色 | 文字色 + 背景色一起接管（Mermaid 默认刷 #e8e8e8/#ECECFF，深色下是亮斑） |
+| 深色适配 | 依赖 Obsidian 反相 | 关闭反相，主题自己负责明暗 |
+
+同时修复：甘特图日期轴用 `--my-text-faint` 只有 3.75:1，改为次级文字色（≥ 4.5:1）。
+
+### 新增：Mermaid 真实渲染检查（tools/check-mermaid.mjs）
+
+上一版的验证台夹具是**手写的静态 SVG**，并且用 `mermaid.initialize({ theme: 'dark' })`
+渲染 —— 而 Obsidian 根本不传 `theme`。夹具与真实环境的这一点差异，让检查全绿却漏掉了
+用户的 bug。**验证工具本身也会说谎，夹具必须复刻真实初始化参数。**
+
+新检查用真实 Mermaid 包 + Obsidian 的真实初始化参数渲染六类图（流程图含 subgraph 与换行标签、
+时序图、状态图、类图、饼图、甘特图），然后：
+
+- 逐个文字元素计算「可见文字色 / 有效背景色」对比度（SVG 看 fill、HTML 看 color），低于 4.5:1 即失败；
+- 断言 SVG 上没有被施加反相滤镜；
+- **像素对拍**：读取元素截图里的真实像素，与计算样式比对 —— 计算说「深底浅字」而屏幕是
+  「白底深字」时必须失败（`filter` 只改像素、不改 `getComputedStyle`，这正是此次漏检的原因）；
+- 每张图单独截图留证（tools/preview/out/mermaid-<模式>-<图类型>.png）。
+
+本机无 mermaid 包时该检查会明确跳过而不是假装通过（主题保持零依赖）。
+
+### 工程
+
+- 静态夹具同步升级为复刻 Mermaid 真实注入规则（含 `span/p` 的 color 与边标签背景色）
+- 验证断言 47 → 49 项（新增 HTML 标签 color 路径、边标签背景、容器透明）
 ## [1.0.6] - 2026-09-16
 
 ### 新增：按分辨率自适应字号（用户报告）

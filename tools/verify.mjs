@@ -208,16 +208,21 @@ const CHECKS = [
    * 主题必须用 !important 才压得住。断言拿「主题令牌的计算值」与「SVG 元素上的
    * 计算值」比对，而不是比对写死的颜色 —— 以后换配色不会产生假告警，而一旦
    * !important 被谁删掉，比对立刻失败。 */
-  ['Mermaid 节点底色改用主题令牌（压过 SVG 内联 ID 样式）', '.mermaid .node rect', 'fill',
+  /* Mermaid 的图【画在透明画布上】，只有线与文字。因此这几条守的是：
+   *   ① 文字色必须被接管（fill 与 color 双路径：SVG <text> 看 fill，
+   *      foreignObject 里的 HTML 看 color —— 只覆盖一个就是用户踩过的隐形字 bug）；
+   *   ② 不铺面板底色，图形直接落在纸面上；
+   *   ③ 边标签的 HTML 背景色也要接管（Mermaid 默认刷 #ECECFF/#e8e8e8，深色下是亮斑）。 */
+  ['Mermaid 节点只用轮廓：填充为纸面色（非 Mermaid 默认淡紫）', '.mermaid .node rect', 'fill',
     (v) => {
       const p = document.createElement('div');
-      p.style.background = 'var(--my-surface-elevated)';
+      p.style.background = 'var(--my-surface-primary)';
       document.body.appendChild(p);
       const want = getComputedStyle(p).backgroundColor;
       p.remove();
-      return v === want && v !== 'rgb(236, 236, 255)';
+      return v === want;
     }],
-  ['Mermaid 节点文字用主题正文色（非 Mermaid 默认 #333）', '.mermaid .node .label', 'fill',
+  ['Mermaid SVG 文字用主题正文色（fill 路径，非默认 #333）', '.mermaid .node .label', 'fill',
     (v) => {
       const p = document.createElement('div');
       p.style.color = 'var(--my-text-primary)';
@@ -226,12 +231,30 @@ const CHECKS = [
       p.remove();
       return v === want;
     }],
+  ['Mermaid HTML 标签用主题正文色（color 路径 —— 只覆盖 fill 就会漏）', '.mermaid .nodeLabel', 'color',
+    (v) => {
+      const p = document.createElement('div');
+      p.style.color = 'var(--my-text-primary)';
+      document.body.appendChild(p);
+      const want = getComputedStyle(p).color;
+      p.remove();
+      return v === want && v !== 'rgb(51, 51, 51)';
+    }],
+  ['Mermaid 边标签背景改为纸面色（非 Mermaid 默认 #ECECFF 亮斑）', '.mermaid .edgeLabel', 'backgroundColor',
+    (v) => {
+      const p = document.createElement('div');
+      p.style.background = 'var(--my-surface-primary)';
+      document.body.appendChild(p);
+      const want = getComputedStyle(p).backgroundColor;
+      p.remove();
+      return v === want;
+    }],
   ['Mermaid 连线用主题描边色（非 Mermaid 默认 #333）', '.mermaid .edgePath .path', 'stroke',
     (v) => v !== 'rgb(51, 51, 51)' && v !== 'none'],
-  ['Mermaid 子图底色非 Mermaid 默认米黄', '.mermaid .cluster rect', 'fill',
-    (v) => v !== 'rgb(255, 255, 222)'],
-  ['Mermaid 容器有主题底色（不是透明）', '.mermaid', 'backgroundColor',
-    (v) => v !== 'rgba(0, 0, 0, 0)'],
+  ['Mermaid 子图不铺底（只留虚线轮廓）', '.mermaid .cluster rect', 'fill',
+    (v) => v === 'rgba(0, 0, 0, 0)' || v === 'none'],
+  ['Mermaid 容器透明：图是版面上的插图，不是一张卡片', '.mermaid', 'backgroundColor',
+    (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
 ];
 

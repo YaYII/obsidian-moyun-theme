@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /* ============================================================================
- * MoYun v1.0.6 —— 中文优先的 Obsidian 主题
+ * MoYun v1.0.7 —— 中文优先的 Obsidian 主题
  * 
  * 本文件由 build.mjs 自动生成，请勿直接编辑。
  * 源码位于 src/，修改后执行：node build.mjs
@@ -10084,39 +10084,117 @@ body.theme-dark .excalidraw,
 /* ============================================================================
  * 墨韵 MoYun · Mermaid 图表
  * ----------------------------------------------------------------------------
- * 本模块解决三个问题：
- *   ① 配色不可读：Mermaid 自带调色板（淡紫底 #ECECFF + 紫边 #9370DB）在深色
- *      模式下几乎看不见，观感也和主题完全脱节；
- *   ② 不随主题变化：图里的字号、圆角、边框都是 Mermaid 自己的死值，屏幕越大
- *      图里的字越小（与大屏自适应字号的目标正好相反）；
- *   ③ 宽屏溢出：图比版心宽时右侧被裁掉，看不到完整流程。
+ * 设计前提（这个模块的所有取舍都从这里推出来）：
+ *   **Mermaid 的图主要是「线 + 文字」，画布本身是透明的。**
+ *   SVG 没有底色，图形浮在笔记纸面（或夜色）之上。因此
+ *     · 不该给图铺一块「面板底色」—— 那会凭空造出一层纸，和笔记版面打架；
+ *     · 不该靠「深色节点 + 浅色文字」制造对比 —— 节点背景本来就是多余的；
+ *     · 文字与线必须直接与【纸面/夜色】对比，而不是与某个自造的方块对比。
+ *   这条前提是从一个真实 bug 里学到的：上一版给节点铺了深色底、却漏了文字色，
+ *   结果深灰字压深灰底，整张图的文字都看不见了。
+ *
+ * 本模块承担的职责：
+ *   ① 文字色（最重要的那条，见「一」）；
+ *   ② 线/箭头用中性描边，节点只用轮廓，不铺底；
+ *   ③ 字号跟随主题与分辨率，不再写死；
+ *   ④ 宽屏溢出时横向滚动。
  *
  * 为什么非用 !important 不可（因此本文件头申请了预算）：
- * Mermaid 渲染时把配色内联进 SVG【内部】的 <style>，形如
+ * Mermaid 把配色与文字色内联进 SVG【内部】的 <style>，形如
  *     <style>#mermaid-1699 .node rect{fill:#ECECFF;stroke:#9370DB}</style>
- * 那是 ID 选择器，优先级高于本站任何外部选择器；而 Mermaid 没有开放
- * 「用 CSS 变量改配色」的入口，所以在 CSS 层改配色只剩 !important 一条路。
- * 自我约束：只覆盖颜色 / 描边 / 字号，不碰几何布局（节点位置由 Mermaid 计算）。
- *
- * 设计原则：配色全部走主题语义令牌，所以深色模式不需要另写一份 —— 明暗自动成立。
- * 这也正是从旧 snippet 里唯一值得吸收的做法（它用 Obsidian 变量而非写死颜色）。
+ * 那是 ID 选择器，优先级高于本站任何外部选择器；Mermaid 也没有开放
+ * 「用 CSS 变量改配色」的入口。自我约束：只覆盖颜色 / 描边 / 字号，不碰几何布局。
  * ========================================================================== */
 
-/* @important-budget 46 — Mermaid 把配色内联进 SVG 内部的 ID 选择器样式，外部 CSS 只能靠 !important 覆盖 */
+/* @important-budget 50 — Mermaid 把配色与文字色内联进 SVG 内部的 ID 选择器样式，外部 CSS 只能靠 !important 覆盖 */
 
 /* --------------------------------------------------------------------------
- * 一、容器
- * 居中 + 底色 + 圆角；超出时横向滚动而不是被裁切。
+ * 一、图形内文字：fill 与 color 必须一起覆盖（用户报告「文字看不清」的根因）
+ * ----------------------------------------------------------------------------
+ * Mermaid 默认主题注入的关键一条是（ID 选择器，普通选择器压不住）：
+ *     #mermaid-1 .label text, #mermaid-1 span, #mermaid-1 p { fill:#333; color:#333 }
+ * 三个坑，任缺一个都会复现「文字和背景一个色」：
+ *
+ *   ① 它【同时写 fill 和 color】。SVG 的 <text> 吃 fill，foreignObject 里的
+ *      HTML（span / p / div）吃 color。只覆盖其中一个，另一半仍是 #333。
+ *      上一版只覆盖了 fill —— SVG 标签正常，HTML 标签在深色模式下全成了隐形字。
+ *
+ *   ② Obsidian 初始化 Mermaid 时【只传 fontFamily，不切换明暗主题】
+ *      （提取自 obsidian.asar 的真实参数：
+ *       mermaid.initialize({ startOnLoad:false, securityLevel:"strict",
+ *                            themeVariables:{ fontFamily:"var(--font-mermaid)" }, … })
+ *      ）—— 哪怕深色模式，Mermaid 用的仍是它自己的浅色变量，文字固定 #333。
+ *      所以「Mermaid 会自动适配深色」是错觉，文字色必须由主题显式接管。
+ *
+ *   ③ 标签载体不止一种：<text>、<tspan>、<span>、<p>、<div>（不同图类型不一样，
+ *      时序图用 <text>，流程图/状态图/类图用 foreignObject 里的 HTML）。
+ *      因此一次列全，不要逐图去猜。
+ * ------------------------------------------------------------------------ */
+.mermaid svg {
+  fill: var(--my-text-primary) !important;   /* 覆盖 #id{fill:#333} 这个继承源 */
+  color: var(--my-text-primary) !important;
+}
+
+.mermaid svg text,
+.mermaid svg tspan,
+.mermaid svg span,
+.mermaid svg p,
+.mermaid svg div,
+.mermaid svg .label,
+.mermaid svg .nodeLabel,
+.mermaid svg .labelText,
+.mermaid svg .messageText,
+.mermaid svg .loopText,
+.mermaid svg .noteText,
+.mermaid svg .taskText,
+.mermaid svg .titleText,
+.mermaid svg .sectionTitle,
+.mermaid svg .pieTitleText,
+.mermaid svg .slice {
+  fill: var(--my-text-primary) !important;
+  color: var(--my-text-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 一·二、关掉 Obsidian 对 Mermaid 的反相滤镜（深色模式「白块 / 隐形字」的真正根因）
+ * ----------------------------------------------------------------------------
+ * Obsidian 原生有一条：
+ *     .theme-dark .mermaid > svg { filter: invert(100%) hue-rotate(180deg) saturate(1.25) }
+ * 它的用意是给「不做深色适配的第三方图」兜底 —— Mermaid 永远吐浅色图，Obsidian 就
+ * 把整张图反相当成深色图。
+ *
+ * 但本主题已经把图里的每一个颜色都换成了随明暗切换的语义令牌。再被反相一次，
+ * 结果就整体翻过来：
+ *     · 深色节点底 → 反相成刺眼的白块；
+ *     · 浅色文字   → 反相成深色文字，压在刚变白的块上。
+ * 这正是用户报的「mermaid 图里的文字看不清、和背景一个色」。
+ *
+ * 还有一个隐蔽之处：filter 只影响【像素】，不影响 getComputedStyle —— 计算样式
+ * 说「深底 + 浅字」，屏幕上却是「白底 + 深字」。所以只读计算样式的检查会全绿，
+ * 必须把 filter 一起断言掉（见 tools/check-mermaid.mjs）。
+ *
+ * 结论：主题自己负责明暗，就不该再叠一层反相。关掉它。
+ * ------------------------------------------------------------------------ */
+.theme-dark .mermaid > svg,
+.theme-dark .markdown-rendered .mermaid > svg,
+.theme-dark .markdown-source-view.mod-cm6 .mermaid > svg,
+.theme-light .mermaid > svg {
+  filter: none !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 二、容器：**透明**，只是把图居中并允许横向滚动
+ * ----------------------------------------------------------------------------
+ * 刻意不写 background / border：图形是笔记版面上的一幅插图，不是一张卡片。
+ * 铺底色会凭空造出一层「面板纸」，在公文体的版面里尤其突兀。
  * ------------------------------------------------------------------------ */
 .markdown-rendered .mermaid,
 .markdown-preview-view .mermaid,
 .markdown-source-view.mod-cm6 .mermaid {
   display: block;
   margin-block: var(--my-space-4);
-  padding: var(--my-space-4) var(--my-space-5);
-  background: var(--my-surface-secondary);
-  border: var(--my-border-width) solid var(--my-border);
-  border-radius: var(--my-radius-m);
+  background: transparent;
+  border: none;
   overflow-x: auto;
   text-align: center;
 }
@@ -10129,9 +10207,9 @@ body.theme-dark .excalidraw,
   height: auto;
 }
 
-/* 图内文字必须归零正文样式：正文的 1.8 行高、2em 首行缩进、段后距会通过
- * foreignObject 里的 HTML 标签漏进图中（Mermaid 用 foreignObject 渲染带
- * 换行的标签），把节点撑变形。SVG 的 <text> 不受影响，但两者要一起交代。 */
+/* 图内文字必须归零正文样式：正文的 1.8 行高、2em 首行缩进会通过 foreignObject
+ * 里的 HTML 标签漏进图中（Mermaid 用 foreignObject 渲染带换行的标签），
+ * 把节点撑变形。SVG 的 <text> 不受影响，但两者要一起交代。 */
 .markdown-rendered .mermaid foreignObject div,
 .markdown-rendered .mermaid .nodeLabel,
 .markdown-rendered .mermaid .edgeLabel {
@@ -10141,9 +10219,18 @@ body.theme-dark .excalidraw,
   text-align: center;
 }
 
+.markdown-rendered .mermaid foreignObject p {
+  text-indent: 0;
+  margin: 0;
+}
+
 /* --------------------------------------------------------------------------
- * 二、流程图节点
- * 底用抬升层、边框用强调色：与主题的卡片语言一致，明暗两种模式都成立。
+ * 三、流程图节点：只留轮廓，不铺底
+ * ----------------------------------------------------------------------------
+ * 填充用「纸面色」而不是 transparent：视觉上与透明无异，但它是【不透明】的，
+ * 因此可以挡住从节点下方穿过的连线 —— 这是 fill:none 做不到的。
+ * 效果：节点看起来就是纸面上的一个方框，文字直接压在纸面上，
+ * 对比度由纸面本身保证（实测 12:1 / 16:1），不会再出现自造底色的翻车。
  * ------------------------------------------------------------------------ */
 .mermaid .node rect,
 .mermaid .node circle,
@@ -10151,7 +10238,7 @@ body.theme-dark .excalidraw,
 .mermaid .node polygon,
 .mermaid .node path,
 .mermaid .labelBox {
-  fill: var(--my-surface-elevated) !important;
+  fill: var(--my-surface-primary) !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -10159,13 +10246,12 @@ body.theme-dark .excalidraw,
 .mermaid .node text,
 .mermaid .nodeLabel,
 .mermaid .labelText {
-  fill: var(--my-text-primary) !important;
   font-size: calc(var(--my-font-size-base) * 0.875) !important;
 }
 
 /* --------------------------------------------------------------------------
- * 三、连线 / 箭头 / 边标签
- * 连线用中性描边：它是结构线不是重点，抢了节点的视觉主角就本末倒置。
+ * 四、连线 / 箭头 / 边标签
+ * 线是结构信息，用中性描边；箭头与线同色，避免一个图里两种灰。
  * ------------------------------------------------------------------------ */
 .mermaid .edgePath .path,
 .mermaid .flowchart-link,
@@ -10176,53 +10262,61 @@ body.theme-dark .excalidraw,
 }
 
 .mermaid marker path,
-.mermaid .marker {
+.mermaid .marker,
+.mermaid .arrowheadPath {
   fill: var(--my-border-strong) !important;
   stroke: var(--my-border-strong) !important;
 }
 
+/* 边标签是次级信息，降一级用次级文字色；fill / color 双写，别漏。
+ * 同时必须接管它的【背景色】：Mermaid 会给标签本身刷一块底色
+ * （流程图 #e8e8e8、类图 #ECECFF），而且写的是 HTML 元素的 background-color ——
+ * 那是真的会被渲染的，深色模式下就是文字后面一块亮斑（实测灰字压 #ECECFF 只有 2.12:1）。
+ * 这里换成纸面色：既不刺眼，又能遮住从标签下方穿过的连线（类图没有垫底矩形，
+ * 全靠这块背景遮线，所以不能简单置为 transparent）。 */
 .mermaid .edgeLabel,
 .mermaid .edgeLabel p,
-.mermaid .edgeLabel span {
+.mermaid .edgeLabel span,
+.mermaid .edgeLabel text {
   color: var(--my-text-secondary) !important;
+  fill: var(--my-text-secondary) !important;
+  background: var(--my-surface-primary) !important;
   font-size: calc(var(--my-font-size-base) * 0.786) !important;
 }
 
 .mermaid .edgeLabel rect,
-.mermaid .edgeLabel foreignObject > div {
+.mermaid .edgeLabel foreignObject > div,
+.mermaid .labelBkg {
   fill: var(--my-surface-primary) !important;
   background: var(--my-surface-primary) !important;
+  opacity: 1 !important;
 }
 
 /* --------------------------------------------------------------------------
- * 四、子图（subgraph / cluster）
- * 下沉层 + 弱边框：分组是背景信息，视觉层级必须低于节点。
+ * 五、子图（subgraph / cluster）
+ * 分组只是「一个框」，同样不铺底：虚线轮廓 + 次级文字色，视觉层级低于节点。
  * ------------------------------------------------------------------------ */
 .mermaid .cluster rect {
-  fill: var(--my-surface-sunken) !important;
+  fill: transparent !important;
   stroke: var(--my-border-subtle) !important;
+  stroke-dasharray: 4 3;
 }
 
 .mermaid .cluster text,
 .mermaid .cluster-label,
 .mermaid .cluster-label text,
-.mermaid .cluster span {
+.mermaid .cluster span,
+.mermaid .cluster p {
   fill: var(--my-text-secondary) !important;
   color: var(--my-text-secondary) !important;
 }
 
 /* --------------------------------------------------------------------------
- * 五、时序图（sequenceDiagram）
+ * 六、时序图（sequenceDiagram）
  * ------------------------------------------------------------------------ */
 .mermaid .actor {
-  fill: var(--my-surface-elevated) !important;
+  fill: var(--my-surface-primary) !important;
   stroke: var(--my-accent) !important;
-}
-
-.mermaid .actor text,
-.mermaid .actorText,
-.mermaid .actor-line + text {
-  fill: var(--my-text-primary) !important;
 }
 
 .mermaid .actor-line {
@@ -10231,59 +10325,53 @@ body.theme-dark .excalidraw,
 
 .mermaid .messageText,
 .mermaid .loopText,
-.mermaid .loopText > tspan,
-.mermaid .noteText,
-.mermaid .noteText > tspan {
-  fill: var(--my-text-primary) !important;
+.mermaid .noteText {
   font-size: calc(var(--my-font-size-base) * 0.8) !important;
 }
 
-/* 便签用警告色的低透明度底：既能一眼识别，又不会在深色模式下刺眼 */
+/* 便签是「标注」不是节点：给一层很淡的警告色，文字仍是正文色 */
 .mermaid .note {
-  fill: rgb(var(--my-warning-rgb) / 0.14) !important;
+  fill: rgb(var(--my-warning-rgb) / 0.12) !important;
   stroke: var(--my-warning) !important;
 }
 
-.mermaid .labelBox,
 .mermaid .loopLine {
   stroke: var(--my-border-subtle) !important;
 }
 
 /* --------------------------------------------------------------------------
- * 六、状态图 / 类图 / 饼图 / 甘特图
- * 这几类图的元素名不统一，统一用「底-边-字」三件套兜住，避免逐图写死。
+ * 七、状态图 / 类图 / 饼图 / 甘特图
+ * 元素名不统一，统一用「轮廓 + 文字」兜住：底一律纸面色，边用强调色。
  * ------------------------------------------------------------------------ */
 .mermaid .statediagram-state rect,
 .mermaid .stateGroup rect,
 .mermaid .classGroup rect,
 .mermaid .entityBox {
-  fill: var(--my-surface-elevated) !important;
+  fill: var(--my-surface-primary) !important;
   stroke: var(--my-accent) !important;
 }
 
 .mermaid .statediagram-cluster rect,
 .mermaid .statediagram-cluster-alt rect {
-  fill: var(--my-surface-sunken) !important;
+  fill: transparent !important;
   stroke: var(--my-border-subtle) !important;
 }
 
+/* 饼图扇区之间的白缝：用纸面色，深色模式下才不会出现一圈亮线 */
 .mermaid .pieCircle {
   stroke: var(--my-surface-primary) !important;
 }
 
-.mermaid .sectionTitle,
-.mermaid .titleText,
-.mermaid .taskText,
-.mermaid .taskTextOutsideRight,
-.mermaid .taskTextOutsideLeft {
-  fill: var(--my-text-primary) !important;
-}
-
 .mermaid .grid .tick line,
-.mermaid .grid .tick text,
 .mermaid .section {
   stroke: var(--my-border-subtle) !important;
-  fill: var(--my-text-faint) !important;
+}
+
+/* 刻度文字是要读的（甘特图的日期轴全靠它），用次级色而不是最淡的那一档：
+ * --my-text-faint 在纸面上只有 3.75:1，达不到 AA。 */
+.mermaid .grid .tick text {
+  fill: var(--my-text-secondary) !important;
+  color: var(--my-text-secondary) !important;
 }
 
 .mermaid .task {
@@ -10292,14 +10380,21 @@ body.theme-dark .excalidraw,
   opacity: 0.85;
 }
 
+/* 解析失败时 Mermaid 会渲染一段错误文字：给危险色，不要让它隐形 */
+.mermaid .error-icon,
+.mermaid .error-text,
+.mermaid .error-text tspan {
+  fill: var(--my-danger) !important;
+  color: var(--my-danger) !important;
+  stroke: var(--my-danger) !important;
+}
+
 /* --------------------------------------------------------------------------
- * 七、打印：图在纸面上不能缩成一团，也不能跨页被切开
+ * 八、打印：图在纸面上不能缩成一团，也不能跨页被切开
  * ------------------------------------------------------------------------ */
 @media print {
   .markdown-rendered .mermaid,
   .markdown-preview-view .mermaid {
-    background: transparent;
-    border-color: var(--my-print-text-muted);
     break-inside: avoid;
     overflow: visible;
   }
@@ -10311,9 +10406,7 @@ body.theme-dark .excalidraw,
 }
 
 /* --------------------------------------------------------------------------
- * 八、动效兜底
- * Mermaid 的连线过渡动画对前庭敏感用户不友好；同时本模块没有自己的过渡效果，
- * 这里统一按系统偏好关闭。
+ * 九、动效兜底
  * ------------------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
   .mermaid *,

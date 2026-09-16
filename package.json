@@ -1,6 +1,6 @@
 {
   "name": "obsidian-moyun-theme",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "墨韵 —— 中文优先的 Obsidian 主题。为汉字的阅读与写作重新设计排版、配色与交互。",
   "type": "module",
   "private": true,
@@ -13,8 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "node tools/verify.mjs",
+    "verify:mermaid": "node tools/check-mermaid.mjs",
     "demo": "node tools/make-demo-vault.mjs",
-    "release": "npm run check && npm run conflicts:strict && npm test && node build.mjs"
+    "release": "npm run check && npm run conflicts:strict && npm test && node build.mjs && npm run verify && npm run verify:mermaid"
   },
   "keywords": [
     "obsidian",
