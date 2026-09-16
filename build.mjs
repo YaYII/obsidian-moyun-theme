@@ -251,7 +251,13 @@ function build({ silent = false } = {}) {
   const { errors, warnings } = validate(files, contents);
 
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
-  const header = `@charset "UTF-8";\n/* ============================================================================\n * 墨韵 MoYun v${manifest.version} —— 中文优先的 Obsidian 主题\n * \n * 本文件由 build.mjs 自动生成，请勿直接编辑。\n * 源码位于 src/，修改后执行：node build.mjs\n * \n * 模块数：${files.length}   生成时间：${new Date().toISOString().slice(0, 19).replace('T', ' ')}\n * ========================================================================== */\n\n`;
+
+  /* 产物头部刻意【不含时间戳】。
+   * 原因：一旦写入生成时间，相同源码每次构建都会产出不同文件，导致
+   *   ① 构建不可复现，无法用 sha256 校验 Release 资产与本地是否一致；
+   *   ② 每次构建都在 git 里产生无意义的 diff。
+   * 可追溯性由 git tag 与 manifest.json 的版本号提供，不需要时间戳。 */
+  const header = `@charset "UTF-8";\n/* ============================================================================\n * 墨韵 MoYun v${manifest.version} —— 中文优先的 Obsidian 主题\n * \n * 本文件由 build.mjs 自动生成，请勿直接编辑。\n * 源码位于 src/，修改后执行：node build.mjs\n * \n * 模块数：${files.length}\n * ========================================================================== */\n\n`;
 
   const body = files
     .map((f) => {
