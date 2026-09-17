@@ -159,6 +159,31 @@ const CHECKS = [
       if (!gov) return true;
       return parseFloat(v) > 0;
     }],
+  // —— 首行缩进（阅读视图 + 编辑区，两套规则都要守住）——
+  /* 这一组是被用户「首行缩进貌似失效了」追出来的：公文体默认开、且它的说明里承诺
+   * 「首行缩进两字」，但它只在阅读视图给了缩进；编辑区的缩进只认「首行缩进两字」
+   * 开关（默认关）—— 于是编辑区一条缩进都没有，而验证台当时根本没有编辑器 DOM。 */
+  ['首行缩进：编辑区正文行缩进两字（公文体默认开即生效）', '#cm-probe-plain', 'textIndent',
+    (v) => parseFloat(v) >= 20],
+  ['首行缩进：含内联标记的段落同样缩进（旧规则会整行豁免）', '#cm-probe-inline', 'textIndent',
+    (v) => parseFloat(v) >= 20],
+  ['首行缩进：编辑区标题行不缩进', '.markdown-source-view.mod-cm6 .cm-line.HyperMD-header', 'textIndent',
+    (v) => parseFloat(v) === 0],
+  ['首行缩进：编辑区列表行不缩进', '.markdown-source-view.mod-cm6 .cm-line.HyperMD-list-line', 'textIndent',
+    (v) => parseFloat(v) === 0],
+  ['首行缩进：公文与缩进开关都关时才不缩进', '#cm-probe-plain', 'textIndent',
+    () => {
+      const body = document.body;
+      const hadGov = body.classList.contains('my-gov-style');
+      const hadIndent = body.classList.contains('my-indent-on');
+      body.classList.remove('my-gov-style', 'my-indent-on');
+      const off = getComputedStyle(document.querySelector('#cm-probe-plain')).textIndent;
+      if (hadGov) body.classList.add('my-gov-style');
+      if (hadIndent) body.classList.add('my-indent-on');
+      return parseFloat(off) === 0;
+    }],
+  ['首行缩进：阅读视图仍豁免列表项（防止列表里二次凹陷）', '.markdown-rendered li p', 'textIndent',
+    (v) => parseFloat(v) === 0],
   ['公文体：标题层级靠字体区分（H2 黑体与 H3 楷体不同）', '.markdown-rendered h2', 'fontFamily',
     (v, el) => {
       if (!document.body.classList.contains('my-gov-style')) return true;

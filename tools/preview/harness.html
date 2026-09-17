@@ -152,6 +152,9 @@
                       <ul><li>嵌套子项一</li><li>嵌套子项二</li></ul>
                     </li>
                     <li>第三项</li>
+                    <!-- 松列表：Markdown 里 li 内直接写段落是常见形态，
+                         主题专门为它写了「不缩进」的豁免规则，夹具必须覆盖到。 -->
+                    <li><p>第四项写成段落（松列表），用于验证列表内段落被豁免缩进。</p></li>
                   </ul>
                   <ol>
                     <li>有序列表第一项</li>
@@ -250,6 +253,27 @@
                     </svg>
                   </div>
 
+                </div>
+              </div>
+
+              <!-- 实时预览（编辑区）夹具：CodeMirror 的真实 DOM 形状（.cm-content > .cm-line）。
+                   为什么必须补上它：主题的首行缩进在「阅读视图」与「编辑区」是两套规则，
+                   而验证台此前【只有阅读视图】—— 于是「公文模式下编辑区完全没有缩进」
+                   这个空档活了很久没人发现（用户报「首行缩进貌似失效了」才追出来）。
+                   用 visibility:hidden 保持布局：getComputedStyle 拿到的是真实 used 值，
+                   但不会出现在截图里，也不吃点击。 -->
+              <div class="markdown-source-view mod-cm6" style="position:absolute; top:0; left:0; width:100%; visibility:hidden; pointer-events:none;">
+                <div class="cm-editor">
+                  <div class="cm-scroller">
+                    <div class="cm-content">
+                      <div class="cm-line" id="cm-probe-plain">这是一条普通正文行，用于验证首行缩进是否真的生效。</div>
+                      <div class="cm-line" id="cm-probe-inline">这一行含<span class="cm-formatting">**</span>内联标记<span class="cm-formatting">**</span>，旧的豁免规则会把整行跳过。</div>
+                      <div class="cm-line HyperMD-header HyperMD-header-2"><span class="cm-formatting">## </span>二级标题</div>
+                      <div class="cm-line HyperMD-list-line HyperMD-list-line-1"><span class="cm-formatting">- </span>列表项</div>
+                      <div class="cm-line HyperMD-quote"><span class="cm-formatting">&gt; </span>引用行</div>
+                      <div class="cm-line HyperMD-codeblock"><span class="cm-formatting">```</span>代码行</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

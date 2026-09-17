@@ -75,7 +75,7 @@ settings:
   -
     id: my-indent-on
     title: 首行缩进两字
-    description: 中文正文段落首行缩进 2 个汉字宽度。列表、引用、代码、表格、公式与图片段落会自动豁免。
+    description: 中文正文段落首行缩进 2 个汉字宽度，阅读视图与编辑区一致。列表、引用、代码、表格、公式与图片段落会自动豁免。开启「公文风格」时自动生效，无需再打开本开关。
     type: class-toggle
     default: false
   -

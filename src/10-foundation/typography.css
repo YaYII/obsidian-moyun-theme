@@ -127,67 +127,67 @@ body {
  * 给 body 加上 .my-indent-on 类。
  * 关键：必须精确豁免不该缩进的段落，否则列表/引用/代码会被推歪。
  * ======================================================================== */
-body.my-indent-on .markdown-rendered p,
-body.my-indent-on .markdown-preview-view p {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p,
+body:is(.my-indent-on, .my-gov-style) .markdown-preview-view p {
   text-indent: var(--my-indent-cjk);
 }
 
 /* —— 豁免清单（逐条说明为什么） —— */
 
 /* 1. 列表项内部段落：已在列表缩进层级里，再缩进会"二次凹陷" */
-body.my-indent-on .markdown-rendered li p,
-body.my-indent-on .markdown-rendered li > p:first-child {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered li p,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered li > p:first-child {
   text-indent: 0;
 }
 
 /* 2. 引用块：引用已有左侧边线作视觉标识，再缩进层级过深 */
-body.my-indent-on .markdown-rendered blockquote p {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered blockquote p {
   text-indent: 0;
 }
 
 /* 3. 标注（Callout）内部：容器自带内边距 */
-body.my-indent-on .markdown-rendered .callout p {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered .callout p {
   text-indent: 0;
 }
 
 /* 4. 表格单元格：空间有限，缩进会挤压列宽 */
-body.my-indent-on .markdown-rendered td p,
-body.my-indent-on .markdown-rendered th p {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered td p,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered th p {
   text-indent: 0;
 }
 
 /* 5. 代码块与数学块：缩进会破坏对齐与公式基线 */
-body.my-indent-on .markdown-rendered pre,
-body.my-indent-on .markdown-rendered pre code,
-body.my-indent-on .markdown-rendered .math,
-body.my-indent-on .markdown-rendered mjx-container {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered pre,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered pre code,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered .math,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered mjx-container {
   text-indent: 0;
 }
 
 /* 6. 仅含图片/嵌入/分隔线/表格的段落：不是文字段，缩进只会让图偏移 */
-body.my-indent-on .markdown-rendered p:has(> img:only-child),
-body.my-indent-on .markdown-rendered p:has(> .internal-embed:only-child),
-body.my-indent-on .markdown-rendered p:has(> .external-embed:only-child),
-body.my-indent-on .markdown-rendered p:has(> .math-block:only-child),
-body.my-indent-on .markdown-rendered p:has(> video:only-child),
-body.my-indent-on .markdown-rendered p:has(> audio:only-child) {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p:has(> img:only-child),
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p:has(> .internal-embed:only-child),
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p:has(> .external-embed:only-child),
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p:has(> .math-block:only-child),
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p:has(> video:only-child),
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p:has(> audio:only-child) {
   text-indent: 0;
 }
 
 /* 7. 脚注、任务列表描述、属性区 */
-body.my-indent-on .markdown-rendered .footnotes p,
-body.my-indent-on .markdown-rendered .metadata-container,
-body.my-indent-on .markdown-rendered .markdown-embed p {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered .footnotes p,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered .metadata-container,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered .markdown-embed p {
   text-indent: 0;
 }
 
 /* 8. 标题永不安缩进 */
-body.my-indent-on .markdown-rendered h1,
-body.my-indent-on .markdown-rendered h2,
-body.my-indent-on .markdown-rendered h3,
-body.my-indent-on .markdown-rendered h4,
-body.my-indent-on .markdown-rendered h5,
-body.my-indent-on .markdown-rendered h6 {
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered h1,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered h2,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered h3,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered h4,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered h5,
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered h6 {
   text-indent: 0;
 }
 
@@ -195,20 +195,32 @@ body.my-indent-on .markdown-rendered h6 {
  * 难点：CodeMirror 里每个源码行是一个 .cm-line，软换行仍在同一元素内，
  *       因此 text-indent 会作用于"每条源码行"，若用户习惯硬换行会每行都缩进。
  * 取舍：只对普通正文行缩进，并排除所有带 HyperMD 语义类的行（标题/列表/引用/
- *       代码/表格/任务），这是中文主题里最稳的做法。 */
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line {
+ *       代码/表格/任务），这是中文主题里最稳的做法。
+ *
+ * ⚠ 两处曾经踩过的坑（都由「编辑器里看不到缩进」这个反馈追出来）：
+ *
+ * ① 触发条件原本只写了 .my-indent-on（默认关），而公文模式（默认开）承诺
+ *    「首行缩进两字」，它却只在阅读视图给了缩进 —— 于是编辑区一条缩进都没有。
+ *    现在触发条件统一为 :is(.my-indent-on, .my-gov-style)：开缩进开关或开公文模式，
+ *    阅读视图与编辑区行为一致。缩进是「读」的属性，两种视图不该各说各话。
+ *
+ * ② 豁免清单里原本还有 :has(.cm-formatting)。它的原意是排除"显示原始标记的行"，
+ *    但 Live Preview 里【任何含内联标记（加粗/斜体/链接/行内代码）的段落】的 DOM
+ *    里都留着 .cm-formatting 元素（只是被 Obsidian 用 CSS 藏起来），
+ *    于是这些段落反而不缩进 —— 表现为"有的段落缩了、有的没缩"。
+ *    现已去掉：带行内格式的段落仍然是正文段落，本来就该缩进。 */
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line {
   text-indent: var(--my-indent-cjk);
 }
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-header,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-list-line,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-quote,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-table-row,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.HyperMD-hr,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line.cm-line-hmd,
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line:has(.cm-formatting),
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line:has(.cm-embed-block),
-body.my-indent-on .markdown-source-view.mod-cm6 .cm-line:has(.cm-widgetBuffer) {
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.HyperMD-header,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.HyperMD-list-line,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.HyperMD-quote,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.HyperMD-table-row,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.HyperMD-hr,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line.cm-line-hmd,
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line:has(.cm-embed-block),
+body:is(.my-indent-on, .my-gov-style) .markdown-source-view.mod-cm6 .cm-line:has(.cm-widgetBuffer) {
   text-indent: 0;
 }
 
