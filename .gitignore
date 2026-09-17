@@ -30,3 +30,6 @@ docs/reference/obsidian-app.css
 
 # 本机安装主题时的配置备份（含个人插件列表，不应公开）
 .install-backup/
+
+# 独立仓库：Obsidian 文件传输插件（有自己的 .git）
+obsidian-vault-bridge/

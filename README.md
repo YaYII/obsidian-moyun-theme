@@ -11,12 +11,41 @@
 
 ![墨韵 MoYun 主题预览](./screenshot.png)
 
-![版本](https://img.shields.io/badge/版本-1.0.1-3a6ea5)
+![版本](https://img.shields.io/badge/版本-1.1.1-3a6ea5)
 ![Obsidian](https://img.shields.io/badge/Obsidian-1.6.0%2B-477a5b)
 ![许可](https://img.shields.io/badge/许可-MIT-8a8170)
-![源码](https://img.shields.io/badge/源码-35%20模块-7159a3)
+![源码](https://img.shields.io/badge/源码-36%20模块-7159a3)
 
 </div>
+
+---
+
+<a id="sponsor"></a>
+
+## 赞助
+
+墨韵是业余时间做出来的：查规范、实测浏览器行为、写检查脚本，
+光是为了搞清「为什么 Mermaid 图里的字会隐形」就翻过 Obsidian 的 asar 包。
+如果它让你的中文阅读舒服了一点，欢迎扫码请我喝杯茶 —— **完全自愿，不影响任何功能**。
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/sponsor/wechat-pay.jpg" alt="微信支付收款码" width="260" />
+      <br /><b>微信支付</b>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/sponsor/alipay.jpg" alt="支付宝收款码" width="260" />
+      <br /><b>支付宝</b>
+    </td>
+  </tr>
+</table>
+
+赞助之外，同样有帮助的三件事：
+
+- 在社区目录里给它点个赞；
+- 提 Issue 告诉我哪里不好用；
+- 把它推荐给身边用中文写笔记的人。
 
 ---
 
@@ -270,33 +299,6 @@ node tools/make-demo-vault.mjs # 重新生成演示库
 - [Dune](https://github.com/Jopp-gh/Obsidian-Dune84) —— 本项目的起点参考
 
 命名、配色与全部代码为本项目原创。
-
-<a id="sponsor"></a>
-
-## 赞助
-
-墨韵是业余时间做出来的：查规范、实测浏览器行为、写检查脚本，
-光是为了搞清「为什么 Mermaid 图里的字会隐形」就翻过 Obsidian 的 asar 包。
-如果它让你的中文阅读舒服了一点，欢迎扫码请我喝杯茶 —— **完全自愿，不影响任何功能**。
-
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <img src="docs/sponsor/wechat-pay.jpg" alt="微信支付收款码" width="260" />
-      <br /><b>微信支付</b>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/sponsor/alipay.jpg" alt="支付宝收款码" width="260" />
-      <br /><b>支付宝</b>
-    </td>
-  </tr>
-</table>
-
-赞助之外，同样有帮助的三件事：
-
-- 在社区目录里给它点个赞；
-- 提 Issue 告诉我哪里不好用；
-- 把它推荐给身边用中文写笔记的人。
 
 ## 许可
 
