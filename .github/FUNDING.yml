@@ -1,0 +1,4 @@
+# GitHub 仓库页的「Sponsor」按钮。
+# 指向仓库内的独立赞助页：Obsidian 的 manifest.fundingUrl 也指向同一个地址，
+# 两处入口保持一致，改收款方式时只需动 docs/sponsor/ 与这一处链接。
+custom: ["https://github.com/YaYII/obsidian-moyun-theme/blob/master/SPONSOR.md"]

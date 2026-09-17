@@ -2,6 +2,29 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.2] - 2026-09-16
+
+### 修复：`fundingUrl` 的锚点在 GitHub 上是失效的
+
+1.1.1 把 `fundingUrl` 指向 `README#sponsor`（配 `<a id="sponsor">`）。抓 GitHub
+渲染后的 HTML 核对发现：**锚点 id 被改写成了 `user-content-sponsor`**，
+所以 `#sponsor` 这个 fragment 在 GitHub 上根本跳不到 —— 点「赞助」按钮会落在页面顶部
+而不是赞助小节。这类失效不报错、不告警，只有真的点一次才会发现。
+
+改为指向仓库内的独立赞助页 `SPONSOR.md`（无 fragment，链接天然稳定）。
+
+### 新增：三个赞助入口，链接统一
+
+| 入口 | 位置 | 指向 |
+|---|---|---|
+| Obsidian 社区主题卡片的「赞助」按钮 | `manifest.json` 的 `fundingUrl` | `SPONSOR.md` |
+| GitHub 仓库页的「Sponsor」按钮 | `.github/FUNDING.yml` | `SPONSOR.md` |
+| README 首个章节 | `README.md` 标题块之后 | 收款码直接可见，并链到 `SPONSOR.md` |
+
+三处指向同一个地址，以后换收款方式只需动 `docs/sponsor/` 与这一处链接。
+
+`SPONSOR.md` 除收款码外写清了「这笔钱会花在哪」与「不花钱也能帮上忙」——
+后者不是客套：深色模式表格、Mermaid 隐形字这两个真 bug 都是用户报出来的。
 ## [1.1.1] - 2026-09-16
 
 ### 新增：赞助入口
