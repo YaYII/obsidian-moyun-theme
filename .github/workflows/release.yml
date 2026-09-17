@@ -66,27 +66,42 @@ jobs:
           name: ${{ steps.meta.outputs.theme_name }} ${{ github.ref_name }}
           draft: false
           generate_release_notes: true
-          # Release 说明后附上赞助二维码：下载页面就是最常被看到的地方。
-          # 用 append_body 而不是 body —— body 会顶掉自动生成的变更说明。
-          append_body: |
-            ---
-            ## 赞助 / Sponsor
-
-            墨韵是业余时间的作品。如果它让你的中文阅读舒服了一点，欢迎扫码支持 ——
-            **完全自愿，不影响任何功能**。
-
-            <table>
-              <tr>
-                <td align="center">
-                  <img src="https://raw.githubusercontent.com/YaYII/obsidian-moyun-theme/master/docs/sponsor/wechat-pay.jpg" width="240" alt="微信支付收款码" />
-                  <br /><b>微信支付</b>
-                </td>
-                <td align="center">
-                  <img src="https://raw.githubusercontent.com/YaYII/obsidian-moyun-theme/master/docs/sponsor/alipay.jpg" width="240" alt="支付宝收款码" />
-                  <br /><b>支付宝</b>
-                </td>
-              </tr>
-            </table>
           files: |
             manifest.json
             theme.css
+
+      # 在自动生成的变更说明之后追加赞助二维码。
+      # 为什么不用上面 action 的 append_body：实测它与 generate_release_notes 同时使用时
+      # 会被【静默忽略】（1.1.1 的 Release 说明里只有一行 Full Changelog）。
+      # 显式调用 gh release edit 是确定的：读回 body → 拼接 → 写回。
+      - name: 在 Release 说明后附上赞助二维码
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh release view "$GITHUB_REF_NAME" --json body -q .body > /tmp/release-body.md
+          cat >> /tmp/release-body.md <<'SPONSOR'
+
+          ---
+
+          ## 赞助 / Sponsor
+
+          墨韵是业余时间的作品。如果它让你的中文阅读舒服了一点，欢迎扫码支持 ——
+          **完全自愿，不影响任何功能**。
+
+          <table>
+            <tr>
+              <td align="center">
+                <img src="https://raw.githubusercontent.com/YaYII/obsidian-moyun-theme/master/docs/sponsor/wechat-pay.jpg" width="240" alt="微信支付收款码" />
+                <br /><b>微信支付</b>
+              </td>
+              <td align="center">
+                <img src="https://raw.githubusercontent.com/YaYII/obsidian-moyun-theme/master/docs/sponsor/alipay.jpg" width="240" alt="支付宝收款码" />
+                <br /><b>支付宝</b>
+              </td>
+            </tr>
+          </table>
+          SPONSOR
+          gh release edit "$GITHUB_REF_NAME" --notes-file /tmp/release-body.md
+          echo "追加快照:"
+          gh release view "$GITHUB_REF_NAME" --json body -q .body | grep -c sponsor

@@ -11,8 +11,11 @@
 1. **`manifest.json` 增加 `fundingUrl`** —— 指向 README 的赞助小节。
    Obsidian 社区主题卡片读到该字段会显示「赞助」按钮（参考 Minimal 主题同款写法）。
 2. **README 新增「赞助」小节**，两张收款码并排，配稳定的 `#sponsor` 锚点。
-3. **每次 Release 说明后附收款码**（`append_body`，不顶掉自动生成的变更说明）——
-   下载页面是最常被看到的地方。
+3. **每次 Release 说明后附收款码** —— 下载页面是最常被看到的地方。
+   实现走了一步弯路：先用了 release action 的 `append_body`，实测它与
+   `generate_release_notes` 同时使用时会被【静默忽略】（1.1.1 的说明里只剩一行
+   Full Changelog）；改成发布后用 `gh release edit` 读回 body → 拼接 → 写回，
+   确定且可验证。1.1.1 的说明已手工补齐。
 
 收款码放在 `docs/sponsor/`（`wechat-pay.jpg` / `alipay.jpg`）。
 
