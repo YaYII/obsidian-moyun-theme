@@ -234,7 +234,11 @@ try {
        * 给它打上移动端类会让「宽屏自适应字号」被移动端分支覆盖，测出来的是假数据。 */
       const mobileCls = device.kind === "desktop" ? "" : " is-mobile is-phone";
       html = html.replace(/<body class="([^"]*)"/, function (m, cls) {
-        return '<body class="' + cls + mobileCls + " " + variant.cls + '"';
+        /* 必须【先摘掉】验证台自带的 theme-dark，否则明暗两个类同时在身上、
+         * 谁赢取决于 app.css 的书写顺序 —— 「浅色」变体会渲染成深色，
+         * 两张截图逐字节相同（本脚本踩过：两个 PNG 都是 508979 字节）。 */
+        const base = cls.replace(/\btheme-(dark|light)\b/g, "").replace(/\s+/g, " ").trim();
+        return '<body class="' + base + mobileCls + " " + variant.cls + '"';
       });
       /* is-phone 下 app.css 会隐藏「未标记为可见」的标签组：
        *   .is-phone .mod-root .workspace-tabs:not(.mod-visible) { display: none }
