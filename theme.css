@@ -3166,8 +3166,10 @@ body.my-gov-style .markdown-rendered table {
   border-radius: 0;
   border-collapse: collapse;
   font-size: 0.95em;
+  /* 单元格行高：表格里既有中文也有数字，1.6 比正文 1.8 紧、比原先残留的 1.5 松，
+   * 多行单元格读起来不挤。原先这里同时写了 1.6 与 1.5，后者生效、前者白写 ——
+   * Obsidian 目录校验的「duplicate line-height」告警就是这一处。 */
   line-height: 1.6;
-  line-height: 1.5;
   text-align: left;
   margin-block: 0.8em 1.2em;
 }
@@ -10885,6 +10887,8 @@ body.my-mermaid-line .mermaid .task {
   stroke: var(--my-text-secondary) !important;
   filter: none;
 }
+
+/* --------------------------------------------------------------------------
  * 九、打印：图在纸面上不能缩成一团，也不能跨页被切开
  * ------------------------------------------------------------------------ */
 @media print {

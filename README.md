@@ -49,6 +49,50 @@
 
 ---
 
+<a id="english"></a>
+
+## English
+
+**MoYun** (墨韵, "ink charm") is a Chinese-first theme for Obsidian. Every other theme is
+designed for English prose — line height, punctuation spacing, and line-breaking rules are
+derived from Latin text, and applying them to Chinese makes reading harder, not easier.
+MoYun rebuilds the typography from the ground up for Han characters.
+
+### What it does differently
+
+- **CJK typography, done properly**: `text-autospace` inserts a quarter-em gap between Chinese
+  and Latin/digits; `line-break: strict` and `text-wrap: pretty` avoid orphaned characters;
+  line height 1.8 (Latin defaults of 1.4 feel cramped with Han characters); heading weight
+  650, because 700+ makes Chinese strokes bleed into each other.
+- **Government-document mode (default on)**: implements GB/T 9704-2012 — FangSong body text,
+  SimHei/KaiTi for heading levels, two-character first-line indent, justified text, and
+  full-grid tables. Turn it off in Style Settings for general-purpose typography.
+- **Eight accent colours** drawn from traditional Chinese pigments (青花, 朱砂, 竹青, 藤紫,
+  秋香, 黛青, 胭脂, 松烟), each calibrated against WCAG AA contrast.
+- **Paper-white day mode, ink-black night mode**: the dark theme uses warm off-white text on
+  deep ink rather than pure white on pure black, which is far easier on the eyes at night.
+- **Resolution-adaptive sizing**: font size and measure scale with window width, so text stays
+  comfortable on 4K displays instead of shrinking into unreadability. Obsidian's own font
+  size and font family settings are respected, never overridden.
+- **Mermaid diagrams** are themed too, in six selectable styles (ink + four neon variants +
+  a print-friendly black-and-white line style).
+
+### Install
+
+1. Open **Settings → Appearance → Themes → Manage**, search for `MoYun`, and install.
+2. Install the **Style Settings** community plugin to reach the theme's 36 options.
+
+Or copy `theme.css` and `manifest.json` into `<vault>/.obsidian/themes/MoYun/`.
+
+### Notes
+
+All theme options are documented in Chinese, with the trade-off explained for each one
+rather than just a slider. Source is modular (`src/`, 36 files) and built by `node build.mjs`;
+the build includes static checks for token misuse, invalid colour functions, comment
+integrity and the Style Settings block structure, plus a Playwright-based visual verification
+suite (59 computed-style assertions per colour scheme).
+
+Licensed under MIT.
 ## 为什么又做一个主题
 
 Obsidian 上优秀的主题很多，但几乎都是为英文写作设计的。这不是「颜色好不好看」的问题，而是排版规则不成立 —— 把英文正文的行高直接套到中文上，读起来就是拥挤的。

@@ -87,6 +87,33 @@ function validate(files, contents) {
     }
   }
 
+  /* 1.5 注释结构检查（硬错误）
+   * 规则来源：一次真实打回 —— 插入新模块时吃掉了某个注释块的开头标记，
+   * 只剩悬挂的一行「星号 + 九、打印：…」和一个孤立的结束标记。CSS 解析器把
+   * 它当成选择器的一部分，Obsidian 目录校验直接报 CSS parse error，整个提交被拒。
+   * 花括号配对检查发现不了它（花括号仍然成对），所以这里用状态机单独扫一遍：
+   *   · 不在注释里却遇到结束标记 → 多余的注释结束符
+   *   · 文件结束时仍在注释里     → 注释未闭合
+   * 说明：本段注释刻意不写出那两个标记的字面形式 —— 写出来会把这段注释提前结束
+   * （同一类错误，只是发生在 JS 里）。 */
+  for (const f of files) {
+    const src = contents.get(f);
+    let inComment = false;
+    let line = 1;
+    for (let i = 0; i < src.length; i++) {
+      const ch = src[i];
+      if (ch === '\n') { line++; continue; }
+      if (!inComment && ch === '/' && src[i + 1] === '*') { inComment = true; i++; continue; }
+      if (inComment && ch === '*' && src[i + 1] === '/') { inComment = false; i++; continue; }
+      if (!inComment && ch === '*' && src[i + 1] === '/') {
+        errors.push(`[${path.relative(ROOT, f)}] 第 ${line} 行有多余的注释结束符 */（缺少配对的 /*），CSS 解析会失败`);
+      }
+    }
+    if (inComment) {
+      errors.push(`[${path.relative(ROOT, f)}] 注释块未闭合（缺少 */），CSS 解析会失败`);
+    }
+  }
+
   // 2. 收集全部已定义令牌，找出被引用但从未定义的 --my-*（拼写错误的主要来源）
   //    注意：Style Settings 面板里的 setting id 会在运行时写成 CSS 变量，
   //    它们不在源码中定义，必须先登记为"外部提供"，否则会误报。
@@ -120,6 +147,37 @@ function validate(files, contents) {
   for (const t of undefinedTokens) {
     const where = [...new Set(usedRaw.get(t))].join(', ');
     errors.push(`引用了未定义的令牌 ${t}（出现在 ${where}）`);
+  }
+
+  /* 2.5 同一规则内重复声明同一属性（提示级）
+   * 规则来源：Obsidian 目录校验报了一处 "Unexpected duplicate line-height" ——
+   * 公文表格里同时写了 1.6 与 1.5，后者生效、前者白写，属于改样式时的残留。
+   * 这类问题不报错、不影响解析，只会让人以为写的值生效了，所以留在提示级。 */
+  for (const f of files) {
+    const body = contents.get(f).replace(/\/\*[\s\S]*?\*\//g, '');
+    const lines = body.split('\n');
+    let block = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes('{')) { block = { line: i + 1, props: new Map() }; continue; }
+      if (line.includes('}')) {
+        if (block) {
+          for (const [prop, at] of block.props) {
+            if (at.length > 1) {
+              warnings.push(`[${path.relative(ROOT, f)}] 第 ${block.line} 行起的规则里，${prop} 被声明了 ${at.length} 次（行 ${at.join('、')}），只有最后一次生效`);
+            }
+          }
+        }
+        block = null;
+        continue;
+      }
+      if (!block) continue;
+      const m = line.match(/^\s*(--[a-zA-Z0-9-]+|[a-z-]+)\s*:/);
+      if (!m) continue;
+      const prop = m[1];
+      if (!block.props.has(prop)) block.props.set(prop, []);
+      block.props.get(prop).push(i + 1);
+    }
   }
 
   // 3. 组件层禁止直接使用原始色板（必须经语义令牌）
