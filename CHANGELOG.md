@@ -2,6 +2,32 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.1] - 2026-09-16
+
+### 新增：赞助入口
+
+用户在浏览器插件项目里已有微信/支付宝收款码，把它接进主题的三处入口：
+
+1. **`manifest.json` 增加 `fundingUrl`** —— 指向 README 的赞助小节。
+   Obsidian 社区主题卡片读到该字段会显示「赞助」按钮（参考 Minimal 主题同款写法）。
+2. **README 新增「赞助」小节**，两张收款码并排，配稳定的 `#sponsor` 锚点。
+3. **每次 Release 说明后附收款码**（`append_body`，不顶掉自动生成的变更说明）——
+   下载页面是最常被看到的地方。
+
+收款码放在 `docs/sponsor/`（`wechat-pay.jpg` / `alipay.jpg`）。
+
+### 顺带发现：浏览器插件里的两张收款码是反的
+
+复制图片时核对内容发现，`Readmdvue` 的 `DonationModal.vue` 把两张图接反了：
+
+```ts
+import wechatPayImgUrl from '../assets/pay/24d4be73ee….jpg'  // 实际是【支付宝】蓝色海报
+import alipayImgUrl   from '../assets/pay/8832d51234….jpg'  // 实际是【微信】绿色海报
+```
+
+模板里写的是「微信支付」标签配 `wechatPayImg`，于是弹窗会把支付宝的码显示在
+「微信支付」标题下面（反之亦然）。钱最终都会到账，但用户扫的码和看到的标签不一致。
+本主题按【图片实际内容】命名，未受影响；插件那边的两行 import 建议对调。
 ## [1.1.0] - 2026-09-16
 
 ### 新增：图表风格扩成「一族六款」
