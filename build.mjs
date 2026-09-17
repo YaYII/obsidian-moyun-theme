@@ -8,9 +8,10 @@
  *   3. 输出体积与模块明细报告，并支持 --watch 增量构建。
  *
  * 用法：
- *   node build.mjs            一次性构建
- *   node build.mjs --watch    监听 src/ 变化自动重建
- *   node build.mjs --check    只校验不写文件（CI 用）
+ *   node build.mjs              一次性构建（产物剥离说明性注释）
+ *   node build.mjs --comments   构建带完整注释的版本（便于对照阅读）
+ *   node build.mjs --watch      监听 src/ 变化自动重建
+ *   node build.mjs --check      只校验不写文件（CI 用）
  */
 
 import fs from 'node:fs';
@@ -36,6 +37,9 @@ const relPath = (file) => {
 const args = new Set(process.argv.slice(2));
 const WATCH = args.has('--watch');
 const CHECK_ONLY = args.has('--check');
+/* 产物默认剥离说明性注释：它们占了近一半体积，而浏览器每次加载都要解析一遍。
+ * 想读带注释的版本（比如对照源码学习）加 --comments。 */
+const KEEP_COMMENTS = args.has('--comments');
 
 /* ---------------------------------------------------------------------------
  * 工具：递归收集 CSS 文件，并按「目录名 + 文件名」排序，保证构建可复现。
@@ -58,6 +62,65 @@ function collectCss(dir) {
     const rb = path.relative(SRC, b);
     return ra < rb ? -1 : ra > rb ? 1 : 0;
   });
+}
+
+/* ---------------------------------------------------------------------------
+ * 注释剥离（产物瘦身）
+ * ---------------------------------------------------------------------------
+ * 动机：theme.css 曾达 487 KB，其中注释占 241 KB（49.6%）。注释对读源码的人有价值，
+ * 但对最终产物没有意义 —— 浏览器每次加载都要完整解析一遍，用户也不会去读它。
+ * 目录校验也会因此提示「Theme CSS file is larger than recommended」。
+ *
+ * 三类注释必须保命（剥离时会漏功能或漏测试）：
+ *   ① Style Settings 配置块 —— 它本身就是一条注释，插件靠它识别主题设置；漏了整个
+ *      设置面板就空了；
+ *   ② 模块横幅 —— 用来在产物里定位模块归属，测试也靠它断言「src 里每个模块都进了产物」；
+ *   ③ 文件头 —— 由 header 单独拼接，本来就不经过这里。
+ *
+ * 实现要点：必须区分「字符串里的 /*」与真实注释。CSS 的 content 属性里可能出现任意
+ * 字符，用正则一把梭会误伤；这里用状态机逐字符走。
+ * ------------------------------------------------------------------------ */
+function stripComments(css) {
+  const parts = [];
+  let inComment = false;
+  let inString = null;
+  let buf = '';
+  let comment = '';
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    const next = css[i + 1];
+    if (inComment) {
+      comment += ch;
+      if (ch === '*' && next === '/') {
+        comment += next;
+        i++;
+        inComment = false;
+        /* 保命注释原样留下，其余丢弃 */
+        if (comment.includes('@settings') || comment.includes('模块：')) {
+          buf += comment;
+        } else if (!comment.includes('@settings')) {
+          /* 丢掉注释后可能留下孤立的空行，压一压 */
+        }
+        comment = '';
+      }
+      continue;
+    }
+    if (inString) {
+      buf += ch;
+      if (ch === '\\') { buf += css[i + 1] ?? ''; i++; continue; }
+      if (ch === inString) inString = null;
+      continue;
+    }
+    if (ch === '/' && next === '*') { inComment = true; comment = '/*'; i++; continue; }
+    if (ch === '"' || ch === "'") { inString = ch; buf += ch; continue; }
+    buf += ch;
+  }
+  return buf
+    .split('\n')
+    .map((l) => l.replace(/[ \t]+$/, ''))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /* ---------------------------------------------------------------------------
@@ -361,12 +424,15 @@ function build({ silent = false } = {}) {
    *   ① 构建不可复现，无法用 sha256 校验 Release 资产与本地是否一致；
    *   ② 每次构建都在 git 里产生无意义的 diff。
    * 可追溯性由 git tag 与 manifest.json 的版本号提供，不需要时间戳。 */
-  const header = `@charset "UTF-8";\n/* ============================================================================\n * ${manifest.name} v${manifest.version} —— 中文优先的 Obsidian 主题\n * \n * 本文件由 build.mjs 自动生成，请勿直接编辑。\n * 源码位于 src/，修改后执行：node build.mjs\n * \n * 模块数：${files.length}\n * ========================================================================== */\n\n`;
+  const header = `@charset "UTF-8";\n/* ============================================================================\n * ${manifest.name} v${manifest.version} —— 中文优先的 Obsidian 主题\n * \n * 本文件由 build.mjs 自动生成，请勿直接编辑。\n * 源码位于 src/，修改后执行：node build.mjs\n * \n * 说明：为控制体积，说明性注释未进入产物；需要带注释的版本请运行\n *       node build.mjs --comments\n * \n * 模块数：${files.length}\n * ========================================================================== */\n\n`;
 
   const body = files
     .map((f) => {
       const rel = relPath(f);
-      return `/* ################ 模块：${rel} ################ */\n\n${contents.get(f).trim()}\n`;
+      const src = contents.get(f).trim();
+      /* 说明性注释默认剥离（占近一半体积）。模块横幅与 @settings 块由 stripComments 保命。 */
+      const code = KEEP_COMMENTS ? src : stripComments(src);
+      return `/* ################ 模块：${rel} ################ */\n\n${code}\n`;
     })
     .join('\n');
 

@@ -14,7 +14,7 @@
 
 ![MoYun theme preview](./screenshot.png)
 
-![version](https://img.shields.io/badge/version-1.1.5-3a6ea5)
+![version](https://img.shields.io/badge/version-1.1.6-3a6ea5)
 ![Obsidian](https://img.shields.io/badge/Obsidian-1.6.0%2B-477a5b)
 ![license](https://img.shields.io/badge/license-MIT-8a8170)
 ![modules](https://img.shields.io/badge/modules-36-7159a3)
@@ -135,7 +135,7 @@ trade-off rather than just offering a slider:
 The theme is modular source plus a build step, not one huge CSS file:
 
 ```
-src/ (36 modules)  →  node build.mjs  →  theme.css (~487 KB)
+src/ (36 modules)  →  node build.mjs  →  theme.css (~262 KB)
 ```
 
 - **Build-time checks (`node build.mjs`)**: brace pairing, comment integrity, undefined design
@@ -149,6 +149,10 @@ src/ (36 modules)  →  node build.mjs  →  theme.css (~487 KB)
   Obsidian's own initialisation arguments, checks every text element's contrast, asserts no
   inversion filter is applied, and cross-checks computed styles against real screenshot pixels.
 - **Tests**: `npm test` (28 assertions over the project's own contracts).
+- **Lean artifact**: the shipped `theme.css` carries no explanatory comments — they are
+  nearly half the source and would be parsed by the browser on every load. Module banners and
+  the Style Settings block are preserved. Run `node build.mjs --comments` if you want the
+  fully annotated build to read alongside the source.
 
 ### Honest limitations
 
@@ -202,7 +206,7 @@ MIT. See [LICENSE](LICENSE).
 ### 开发与验证
 
 ```
-src/（36 个模块）  →  node build.mjs  →  theme.css（约 487 KB）
+src/（36 个模块）  →  node build.mjs  →  theme.css（约 262 KB）
 ```
 
 构建期会做括号配对、注释结构、未定义令牌、无效颜色函数、设置面板 YAML 结构、
