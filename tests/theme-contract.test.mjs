@@ -13,6 +13,10 @@
  *   五、设置面板结构   —— 配置块 YAML 重复键/未知类型等（曾经整块失效过）
  *
  * 运行：npm test          （需要先 npm install，仅测试需要依赖）
+ * 范围：脚本用 --dir tests 把扫描范围钉在 tests/。
+ *       不要改成 vitest run tests/ —— 位置参数是【子串匹配】，会连本目录下另一个
+ *       独立仓库（obsidian-vault-bridge/tests/）一起跑进来，实测让门禁从
+ *       「1 个文件 28 项」变成「9 个文件、3 个文件失败」。
  * 说明：构建与两类静态校验（build.mjs / check-conflicts.mjs）刻意保持【零依赖】，
  *       任何人在任何机器上都能直接 node 运行；只有测试使用标准工具链。
  */
