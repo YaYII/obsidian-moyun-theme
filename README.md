@@ -109,14 +109,14 @@ no plugin, no JavaScript, no changes to your notes.
 ### Install
 
 1. **Settings → Appearance → Themes → Manage**, search for `MoYun`, install, then select it.
-2. Install the **Style Settings** community plugin — it unlocks the theme's 36 options.
+2. Install the **Style Settings** community plugin — it unlocks the theme's 37 settings.
 3. Restart Obsidian or switch theme once after updating, so the new CSS is picked up.
 
 Manual install: copy `theme.css` and `manifest.json` into `<vault>/.obsidian/themes/MoYun/`.
 
 ### Settings
 
-Style Settings exposes 36 options in eight groups, all documented — each one explains the
+Style Settings exposes 37 settings in eight groups, all documented — each one explains the
 trade-off rather than just offering a slider:
 
 | Group | What is in it |
@@ -218,6 +218,39 @@ The theme only uses **public CSS variables** and standard properties. If a futur
 renames an internal variable, the affected rule falls back to Obsidian's own default rather
 than breaking the layout.
 
+### Mobile
+
+Mobile is where a Chinese theme is most likely to get in the way, so the theme is measured
+against Obsidian's own mobile rendering instead of being eyeballed. `node tools/check-mobile.mjs`
+loads the same real Obsidian DOM and `app.css` twice in a phone-sized viewport — once without the
+theme (native baseline), once with it — and compares font size, column width, characters per line,
+visible lines per screen and horizontal overflow. 95 assertions across five viewports.
+
+Measured at 390x844 with Obsidian's default 16px font size:
+
+| | Obsidian native | MoYun |
+|---|---|---|
+| Body text | 16px | 16px |
+| Characters per line | 21.4 | 21.4 |
+| Vertical gutter | 8px | 16px |
+| H1 | 25.9px (32px in govdoc style) | 28px |
+| Visible lines per screen | 35.2 | 29.3 |
+
+Three things are worth knowing:
+
+- **The theme does not enlarge text on mobile.** Body size matches Obsidian's own; the gap in
+  lines per screen comes from the 1.8x CJK line height, which is a deliberate reading choice and
+  is adjustable in Style Settings.
+- **Your phone's font size is a device setting.** It lives in `.obsidian/appearance.json`, which
+  sync tools copy between desktop and phone. To let the two differ, exclude that file from sync —
+  or use the theme's *Mobile font offset* setting, which only affects mobile.
+- **Pinch-to-zoom cannot be enabled by a theme.** Obsidian ships
+  `<meta name="viewport" content="... maximum-scale=1.0, user-scalable=no ...">`, and CSS cannot
+  change a viewport declaration. On a phone, use *Settings → Appearance → Font size*.
+
+Mobile-specific rules live in one place — the `body.is-mobile` block of the token layer:
+flat surface layering, a 16px vertical gutter, a smaller heading scale and the font offset.
+
 ### Honest limitations
 
 - Two of the six typographic features depend on fairly recent Chromium versions; on older
@@ -257,12 +290,12 @@ MIT. See [LICENSE](LICENSE).
 4. **分辨率自适应字号** —— 字号与版心随窗口宽度缩放，4K 屏不再逼着眼睛看小字；
    同时尊重 Obsidian 自带的字体与字号设置。
 5. **Mermaid 图表六种风格** —— 墨韵（跟随主题色）、赛博霓虹四套配色、极简黑白线框。
-6. **全中文的设置面板** —— 36 个选项分八组，每一项都写清取舍而不只是给个滑杆。
+6. **全中文的设置面板** —— 37 项设置分八组，每一项都写清取舍而不只是给个滑杆。
 
 ### 安装
 
 1. **设置 → 外观 → 主题 → 管理**，搜索 `MoYun` 安装并启用；
-2. 安装 **Style Settings** 社区插件，才能打开主题的 36 个选项；
+2. 安装 **Style Settings** 社区插件，才能打开主题的 37 项设置；
 3. 更新主题后重启 Obsidian 或切换一次主题，让新样式生效。
 
 手动安装：把 `theme.css` 与 `manifest.json` 放进 `<库>/.obsidian/themes/MoYun/`。
@@ -276,6 +309,36 @@ CSS Text Level 4 属性上（`text-autospace` 需要 Chromium 136+）。更早�
 
 主题只使用**公开的 CSS 变量**与标准属性。若将来的 Obsidian 改名了某个内部变量，
 受影响的规则会回落到 Obsidian 自身的默认值，而不是把版面弄坏。
+
+### 移动端
+
+手机是中文主题最容易「帮倒忙」的地方，所以这里不靠观感，而是拿 Obsidian 自己的移动端渲染
+当基线：`node tools/check-mobile.mjs` 在同一个手机视口里加载两次真实 DOM 与真实 `app.css`
+（一次不加载主题、一次加载），逐项对比字号、版心、每行字数、一屏行数与横向溢出，共 95 条
+断言、覆盖 5 种视口。
+
+实测（390×844，Obsidian 默认 16px 字号）：
+
+| 项目 | Obsidian 原生 | 墨韵 |
+|---|---|---|
+| 正文字号 | 16px | 16px |
+| 每行汉字 | 21.4 | 21.4 |
+| 版心上下留白 | 8px | 16px |
+| 一级标题 | 25.9px（公文模式 32px） | 28px |
+| 一屏可见行数 | 35.2 | 29.3 |
+
+三件值得知道的事：
+
+- **手机上的字不是主题放大的**：正文与原生同号；一屏行数的差距来自中文 1.8 倍行高，
+  那是主题刻意的阅读取舍，可在 Style Settings 里调。
+- **手机字号是设备设置**：它写在 `.obsidian/appearance.json` 里，同步工具会把它带到两端。
+  想让桌面与手机字号不同，就在同步工具里排除这个文件；或者用主题的「手机字号微调」。
+- **双指缩放不是主题能开的**：Obsidian 打包的 HTML 里写死了
+  `maximum-scale=1.0, user-scalable=no`，而 CSS 改不了 viewport 声明。手机上要改阅读大小，
+  请用「设置 → 外观 → 字体大小」。
+
+移动端专属规则集中在令牌层唯一的一个 `body.is-mobile` 里：统一表面层次、16px 上下留白、
+更小的标题字阶、手机字号偏移量。
 
 ### 图表风格（六选一）
 

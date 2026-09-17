@@ -342,7 +342,7 @@ body {
   --file-margins-x: var(--my-editor-padding-x);
   --file-margins-y: var(--my-editor-padding-y);
   --file-folding-offset: 26px;
-  --inline-title-size: 2.1em;
+  --inline-title-size: var(--my-inline-title-size);
   --inline-title-weight: var(--my-font-weight-heading);
   --inline-title-color: var(--my-text-primary);
   --inline-title-font: var(--my-font-heading);

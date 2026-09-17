@@ -130,6 +130,14 @@ body.my-gov-style .markdown-rendered .inline-title {
   text-indent: 0;
 }
 
+/* 手机端：公文标题 2em 在 390px 宽的屏上一行只放 11 个汉字，标题本身就要折行。
+ * 收到与通用模式一致的 1.75em（= 移动端的 --my-h1-size），居中观感不变。
+ * 只覆盖手机：桌面与打印仍按公文字号执行。 */
+body.my-gov-style.is-mobile .markdown-rendered h1,
+body.my-gov-style.is-mobile .markdown-rendered .inline-title {
+  font-size: var(--my-h1-size);
+}
+
 /* 一级标题（一、）：三号黑体 */
 body.my-gov-style .markdown-rendered h2 {
   font-family: var(--my-gov-font-h1);

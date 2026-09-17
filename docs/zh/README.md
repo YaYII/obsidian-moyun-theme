@@ -83,7 +83,7 @@ MoYun rebuilds the typography from the ground up for Han characters.
 ### Install
 
 1. Open **Settings → Appearance → Themes → Manage**, search for `MoYun`, and install.
-2. Install the **Style Settings** community plugin to reach the theme's 36 options.
+2. Install the **Style Settings** community plugin to reach the theme's 37 settings.
 
 Or copy `theme.css` and `manifest.json` into `<vault>/.obsidian/themes/MoYun/`.
 
@@ -183,7 +183,7 @@ Mermaid 图形（流程图 / 时序图 / 状态图 / 类图 / 饼图 / 甘特图
 主题是**源码分模块 + 构建产出**的，不是一份 8000 行的 CSS 大文件：
 
 ```
-36 个模块  →  node build.mjs  →  theme.css (459 KB)
+36 个模块  →  node build.mjs  →  theme.css (237 KB)
 ```
 
 - **构建期校验**：花括号配对、未定义令牌、原始色板越界引用、Style Settings 格式
@@ -328,9 +328,10 @@ node tools/make-demo-vault.mjs # 重新生成演示库
 
 ## 兼容性
 
-- **Obsidian 1.6.0 及以上**（`manifest.json` 中的 `minAppVersion`）
+- **Obsidian 1.13.0 及以上**（`manifest.json` 中的 `minAppVersion`；此处此前误写为 1.6.0，已按实测环境改正）
 - 中文排版的新特性（`text-autospace`）需要 **Chromium 136 以上**。Obsidian 1.13.x 内置 Chromium 150，完全支持；更低版本会自动降级，不影响其它样式。
-- 桌面端与移动端均已适配（移动端会统一表面层次，避免窄屏被切成太多色块）
+- 桌面端与移动端均已适配。移动端专属规则集中在令牌层的 `body.is-mobile`：统一表面层次（避免窄屏被切成太多色块）、版心上下留白 40px → 16px、标题字阶收敛（公文 h1 2em → 1.75em）、以及只作用于手机的「手机字号微调」。
+- 移动端有一条**做不到**的事，写在这里以免被误解：**双指缩放无法由主题开启**。Obsidian 自己打包的 HTML 里写死了 `<meta name="viewport" content="… maximum-scale=1.0, user-scalable=no …">`，而 CSS 无法修改 viewport 声明。在手机上改阅读大小的正确入口是「设置 → 外观 → 字体大小」；该值存放在 `.obsidian/appearance.json`，同步工具会把它在桌面与手机之间同步，想两端不同就排除这个文件。
 
 ## 致谢
 

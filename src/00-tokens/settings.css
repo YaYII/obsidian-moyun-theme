@@ -136,6 +136,16 @@ settings:
     min: 0
     max: 200
     step: 10
+  -
+    id: my-mobile-font-delta
+    title: 手机字号微调
+    description: 只作用于手机/平板端，在 Obsidian 自带字号上叠加（0 = 完全跟随）。桌面/手机共用同一份 appearance.json 时，用它单独调手机的字号；缩小能让一屏多放几行。
+    type: variable-number-slider
+    default: 0
+    min: -4
+    max: 4
+    step: 1
+    format: px
 
   # ==========================================================================
   # 四、行距与版心
