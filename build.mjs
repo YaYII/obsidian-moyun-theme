@@ -40,6 +40,8 @@ const CHECK_ONLY = args.has('--check');
 /* 产物默认剥离说明性注释：它们占了近一半体积，而浏览器每次加载都要解析一遍。
  * 想读带注释的版本（比如对照源码学习）加 --comments。 */
 const KEEP_COMMENTS = args.has('--comments');
+/* 发布形态压缩默认开启；--pretty 保留缩进与换行，便于人工阅读产物。 */
+const PRETTY = args.has('--pretty') || KEEP_COMMENTS;
 
 /* ---------------------------------------------------------------------------
  * 工具：递归收集 CSS 文件，并按「目录名 + 文件名」排序，保证构建可复现。
@@ -95,12 +97,12 @@ function stripComments(css) {
         comment += next;
         i++;
         inComment = false;
-        /* 保命注释原样留下，其余丢弃 */
-        if (comment.includes('@settings') || comment.includes('模块：')) {
-          buf += comment;
-        } else if (!comment.includes('@settings')) {
-          /* 丢掉注释后可能留下孤立的空行，压一压 */
-        }
+        /* 保命注释原样留下，其余丢弃。
+         * 注意匹配要【精确】：早先写成「只要注释里出现『模块：』就保留」，
+         * 结果源码里凡是提到模块名的说明性注释全被带进了产物，白白多出十几 KB。 */
+        const isBanner = /^\/\*\s*#{4,}\s*模块：/.test(comment);
+        const isSettings = comment.includes('@settings');
+        if (isBanner || isSettings) buf += comment;
         comment = '';
       }
       continue;
@@ -121,6 +123,56 @@ function stripComments(css) {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/* ---------------------------------------------------------------------------
+ * 发布形态压缩
+ * ---------------------------------------------------------------------------
+ * 目录校验提示「Theme CSS file is larger than recommended」，而阈值官方没有公开
+ * （校验器不开源，论坛也无人给出数字）。可确定的是：487 KB 与 262 KB 都会告警，
+ * 所以只能往「尽量小」的方向做。
+ *
+ * 压缩只做**不改变语义**的空白处理 —— 这正是分发样式表的常规做法：
+ *   · 去掉行首缩进与空行
+ *   · 声明行去掉冒号后的空格、去掉块尾多余分号
+ *   · 折叠选择器与花括号之间的空白
+ * 不做的事（刻意）：不改写数值（0px→0 会在 calc() 里失效）、不重命名自定义属性
+ * （那会毁掉可读性与调试能力）、不合并规则（会改变层叠顺序的风险）。
+ *
+ * 判定「这行是声明」的依据是**以分号结尾**：选择器行永不以分号结尾（它们以 , { 或
+ * 选择器本身结尾），因此伪类选择器（a:hover,）不会被误当成声明而改坏。
+ * ------------------------------------------------------------------------ */
+function minifyCss(css) {
+  const out = [];
+  let inStyle = false;   // 是否处于某个「样式规则」内部（决定 ; 能否省）
+  let inComment = false;
+  for (const raw of css.split('\n')) {
+    /* 注释块【原样保留】：缩进与换行都是它的语义。
+     * 这里踩过一次大坑：第一版对每一行都做 trim，把 @settings 的 YAML 压成了一行，
+     * Style Settings 直接失效 —— 比体积告警严重得多。 */
+    if (inComment) {
+      out.push('\n' + raw);
+      if (raw.includes('*/')) inComment = false;
+      continue;
+    }
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('/*')) {
+      inComment = !line.includes('*/');
+      out.push('\n' + raw.trimEnd());
+      continue;
+    }
+    if (line.includes('{')) inStyle = true;
+    const declares = inStyle && line.endsWith(';');
+    const decl = declares && line.match(/^(--[A-Za-z][\w-]*|[A-Za-z-][\w-]*)\s*:\s*(.*);$/);
+    if (decl && !/[{}]/.test(line)) {
+      out.push(decl[1] + ':' + decl[2].trim() + ';');
+    } else {
+      out.push(line);
+    }
+    if (line.includes('}')) inStyle = false;
+  }
+  return out.join('').replace(/;}/g, '}').replace(/\s*\{\s*/g, '{');
 }
 
 /* ---------------------------------------------------------------------------
@@ -431,7 +483,8 @@ function build({ silent = false } = {}) {
       const rel = relPath(f);
       const src = contents.get(f).trim();
       /* 说明性注释默认剥离（占近一半体积）。模块横幅与 @settings 块由 stripComments 保命。 */
-      const code = KEEP_COMMENTS ? src : stripComments(src);
+      const stripped = KEEP_COMMENTS ? src : stripComments(src);
+      const code = PRETTY ? stripped : minifyCss(stripped);
       return `/* ################ 模块：${rel} ################ */\n\n${code}\n`;
     })
     .join('\n');
@@ -468,6 +521,20 @@ function build({ silent = false } = {}) {
    * 有一次改了 manifest 的版本号却忘了重新构建，于是提交上去的 theme.css 头部
    * 仍写着上一个版本号，仓库里的产物与清单对不上 —— 直到比对 Release 资产才暴露。
    * 这里把「源码 + 清单」与「已提交的产物」绑在一起：不一致就报错，提示重新构建。 */
+  /* Style Settings 配置块必须【原样】进入产物。
+   * 规则来源：一次自造事故 —— 给产物做空白压缩时顺手 trim 了每一行，
+   * 把 @settings 的 YAML 缩进压平，插件将无法解析（整个设置面板失效）。
+   * 这条检查把「产物里的块 == 源码里的块」钉死，任何压缩/处理都不能碰它。 */
+  const srcAll = [...contents.values()].join('\n');
+  const blockOf = (text) => {
+    const i = text.indexOf('/* @settings');
+    return i < 0 ? null : text.slice(i, text.indexOf('*/', i) + 2);
+  };
+  const srcBlock = blockOf(srcAll);
+  if (srcBlock && blockOf(output) !== srcBlock) {
+    errors.push('Style Settings 配置块在产物中被改动了（缩进/换行必须与源码逐字符一致），请检查产物处理逻辑');
+  }
+
   if (CHECK_ONLY && fs.existsSync(OUT)) {
     const onDisk = fs.readFileSync(OUT, 'utf8');
     if (onDisk !== output) {

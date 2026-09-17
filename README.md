@@ -14,7 +14,7 @@
 
 ![MoYun theme preview](./screenshot.png)
 
-![version](https://img.shields.io/badge/version-1.1.7-3a6ea5)
+![version](https://img.shields.io/badge/version-1.1.8-3a6ea5)
 ![Obsidian](https://img.shields.io/badge/Obsidian-1.13.0%2B-477a5b)
 ![license](https://img.shields.io/badge/license-MIT-8a8170)
 ![modules](https://img.shields.io/badge/modules-36-7159a3)
@@ -135,7 +135,7 @@ trade-off rather than just offering a slider:
 The theme is modular source plus a build step, not one huge CSS file:
 
 ```
-src/ (36 modules)  →  node build.mjs  →  theme.css (~262 KB)
+src/ (36 modules)  →  node build.mjs  →  theme.css (~237 KB)
 ```
 
 - **Build-time checks (`node build.mjs`)**: brace pairing, comment integrity, undefined design
@@ -229,7 +229,7 @@ CSS Text Level 4 属性上（`text-autospace` 需要 Chromium 136+）。更早�
 ### 开发与验证
 
 ```
-src/（36 个模块）  →  node build.mjs  →  theme.css（约 262 KB）
+src/（36 个模块）  →  node build.mjs  →  theme.css（约 237 KB）
 ```
 
 构建期会做括号配对、注释结构、未定义令牌、无效颜色函数、设置面板 YAML 结构、
