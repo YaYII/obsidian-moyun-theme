@@ -14,8 +14,8 @@
 
 ![MoYun theme preview](./screenshot.png)
 
-![version](https://img.shields.io/badge/version-1.1.6-3a6ea5)
-![Obsidian](https://img.shields.io/badge/Obsidian-1.6.0%2B-477a5b)
+![version](https://img.shields.io/badge/version-1.1.7-3a6ea5)
+![Obsidian](https://img.shields.io/badge/Obsidian-1.13.0%2B-477a5b)
 ![license](https://img.shields.io/badge/license-MIT-8a8170)
 ![modules](https://img.shields.io/badge/modules-36-7159a3)
 
@@ -154,6 +154,19 @@ src/ (36 modules)  →  node build.mjs  →  theme.css (~262 KB)
   the Style Settings block are preserved. Run `node build.mjs --comments` if you want the
   fully annotated build to read alongside the source.
 
+### Compatibility
+
+MoYun requires **Obsidian 1.13.0 or newer**. The reason is not laziness: its core CJK
+features build on CSS Text Level 4 properties that only reached Chromium in recent versions
+(`text-autospace` needs Chromium 136). On an older build those declarations are simply
+ignored — no crash, no broken layout, but half the point of the theme silently disappears.
+Declaring a lower minimum would have been dishonest, so the requirement now matches what the
+theme actually needs and what it is tested against (1.13.7, Chromium 150).
+
+The theme only uses **public CSS variables** and standard properties. If a future Obsidian
+renames an internal variable, the affected rule falls back to Obsidian's own default rather
+than breaking the layout.
+
 ### Honest limitations
 
 - Two of the six typographic features depend on fairly recent Chromium versions; on older
@@ -202,6 +215,16 @@ MIT. See [LICENSE](LICENSE).
 3. 更新主题后重启 Obsidian 或切换一次主题，让新样式生效。
 
 手动安装：把 `theme.css` 与 `manifest.json` 放进 `<库>/.obsidian/themes/MoYun/`。
+
+### 兼容性
+
+需要 **Obsidian 1.13.0 或更高**。原因不敷衍：核心的中文排版特性建立在较新 Chromium 才有的
+CSS Text Level 4 属性上（`text-autospace` 需要 Chromium 136+）。更早的版本会直接忽略这些声明 ——
+不报错、不破坏版面，但主题的一半意义会静默消失。把最低版本写低是不诚实的，
+所以现在这个声明与「主题真正需要什么、以及我们拿什么版本验证」一致（1.13.7 / Chromium 150）。
+
+主题只使用**公开的 CSS 变量**与标准属性。若将来的 Obsidian 改名了某个内部变量，
+受影响的规则会回落到 Obsidian 自身的默认值，而不是把版面弄坏。
 
 ### 开发与验证
 
