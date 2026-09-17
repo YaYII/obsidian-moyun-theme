@@ -2,6 +2,35 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.9] - 2026-09-16
+
+### 新增：图表风格展示图（README 中英两节）
+
+用户要求把六种图表风格的效果图做出来并放进仓库。新增
+`tools/make-mermaid-gallery.mjs`，用**真实 Mermaid 包 + Obsidian 的真实初始化参数**
+渲染同一张流程图（含子图、换行标签、带标签的连线），每种风格一张，共七张：
+
+| 文件 | 风格 |
+|---|---|
+| `mermaid-ink-dark.webp` / `mermaid-ink-light.webp` | 墨韵（跟随主题色，明暗各一张） |
+| `mermaid-cyber.webp` | 赛博 · 青蓝 |
+| `mermaid-cyber-matrix.webp` | 赛博 · 矩阵翠绿 |
+| `mermaid-cyber-violet.webp` | 赛博 · 紫粉 |
+| `mermaid-cyber-amber.webp` | 赛博 · 琥珀 |
+| `mermaid-line-light.webp` | 极简 · 黑白线框 |
+
+两个决定：
+
+1. **输出到 `docs/images/mermaid/` 而不是 `tools/preview/out/`** —— 后者是验证产物、
+   被 `.gitignore` 排除，而 README 需要的是可提交、可长期引用的展示图。
+2. **借 Chromium 的 canvas 转成 WebP** —— 七张 2x PNG 加起要 1.5 MB 以上，
+   转 WebP 后合计 396 KB（单张 38–73 KB）。仓库里不该放这么大的 PNG。
+
+展示图刻意用真实笔记里常见的图形（子图 + `<br/>` 换行 + 带标签的连线），
+而不是验证台夹具那种极简图 —— 展示图要让人判断「我要不要用这个风格」。
+
+README 英文小节给出完整七张（两列配对 + 说明文字），中文小节给三张代表
+（墨韵夜间 / 赛博青蓝 / 极简线框）并指向英文小节的完整图廊。
 ## [1.1.8] - 2026-09-16
 
 ### 优化：产物压缩空白，261.7 KB → 236.9 KB（累计从 487 KB 降 51%）

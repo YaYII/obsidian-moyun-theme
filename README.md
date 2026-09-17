@@ -14,7 +14,7 @@
 
 ![MoYun theme preview](./screenshot.png)
 
-![version](https://img.shields.io/badge/version-1.1.8-3a6ea5)
+![version](https://img.shields.io/badge/version-1.1.9-3a6ea5)
 ![Obsidian](https://img.shields.io/badge/Obsidian-1.13.0%2B-477a5b)
 ![license](https://img.shields.io/badge/license-MIT-8a8170)
 ![modules](https://img.shields.io/badge/modules-36-7159a3)
@@ -130,6 +130,57 @@ trade-off rather than just offering a slider:
 | ✨ Content | Diagram style, heading numbers, rainbow folders, image grid and more |
 | ⚙️ Advanced | Print, immersive mode, plugin compatibility |
 
+### Diagram styles
+
+Mermaid diagrams are themed too, and there are six styles to choose from in Style Settings.
+All seven images below are **real renders** (same diagrams, same Mermaid version and the same
+initialisation arguments Obsidian uses), not mock-ups. Regenerate them any time with
+`node tools/make-mermaid-gallery.mjs`.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-ink-dark.webp" alt="Ink style, dark mode" /><br />
+      <sub><b>Ink</b> · dark — follows the theme, outlines and glow use the accent colour</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-ink-light.webp" alt="Ink style, light mode" /><br />
+      <sub><b>Ink</b> · light — transparent canvas, neutral edges, no colour noise</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-cyber.webp" alt="Cyber cyan style" /><br />
+      <sub><b>Cyber · cyan</b> — dark terminal canvas, neon outlines, glowing edges</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-cyber-matrix.webp" alt="Cyber matrix green style" /><br />
+      <sub><b>Cyber · matrix</b> — phosphor green, the most “terminal” of the set</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-cyber-violet.webp" alt="Cyber violet style" /><br />
+      <sub><b>Cyber · violet</b> — synthwave violet and magenta</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-cyber-amber.webp" alt="Cyber amber style" /><br />
+      <sub><b>Cyber · amber</b> — warm terminal, gentler for long evening reading</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/mermaid/mermaid-line-light.webp" alt="Minimal black and white line style" /><br />
+      <sub><b>Minimal</b> · black-and-white line drawing — for printing and formal documents</sub>
+    </td>
+    <td align="center" width="50%">
+      <sub>Every style keeps text contrast at or above WCAG AA (≥ 4.5:1) — enforced by<br />
+      <code>tools/check-mermaid.mjs</code>, which also asserts that no inversion filter is<br />
+      applied and cross-checks computed styles against real screenshot pixels.</sub>
+    </td>
+  </tr>
+</table>
+
 ### Development
 
 The theme is modular source plus a build step, not one huge CSS file:
@@ -226,6 +277,28 @@ CSS Text Level 4 属性上（`text-autospace` 需要 Chromium 136+）。更早�
 主题只使用**公开的 CSS 变量**与标准属性。若将来的 Obsidian 改名了某个内部变量，
 受影响的规则会回落到 Obsidian 自身的默认值，而不是把版面弄坏。
 
+### 图表风格（六选一）
+
+Mermaid 图也跟着主题走，可在 **设置 → Style Settings → ✨ 内容增强 → 图表风格** 里切换。
+下面几张都是**真实渲染**（同一张图、同一版 Mermaid、Obsidian 的真实初始化参数），不是效果图；
+随时可用 `node tools/make-mermaid-gallery.mjs` 重新生成。完整七张见上方英文小节。
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/images/mermaid/mermaid-ink-dark.webp" alt="墨韵 · 夜间" /><br />
+      <sub><b>墨韵</b>（默认）· 夜间 —— 描边与辉光取自「主题色」</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/mermaid/mermaid-cyber.webp" alt="赛博 · 青蓝" /><br />
+      <sub><b>赛博 · 青蓝</b> —— 深色终端画布，线条与文字发光</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/mermaid/mermaid-line-light.webp" alt="极简 · 黑白线框" /><br />
+      <sub><b>极简 · 黑白线框</b> —— 无颜色无辉光，适合打印与正式公文</sub>
+    </td>
+  </tr>
+</table>
 ### 开发与验证
 
 ```
