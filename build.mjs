@@ -397,6 +397,19 @@ function build({ silent = false } = {}) {
     }
   }
 
+  /* 产物陈旧检查（仅 --check 模式，即 CI 跑的那条）
+   * 规则来源：本主题把构建产物 theme.css 一起提交（方便用户直接下载）。
+   * 有一次改了 manifest 的版本号却忘了重新构建，于是提交上去的 theme.css 头部
+   * 仍写着上一个版本号，仓库里的产物与清单对不上 —— 直到比对 Release 资产才暴露。
+   * 这里把「源码 + 清单」与「已提交的产物」绑在一起：不一致就报错，提示重新构建。 */
+  if (CHECK_ONLY && fs.existsSync(OUT)) {
+    const onDisk = fs.readFileSync(OUT, 'utf8');
+    if (onDisk !== output) {
+      const at = [...onDisk].findIndex((ch, i) => ch !== output[i]);
+      errors.push(`theme.css 与源码/清单不一致（产物陈旧，首个差异在第 ${at + 1} 个字符附近），请重新执行 node build.mjs`);
+    }
+  }
+
   if (!silent) {
     const kb = (Buffer.byteLength(output, 'utf8') / 1024).toFixed(1);
     console.log(`\n${manifest.name} 构建${CHECK_ONLY ? '校验' : '完成'}`);
