@@ -163,6 +163,11 @@ function collect() {
    * 视口高度的较小值：真机上容器高度就是视口高度，这里用 min 保证两头都对。 */
   const hostH = Math.min(host ? host.h : vh, vh);
 
+  /* 宽图（900px 夹具）：手机上它是否被压扁，是「图看不清楚」的直接量化指标。
+   * 压扁 = svg 渲染宽度 ≈ 版心宽度（340px）→ 图内 14px 文字实际只剩 5.3px。 */
+  const wideBox = document.querySelector("#mermaid-wide");
+  const wideSvg = wideBox ? wideBox.querySelector("svg") : null;
+
   const headingSel = [["h1", "h1"], ["h2", "h2"], ["h3", "h3"], ["h4", "h4"]];
   const headings = {};
   for (const pair of headingSel) {
@@ -183,6 +188,9 @@ function collect() {
     hostSel: host ? host.sel : "(视口)",
     sizerPaddingTop: sizerCs ? parseFloat(sizerCs.paddingTop) : -1,
     sizerPaddingLeft: sizerCs ? parseFloat(sizerCs.paddingLeft) : -1,
+    wideBox: wideBox ? Math.round(wideBox.clientWidth) : -1,
+    wideSvg: wideSvg ? Math.round(wideSvg.getBoundingClientRect().width) : -1,
+    wideScrollable: wideBox ? wideBox.scrollWidth > wideBox.clientWidth + 1 : false,
     headings: headings,
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     /* text-size-adjust 是继承属性，且 Obsidian 只在 body.is-mobile 上声明，
@@ -268,6 +276,15 @@ try {
         const bumped = await page.evaluate(collect);
         m.knobBase = m.fontSize;
         m.knobBumped = bumped.fontSize;
+      }
+      /* 图表在手机上的两种模式都要量：默认「原始尺寸 + 可横向滑动」，
+       * 设置项 my-mobile-diagram-fit 打开后「缩放进屏」（回到老行为）。 */
+      if (variant.id === "moyun-dark" && device.kind !== "desktop") {
+        await page.evaluate(() => document.body.classList.add("my-mobile-diagram-fit"));
+        const fitted = await page.evaluate(collect);
+        m.diagramFitWidth = fitted.wideSvg;
+        m.diagramFitScrollable = fitted.wideScrollable;
+        await page.evaluate(() => document.body.classList.remove("my-mobile-diagram-fit"));
       }
       results[variant.id] = m;
 
@@ -367,6 +384,20 @@ try {
       /* 版面留白：桌面 40px 的上下留白在手机上等于白扔两行，这里守住 16px。 */
       assert(mine.sizerPaddingTop >= 0 && mine.sizerPaddingTop <= 20,
         device.id + " 版心上下留白收敛（≤ 20px）", "实测 " + fmt(mine.sizerPaddingTop, 1) + "px");
+
+      /* 图表可读性（手机端核心契约）：900px 的图不许被压扁到版心宽度以内，
+       * 必须保持原始尺寸并允许横向滑动；打开设置项后才允许缩放进屏。 */
+      assert(mine.wideSvg >= 880,
+        device.id + " 宽图不被压扁（保持原始尺寸 ~900px）",
+        "版心 " + mine.wideBox + "px，图渲染 " + mine.wideSvg + "px");
+      assert(mine.wideScrollable === true,
+        device.id + " 宽图容器可横向滑动",
+        "scrollWidth > clientWidth = " + mine.wideScrollable);
+      if (typeof mine.diagramFitWidth === "number") {
+        assert(mine.diagramFitWidth <= mine.wideBox + 2,
+          device.id + " 设置项「图表缩放进屏」生效（图收进版心）",
+          "图渲染 " + mine.diagramFitWidth + "px ≤ 版心 " + mine.wideBox + "px");
+      }
     }
     if (device.kind === "phone") {
       assert(mine.charsPerLine >= 14,

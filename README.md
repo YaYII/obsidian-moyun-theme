@@ -244,12 +244,23 @@ Three things are worth knowing:
 - **Your phone's font size is a device setting.** It lives in `.obsidian/appearance.json`, which
   sync tools copy between desktop and phone. To let the two differ, exclude that file from sync —
   or use the theme's *Mobile font offset* setting, which only affects mobile.
-- **Pinch-to-zoom cannot be enabled by a theme.** Obsidian ships
-  `<meta name="viewport" content="... maximum-scale=1.0, user-scalable=no ...">`, and CSS cannot
-  change a viewport declaration. On a phone, use *Settings → Appearance → Font size*.
+- **Pinch-to-zoom cannot be enabled by a theme.** Obsidian is built on Capacitor, whose
+  `zoomEnabled` option defaults to `false` ("Enable zooming within the Capacitor Web View") — a
+  native, app-level switch no stylesheet can reach — and its HTML ships
+  `maximum-scale=1.0, user-scalable=no`. Both are outside CSS. What a theme *can* fix is the
+  consequence: **wide content is no longer shrunk into unreadability.**
+  - Wide Mermaid diagrams keep their natural size on mobile and their block scrolls horizontally.
+    A 900px flowchart in a 340px column used to be scaled to 340px — 14px labels rendered at
+    5.3px. *Content enhancements → Fit diagrams on mobile* restores fit-to-width if you prefer it.
+  - Images can be tapped to open Obsidian's own full-screen viewer.
+
+If you need real magnification on Android, the system's *Settings → Accessibility → Magnification*
+works in every app. Pinch-zoom does work inside Obsidian's graph and canvas views, because those
+are rendered by Cytoscape, which implements its own touch zoom.
 
 Mobile-specific rules live in one place — the `body.is-mobile` block of the token layer:
-flat surface layering, a 16px vertical gutter, a smaller heading scale and the font offset.
+flat surface layering, a 16px vertical gutter, a smaller heading scale, the font offset, and
+natural-size diagrams with horizontal panning.
 
 ### Honest limitations
 
@@ -337,8 +348,20 @@ CSS Text Level 4 属性上（`text-autospace` 需要 Chromium 136+）。更早�
   `maximum-scale=1.0, user-scalable=no`，而 CSS 改不了 viewport 声明。手机上要改阅读大小，
   请用「设置 → 外观 → 字体大小」。
 
+**关于双指缩放（把机制说清楚）**：Obsidian 是 Capacitor 应用，它的 `zoomEnabled` 选项默认
+`false`（官方描述是「Enable zooming within the Capacitor Web View」）—— 这是 app 级原生开关，
+样式表碰不到；同时它的 HTML 写死了 `maximum-scale=1.0, user-scalable=no`。两者都在 CSS 之外，
+所以任何主题都开不了缩放。主题能做的是**消除后果：不让宽内容被压到看不清**：
+
+- 手机上宽 Mermaid 图保持原始尺寸、所在区块横向滑动。900px 的流程图在 340px 版心里原本被缩成
+  340px（14px 的图内文字实际只剩 5.3px）；设置 **✨ 内容增强 → 手机上图表缩放进屏** 可切回旧行为。
+- 图片不受影响，点一下即可在 Obsidian 自带的全屏查看器里打开。
+
+Android 上若确实需要放大，系统级「设置 → 辅助功能 → 放大手势」在任何界面都可用；
+另外 Obsidian 的**关系图 / 白板**里双指缩放是可用的 —— 那两处由 Cytoscape 渲染，自带触摸缩放。
+
 移动端专属规则集中在令牌层唯一的一个 `body.is-mobile` 里：统一表面层次、16px 上下留白、
-更小的标题字阶、手机字号偏移量。
+更小的标题字阶、手机字号偏移量，以及「图表保持原尺寸、可横向平移」。
 
 ### 图表风格（六选一）
 

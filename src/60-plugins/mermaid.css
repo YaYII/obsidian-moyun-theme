@@ -178,6 +178,37 @@
   height: auto;
 }
 
+/* --------------------------------------------------------------------------
+ * 手机端：图不被压扁，改为「原始尺寸 + 横向滑动」
+ * 为什么单独写一条：上面那条 max-width: 100% 在桌面端是对的（图缩进版心、不溢出），
+ * 但手机版心只有 ~340px。一张 900px 宽的流程图被压到 340px 后，图里 14px 的文字
+ * 实际只剩 5.3px —— 用户的原话就是「图看不清楚了」。
+ * 而手机上双指缩放是不可用的：Obsidian 的 WebView 在 Capacitor 配置里默认关闭缩放
+ * （zoomEnabled 默认 false，属 app 级原生开关），CSS 改不了它，所以保住可读性的办法
+ * 只有「保持原始尺寸 + 容器横向滑动，用手指平移看局部」。
+ * 窄图（自然宽度小于版心）不受影响：它们本来就放得下，观感与以前完全一致。
+ * 想要「整图缩放进屏」的用户，打开 Style Settings → ✨ 内容增强 → 手机上图表缩放进屏。
+ * ------------------------------------------------------------------------ */
+body.is-mobile .markdown-rendered .mermaid svg,
+body.is-mobile .markdown-preview-view .mermaid svg,
+body.is-mobile .markdown-source-view.mod-cm6 .mermaid svg {
+  max-width: none;
+}
+
+body.is-mobile .markdown-rendered .mermaid,
+body.is-mobile .markdown-preview-view .mermaid,
+body.is-mobile .markdown-source-view.mod-cm6 .mermaid {
+  /* 手指平移时要有惯性，否则宽图滑动很涩 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 设置项：手机上图表缩放进屏（回到 max-width: 100% 的行为） */
+body.is-mobile.my-mobile-diagram-fit .markdown-rendered .mermaid svg,
+body.is-mobile.my-mobile-diagram-fit .markdown-preview-view .mermaid svg,
+body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg {
+  max-width: 100%;
+}
+
 /* 图内文字必须归零正文样式：正文的 1.8 行高、2em 首行缩进会通过 foreignObject
  * 里的 HTML 标签漏进图中（Mermaid 用 foreignObject 渲染带换行的标签），
  * 把节点撑变形。SVG 的 <text> 不受影响，但两者要一起交代。 */

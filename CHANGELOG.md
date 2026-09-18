@@ -2,6 +2,35 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.1] - 2026-09-17
+
+### 修复：手机上的宽图不再被压扁（「图看不清楚」的真正成因）
+
+用户追问「为什么手机上不能双指放大缩小，这样很多图会看不清楚」。先把缩放这件事的机制查实：
+
+- Obsidian 是 Capacitor 应用，其 `zoomEnabled` 选项**默认 false**（官方描述：Enable zooming
+  within the Capacitor Web View）—— 属 **app 级原生开关**，样式表永远碰不到；
+- 它的 HTML 里还写死了 `maximum-scale=1.0, user-scalable=no`（`obsidian.asar` 可直接 grep 到）；
+  MDN 指出这类声明「浏览器设置可以忽略，iOS 10+ 默认忽略」，所以 iOS 本来就允许捏合，
+  Android 则由 WebView 原生设置决定；
+- 反证：`obsidian.asar` 里唯一实现触摸缩放的是 Cytoscape（`t.pinching`、`gestureStartHandler`、
+  `viewport({zoom, pan, cancelOnFailedZoom: true})`），因此**关系图与白板里双指缩放可用**，
+  而正文是普通 WebView 页面，没有自建捏合处理。
+
+**主题无法开启双指缩放**（已写进 README 中英两节与 docs/zh），但可以让「图看不清」不再发生 ——
+而这恰恰是主题自己的锅：`src/60-plugins/mermaid.css` 给 `.mermaid svg` 设了
+`max-width: 100%`，桌面端是对的，手机上却把 900px 的流程图压成 340px，图内 14px 文字实际
+只剩 5.3px。现在手机上改为**保持原始尺寸 + 区块横向滑动**（含
+`-webkit-overflow-scrolling: touch`），并提供 Style Settings 开关
+「✨ 内容增强 → 手机上图表缩放进屏」回到旧行为。
+
+### 验证
+
+`tools/check-mobile.mjs` 增加宽图档位：验证台新增一张 900×200 的几何夹具（刻意不含文字，
+避免扰动 verify.mjs 的对比度断言），断言手机上「图渲染宽度 ≥ 880px」「容器
+`scrollWidth > clientWidth`，即可横向滑动」「打开设置项后图收进版心」。**107 条断言**全部通过；
+其余关卡（build --check / npm test / verify / check-mermaid / conflicts:strict 0）同样全绿。
+
 ## [1.2.0] - 2026-09-17
 
 ### 修复：移动端（手机/平板）的阅读密度与字号归属

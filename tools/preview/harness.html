@@ -252,6 +252,10 @@
                       <g class="actor"><rect x="20" y="80" width="80" height="24"></rect><text x="30" y="96">参与者</text></g>
                     </svg>
                   </div>
+                   <!-- 手机端探针专用：一张 900px 宽的图。手机版心只有 ~340px，
+                        「图看不清楚」的成因就是它被 max-width:100% 压成三分之一。
+                        刻意不放任何文字元素，避免扰动 verify.mjs 的对比度断言。 -->
+                   <div class="mermaid" id="mermaid-wide"><svg viewBox="0 0 900 200" width="900" height="200" role="graphics-document"><g class="cluster"><rect x="4" y="4" width="892" height="192" rx="6"></rect></g><g class="node"><rect x="24" y="60" width="240" height="64" rx="6"></rect></g><g class="node"><rect x="620" y="60" width="240" height="64" rx="6"></rect></g><path class="path" d="M264 92 L620 92" fill="none"></path></svg></div>
 
                 </div>
               </div>
