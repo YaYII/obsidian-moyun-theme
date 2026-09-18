@@ -282,6 +282,71 @@ const CHECKS = [
   ['Mermaid 容器透明：图是版面上的插图，不是一张卡片', '.mermaid', 'backgroundColor',
     (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
+
+  /* —— 「图搬出笔记」防线（1.2.4）——
+   * 图会被搬走：放大查看器、白板卡片、导出。真正会咬人的不是「搬走」本身，而是
+   * 【搬走之后，图内文字的样式不能再靠祖先给】：祖先要是还提供正文的行高（1.8）、
+   * 首行缩进（2em）和另一套字体，标签就会被推出自己的外框、和相邻标签叠在一起 ——
+   * 用户截图里那句「放大后编成鬼样子」。
+   * 所以这里刻意造一个「坏祖先」：holder 用内联样式给足 2em / 1.8 / Times New Roman，
+   * 再把整块 <div class="mermaid"> 挂进去。图内规则只要不依赖 .markdown-rendered，
+   * 就一定赢；一旦谁把规则加回 .markdown-rendered 前缀，这三条立刻变红。
+   * 注意判定函数会被序列化后送进页面执行，逻辑只能写在函数体内。 */
+  ['图内标签自带底账：坏祖先也压不出首行缩进', '.mermaid .nodeLabel', 'textIndent',
+    (_v, el) => {
+      const root = el.closest('.mermaid');
+      const parent = root.parentNode;
+      const next = root.nextSibling;
+      const holder = document.createElement('div');
+      holder.style.textIndent = '2em';
+      holder.style.lineHeight = '1.8';
+      holder.style.fontFamily = 'Times New Roman, serif';
+      document.body.appendChild(holder);
+      holder.appendChild(root);
+      const got = getComputedStyle(el).textIndent;
+      parent.insertBefore(root, next);
+      holder.remove();
+      return got === '0px';
+    }],
+  ['图内标签自带底账：坏祖先也压不出正文行高', '.mermaid .nodeLabel', 'lineHeight',
+    (_v, el) => {
+      const root = el.closest('.mermaid');
+      const parent = root.parentNode;
+      const next = root.nextSibling;
+      const holder = document.createElement('div');
+      holder.style.textIndent = '2em';
+      holder.style.lineHeight = '1.8';
+      holder.style.fontFamily = 'Times New Roman, serif';
+      document.body.appendChild(holder);
+      holder.appendChild(root);
+      const cs = getComputedStyle(el);
+      const lh = parseFloat(cs.lineHeight);
+      const size = parseFloat(cs.fontSize);
+      parent.insertBefore(root, next);
+      holder.remove();
+      return lh <= size * 1.5;
+    }],
+  ['图内文字自带字体：坏祖先也换不掉它的字', '.mermaid .nodeLabel', 'fontFamily',
+    (_v, el) => {
+      const root = el.closest('.mermaid');
+      const parent = root.parentNode;
+      const next = root.nextSibling;
+      const holder = document.createElement('div');
+      holder.style.textIndent = '2em';
+      holder.style.lineHeight = '1.8';
+      holder.style.fontFamily = 'Times New Roman, serif';
+      document.body.appendChild(holder);
+      holder.appendChild(root);
+      const got = getComputedStyle(el).fontFamily;
+      parent.insertBefore(root, next);
+      holder.remove();
+      const probe = document.createElement('div');
+      probe.style.fontFamily = 'var(--my-font-text-effective, var(--font-text))';
+      document.body.appendChild(probe);
+      const want = getComputedStyle(probe).fontFamily;
+      probe.remove();
+      return got === want && !/Times New Roman/.test(got);
+    }],
   ['Mermaid 文字带辉光（亮晶晶 · SVG 路径用 drop-shadow）', '.mermaid svg text', 'filter',
     (v) => /drop-shadow/.test(v)],
   ['Mermaid 文字带辉光（HTML 标签路径用 text-shadow）', '.mermaid .nodeLabel', 'textShadow',

@@ -2,6 +2,40 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.4] - 2026-09-18
+
+### 修复：图被搬出笔记之后，文字不再「编成鬼样子」
+
+用户把同一张 Mermaid 流程图截图对比：**笔记里正常，点开放大后标签挤成一团、字撑破外框**。
+根因两条，都只在「图离开 `.markdown-rendered` 之后」才发作：
+
+- **正文样式顺着 `foreignObject` 漏进了图里。** 图内文字归零的那几条规则原本带
+  `.markdown-rendered` 前缀，图一被搬进放大查看器 / 白板卡片 / 导出容器，祖先就不存在了，
+  标签重新吃回正文的 `text-indent: 2em` 与 `line-height: 1.8`，于是被推出自己的外框、
+  和相邻标签叠在一起。选择器改为直接挂 `.mermaid` 之下（只命中图内元素，不影响正文）。
+- **字体与文字度量靠继承，搬一次就换一套。** 图内文字原本不声明 `font-family`，
+  换到查看器里会落到另一套字体上；实测标签宽度差约 **4%** —— 对 440px 宽的标签就是 18px，
+  足够撑破外框。现在图内文字载体规则里写死
+  `font-family: var(--my-font-text-effective, var(--font-text))`，并把影响字宽的度量
+  （`font-variant-east-asian: proportional-width`、`text-rendering`、
+  `font-feature-settings`、`letter-spacing: 0`）一起自带。
+
+> 一句话原则：**图表文字自带字体与度量，不依赖碰巧包着它的那个祖先。**
+
+回归防线：`tools/verify.mjs` 新增三条断言，做法是**先造一个「坏祖先」** —— holder 用内联样式
+给足 `text-indent: 2em`、`line-height: 1.8`、`Times New Roman`，再把整块
+`<div class="mermaid">` 挂进去，要求标签的首行缩进仍是 `0px`、行高不超过字号的 1.5 倍、
+字体仍是主题正文栈。**64 条断言 × 明暗两种模式全绿**；`check-mermaid` 六种风格 × 两种模式
+仍全部通过。
+
+这三条都实测过「会响」：
+
+- 把图内归零规则加回 `.markdown-rendered` 前缀 → 首行缩进与行高两条立刻变红；
+- 删掉载体规则里的 `font-family` → 字体那条立刻变红。
+
+配套的插件侧还有一道真渲染测试（`verify:labels`，真实 Mermaid + 真实搬移后的坐标对比）：
+把上面第一条规则加回前缀，它从 9/9 掉到 8/9。
+
 ## [1.2.3] - 2026-09-18
 
 ### 图表方框改为「有色轮廓 + 透明内里」

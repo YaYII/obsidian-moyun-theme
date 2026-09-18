@@ -72,6 +72,17 @@
 .mermaid svg .slice {
   fill: var(--my-text-primary) !important;
   color: var(--my-text-primary) !important;
+  /* 字体必须在这里写死来源：图表文字属于「笔记正文排版」，而不是「碰巧包着它的那个祖先」。
+   * 这条被同一个 bug 教训了两次 —— 把图搬进放大查看器 / 白板之后，若字体靠 .markdown-rendered
+   * 或 body 继承，标签会换成另一套字体，字宽随之变化，于是文字撑破外框、互相覆盖。 */
+  font-family: var(--my-font-text-effective, var(--font-text)) !important;
+  /* 文字【度量】同样要自带：东亚标点的比例宽度、连字与字距都会改变字宽。
+   * 靠祖先继承时，把图搬到别处显示就会换一套度量 —— 实测标签宽度会差 4%，
+   * 对 440px 宽的标签就是 18px，足以撑破自己的外框、让文字叠在一起。 */
+  font-variant-east-asian: proportional-width !important;
+  text-rendering: optimizeLegibility !important;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1 !important;
+  letter-spacing: 0 !important;
 }
 
 /* 文字一律居中：Mermaid 给 HTML 标签写的是 display:inline-block + nowrap，
@@ -223,16 +234,20 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 /* 图内文字必须归零正文样式：正文的 1.8 行高、2em 首行缩进会通过 foreignObject
  * 里的 HTML 标签漏进图中（Mermaid 用 foreignObject 渲染带换行的标签），
  * 把节点撑变形。SVG 的 <text> 不受影响，但两者要一起交代。 */
-.markdown-rendered .mermaid foreignObject div,
-.markdown-rendered .mermaid .nodeLabel,
-.markdown-rendered .mermaid .edgeLabel {
+/* 选择器刻意【不带】.markdown-rendered 前缀：图表会被搬到别处显示（放大查看器、白板、导出），
+ * 一旦要求祖先存在，搬出去就全丢 —— 标签会重新吃正文的 2em 首行缩进与 1.8 行高，
+ * 撑破自己的外框、文字互相覆盖。用户截图里「放大后编成鬼样子」的根因就是这个。
+ * 挂在 .mermaid 下即可：只会命中图内元素，不会影响正文。 */
+.mermaid foreignObject div,
+.mermaid .nodeLabel,
+.mermaid .edgeLabel {
   text-indent: 0;
   margin: 0;
   line-height: 1.35;
   text-align: center;
 }
 
-.markdown-rendered .mermaid foreignObject p {
+.mermaid foreignObject p {
   text-indent: 0;
   margin: 0;
 }
