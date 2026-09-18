@@ -202,6 +202,17 @@ body.is-mobile .markdown-source-view.mod-cm6 .mermaid {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Canvas 卡片里反过来：恢复「缩放进屏」。
+ * 理由与上面恰好互补，这条界线值得写清楚：
+ *   有缩放能力的地方 → 缩放进屏（放大交给缩放手势）；
+ *   没有缩放能力的地方 → 保持原尺寸 + 横向滑动（否则图被压到读不出字）。
+ * Obsidian 的 Canvas（白板）由 Cytoscape 渲染，整块画布可以双指缩放
+ * （bundle 里就有 plugins.canvas.label-pinch-zoom 这个手势提示），而卡片内部不能平移；
+ * 卡片又往往是窄的，图若保持原尺寸会被卡片裁掉。所以 Canvas 内交回缩放进屏。 */
+body.is-mobile .canvas-node-content .mermaid svg {
+  max-width: 100%;
+}
+
 /* 设置项：手机上图表缩放进屏（回到 max-width: 100% 的行为） */
 body.is-mobile.my-mobile-diagram-fit .markdown-rendered .mermaid svg,
 body.is-mobile.my-mobile-diagram-fit .markdown-preview-view .mermaid svg,

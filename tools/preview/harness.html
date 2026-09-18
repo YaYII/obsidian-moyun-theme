@@ -256,6 +256,9 @@
                         「图看不清楚」的成因就是它被 max-width:100% 压成三分之一。
                         刻意不放任何文字元素，避免扰动 verify.mjs 的对比度断言。 -->
                    <div class="mermaid" id="mermaid-wide"><svg viewBox="0 0 900 200" width="900" height="200" role="graphics-document"><g class="cluster"><rect x="4" y="4" width="892" height="192" rx="6"></rect></g><g class="node"><rect x="24" y="60" width="240" height="64" rx="6"></rect></g><g class="node"><rect x="620" y="60" width="240" height="64" rx="6"></rect></g><path class="path" d="M264 92 L620 92" fill="none"></path></svg></div>
+                   <!-- Canvas 卡片夹具：白板里卡片是窄的、内部不能平移，但整块画布可以双指缩放，
+                        所以卡片内的图应当缩放进屏（与手机版心内的策略相反）。同样不放文字。 -->
+                   <div class="canvas-node-content markdown-embed"><div class="markdown-embed-content"><div class="markdown-preview-view markdown-rendered"><div class="mermaid" id="mermaid-in-canvas"><svg viewBox="0 0 900 200" width="900" height="200" role="graphics-document"><rect x="4" y="4" width="892" height="192" rx="6"></rect><path class="path" d="M40 100 L860 100" fill="none"></path></svg></div></div></div></div>
 
                 </div>
               </div>

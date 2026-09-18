@@ -168,6 +168,11 @@ function collect() {
   const wideBox = document.querySelector("#mermaid-wide");
   const wideSvg = wideBox ? wideBox.querySelector("svg") : null;
 
+  /* Canvas 卡片里的图（白板场景）：卡片窄、内部不能平移，但画布可双指缩放，
+   * 所以这里应当【缩放进屏】—— 与版心内的策略正好相反。 */
+  const canvasBox = document.querySelector("#mermaid-in-canvas");
+  const canvasSvg = canvasBox ? canvasBox.querySelector("svg") : null;
+
   const headingSel = [["h1", "h1"], ["h2", "h2"], ["h3", "h3"], ["h4", "h4"]];
   const headings = {};
   for (const pair of headingSel) {
@@ -191,6 +196,8 @@ function collect() {
     wideBox: wideBox ? Math.round(wideBox.clientWidth) : -1,
     wideSvg: wideSvg ? Math.round(wideSvg.getBoundingClientRect().width) : -1,
     wideScrollable: wideBox ? wideBox.scrollWidth > wideBox.clientWidth + 1 : false,
+    canvasBox: canvasBox ? Math.round(canvasBox.clientWidth) : -1,
+    canvasSvg: canvasSvg ? Math.round(canvasSvg.getBoundingClientRect().width) : -1,
     headings: headings,
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     /* text-size-adjust 是继承属性，且 Obsidian 只在 body.is-mobile 上声明，
@@ -393,6 +400,10 @@ try {
       assert(mine.wideScrollable === true,
         device.id + " 宽图容器可横向滑动",
         "scrollWidth > clientWidth = " + mine.wideScrollable);
+      /* 白板（Canvas）卡片里的策略相反：缩放进屏，因为缩放能力在画布那边。 */
+      assert(mine.canvasSvg > 0 && mine.canvasSvg <= mine.canvasBox + 2,
+        device.id + " Canvas 卡片里的图缩放进屏（放大交给画布缩放）",
+        "卡片 " + mine.canvasBox + "px，图渲染 " + mine.canvasSvg + "px");
       if (typeof mine.diagramFitWidth === "number") {
         assert(mine.diagramFitWidth <= mine.wideBox + 2,
           device.id + " 设置项「图表缩放进屏」生效（图收进版心）",

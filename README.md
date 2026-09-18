@@ -262,6 +262,24 @@ Mobile-specific rules live in one place — the `body.is-mobile` block of the to
 flat surface layering, a 16px vertical gutter, a smaller heading scale, the font offset, and
 natural-size diagrams with horizontal panning.
 
+### Zoomable reading: use the built-in Canvas
+
+Canvas is a **core** Obsidian feature (*Settings → Core plugins → Canvas*; the app bundle's i18n
+namespace for it is `plugins.canvas.*`), so there is nothing to install. It is also the one place
+where a pinch zooms the whole view on mobile, because Canvas is rendered by Cytoscape, which
+implements its own touch zoom. That makes it the practical way to read something you need to
+magnify:
+
+1. Create a canvas and drag your note onto it — it becomes a file card rendering the note's
+   content (the theme styles those cards: 0.95em body text, rounded container, accent outline when
+   selected, styled groups and connection points).
+2. Pinch to zoom the board; cards and their contents scale with it.
+
+What a theme *cannot* do is turn the reading view itself into a zoomable board: a theme is CSS
+only, so it cannot create a view, add a zoom control or handle a gesture — that needs a plugin (or
+a change in Obsidian). Because zoom lives on the canvas, diagrams inside canvas cards are
+deliberately scaled to fit their card, the opposite of the reading column's behaviour.
+
 ### Honest limitations
 
 - Two of the six typographic features depend on fairly recent Chromium versions; on older
@@ -362,6 +380,21 @@ Android 上若确实需要放大，系统级「设置 → 辅助功能 → 放�
 
 移动端专属规则集中在令牌层唯一的一个 `body.is-mobile` 里：统一表面层次、16px 上下留白、
 更小的标题字阶、手机字号偏移量，以及「图表保持原尺寸、可横向平移」。
+
+### 用白板放大阅读（Canvas 是核心功能，不是插件）
+
+**白板是 Obsidian 核心自带的功能**（设置 → 核心插件 → 白板；应用包里它的 i18n 命名空间是
+`plugins.canvas.*`），不需要装任何插件。它也是全应用里**唯一能双指缩放整个视图**的地方 ——
+因为白板由 Cytoscape 渲染，自带触摸缩放。所以在手机上想放大看东西，推荐这样做：
+
+1. 新建一个白板（右键文件列表 → 新建白板），把你的笔记拖进去 —— 它会变成一张文件卡片，
+   渲染笔记内容（主题已经给这些卡片做了排版：正文 0.95em、圆角容器、选中时描边用强调色、
+   分组与连线端点也都有样式）。
+2. 双指缩放整块画布，卡片与卡片里的内容一起放大。
+
+**主题做不到**的是把「阅读视图本身」变成可缩放的白板：主题只有 CSS，不能创建视图、加缩放控件
+或处理手势 —— 那必须由插件实现（或者等 Obsidian 官方开放）。也正因为白板上有缩放，卡片内的图
+是**缩放进屏**的，与手机版心内「保持原尺寸 + 横向滑动」的策略刚好相反。
 
 ### 图表风格（六选一）
 
