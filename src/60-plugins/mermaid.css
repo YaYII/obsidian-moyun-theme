@@ -432,12 +432,34 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
  *     → 保留填充：它们的颜色与长度本身就是信息，抹平等于丢数据。
  * ------------------------------------------------------------------------ */
 
-/* 思维导图：根是 circle.node-bkg，分支是 path.node-bkg（都带 node-no-border，原本无描边） */
+/* 思维导图：根是 circle.node-bkg，分支是 path.node-bkg（都带 node-no-border，原本无描边）
+ * 关于填充：这里是【唯一】不能用 transparent 的地方 —— 思维导图的连线又粗又亮，
+ * 而且是【从父节点画到子节点】的，节点一旦透明，那根粗线就从标签上穿过去（实测截图里
+ * 黄色/绿色/紫色三条粗线横在方框里，看起来比原来的底色还脏）。
+ * 所以用与画布同色的「遮线底」：视觉上与透明无异（画布是什么色它就是什么色），
+ * 但把从下面穿过的线挡住 —— 与边标签（.labelBkg）是同一手法、同一个理由。 */
 .mermaid .mindmap-node .node-bkg,
 .mermaid .mindmap-node circle,
 .mermaid .mindmap-node path {
-  fill: transparent !important;
+  fill: var(--background-primary) !important;
   stroke: var(--my-accent) !important;
+}
+
+/* 思维导图的连线：Mermaid 给每个分支一套高饱和色（亮黄/嫩绿/亮紫），既是默认配色、
+ * 又粗得压过文字；这里统一成结构线的中性色，并压细一档。 */
+.mermaid .mindmap-edges path,
+.mermaid .mindmap-edges .edge,
+.mermaid .edge.section-edge-0,
+.mermaid .edge.section-edge-1,
+.mermaid .edge.section-edge-2,
+.mermaid .edge.section-edge-3 {
+  stroke: var(--my-mermaid-edge) !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid .mindmap-edges path.section-edge-0,
+.mermaid .mindmap-edges path[class*="section-edge"] {
+  filter: none !important;
 }
 
 .mermaid .mindmap-node text,
@@ -448,10 +470,20 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
   color: var(--my-text-primary) !important;
 }
 
-/* 时间线：事件框是 .node-bkg，轨道线是 .node-line-N */
+/* 节点下方那条 section 色的短横线（Mermaid 用它标分支颜色）：同样归到结构线，
+ * 否则方框底边会挂一条亮黄/亮绿的边，看着像「框里又垫了色」。 */
+.mermaid .mindmap-node line,
+.mermaid .timeline-node line,
+.mermaid .mindmap-node .node-line,
+.mermaid .timeline-node .node-line {
+  stroke: var(--my-mermaid-edge) !important;
+  stroke-width: 2px !important;
+}
+
+/* 时间线：事件框是 .node-bkg，轨道线是 .node-line-N；同样用遮线底（虚线轨道会从框里穿过） */
 .mermaid .timeline-node .node-bkg,
 .mermaid .timeline-node path {
-  fill: transparent !important;
+  fill: var(--background-primary) !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -499,6 +531,28 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 /* 甘特图：区段底不铺底（数据在条上），条保留 */
 .mermaid rect.section {
   fill: transparent !important;
+}
+
+/* 单序列数据图形：颜色不承载信息（长度才是），改用主题强调色 ——
+ * 否则深色底上会出现 Mermaid 默认的淡紫柱、灰蓝条，比白块好一点但依旧出戏。
+ * 多类别的数据图形（饼扇区、git 提交点、旅程心情条）不动：颜色在那里就是类别。 */
+.mermaid g[class^="bar-plot"] rect {
+  fill: var(--my-accent) !important;
+}
+
+.mermaid g[class^="line-plot"] path {
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid rect.task:not([class*="task-type"]) {
+  fill: var(--my-accent) !important;
+}
+
+/* 坐标轴与刻度：结构线，不该抢戏 */
+.mermaid g[class^="axis"] path,
+.mermaid g[class^="axisl"] path,
+.mermaid g.ticks path {
+  stroke: var(--my-border-subtle) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -563,8 +617,7 @@ body[class*="my-mermaid-cyber"] .mermaid .labelBox,
 body[class*="my-mermaid-cyber"] .mermaid .actor,
 body[class*="my-mermaid-cyber"] .mermaid .statediagram-state rect,
 body[class*="my-mermaid-cyber"] .mermaid .classGroup rect,
-body[class*="my-mermaid-cyber"] .mermaid .mindmap-node .node-bkg,
-body[class*="my-mermaid-cyber"] .mermaid .timeline-node .node-bkg,
+
 body[class*="my-mermaid-cyber"] .mermaid rect.req,
 body[class*="my-mermaid-cyber"] .mermaid .reqLabelBox,
 body[class*="my-mermaid-cyber"] .mermaid .branchLabelBkg,
@@ -574,6 +627,13 @@ body[class*="my-mermaid-cyber"] .mermaid circle[class^="actor-"] {
   fill: transparent !important;
   stroke: var(--my-cyber-cyan) !important;
   filter: drop-shadow(0 0 5px var(--my-cyber-glow));
+}
+
+/* 思维导图/时间线的「遮线底」在赛博风格下必须换成赛博画布色：
+ * 那里 .mermaid 容器是深色终端底，用 --background-primary 会露出一块方方正正的亮斑。 */
+body[class*="my-mermaid-cyber"] .mermaid .mindmap-node .node-bkg,
+body[class*="my-mermaid-cyber"] .mermaid .timeline-node .node-bkg {
+  fill: var(--my-cyber-bg) !important;
 }
 
 /* 绘图区底与象限底在赛博风格下同样不铺底（原本是纯白与淡紫，霓虹底色上很刺眼） */

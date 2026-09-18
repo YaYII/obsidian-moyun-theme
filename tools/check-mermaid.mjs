@@ -413,6 +413,21 @@ for (const mode of ['dark', 'light']) {
       }
       return 1;
     };
+    /* 所在画布的有效背景：从形状往上找到第一个不透明的容器背景（HTML 用 background-color），
+     * 找不到就落到 body。赛博风格把画布色写在 .mermaid 上，所以必须往上走，不能只看 body。 */
+    const effectiveBg = (el) => {
+      let p = el.parentElement;
+      while (p) {
+        if (!(p instanceof SVGElement)) {
+          const bg = getComputedStyle(p).backgroundColor;
+          const a = alphaOf(bg);
+          if (a > 0.9) return bg;
+        }
+        p = p.parentElement;
+      }
+      return getComputedStyle(document.body).backgroundColor;
+    };
+
     const violations = [];
     const labels = [];
     /* 只审计本脚本渲染的图（带 data-diagram）：验证台里那几张手写夹具另有 verify.mjs 管，
@@ -428,6 +443,12 @@ for (const mode of ['dark', 'light']) {
         const box = el.getBoundingClientRect();
         if (box.width * box.height < 40) continue; /* 极小点（笑脸眼睛等）不参与 */
         if (dataShapes.some((sel) => el.matches(sel) || el.closest(sel))) continue;
+        /* 结构方框有两条合法路径：
+         *   ① 完全透明（首选）；
+         *   ② 「与所在画布同色」的遮线底 —— 思维导图的连线是从父节点画到子节点的粗线，
+         *      节点透明了线就从标签上穿过去，只能用同色底挡住（边标签用同一手法）。
+         *      同色 = 视觉上与透明无异，所以这里按「颜色与有效背景相等」放行。 */
+        if (fill === effectiveBg(el)) continue;
         violations.push({
           diagram: diagram,
           cls: el.tagName.toLowerCase() + (el.getAttribute("class") ? "." + el.getAttribute("class") : ""),

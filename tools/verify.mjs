@@ -290,10 +290,27 @@ const CHECKS = [
    * 用户看到的就是「方框里怎么又有背景了」。
    * 下面 8 条守「结构必须透明」，后 2 条守「数据不许被一起抹平」：饼扇区、甘特条、
    * 旅程任务条这些用颜色/长度编码数据的图形，透明了等于丢信息。 */
-  ['思维导图节点底透明（Mermaid 默认纯蓝，必须压掉）', '.mindmap-node .node-bkg', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
-  ['时间线事件框底透明（Mermaid 默认亮黄）', '.timeline-node .node-bkg', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  /* 思维导图与时间线是【唯一】允许结构方框带填充的地方：它们的连线从父节点画到子节点，
+   * 方框透明了线就从标签上穿过去。合法条件是「填充 == 画布色」（视觉上等同透明），
+   * 而且绝不能是 Mermaid 的默认色（纯蓝 #0000EC / 亮黄 #FFFF78）。 */
+  ['思维导图节点底 = 画布色（遮线底，不是 Mermaid 默认纯蓝）', '.mindmap-node .node-bkg', 'fill',
+    (val) => {
+      const probe = document.createElement('div');
+      probe.style.background = 'var(--background-primary)';
+      document.body.appendChild(probe);
+      const want = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return val === want && !/^rgb\(0, 0, 236\)$/.test(val);
+    }],
+  ['时间线事件框底 = 画布色（遮线底，不是 Mermaid 默认亮黄）', '.timeline-node .node-bkg', 'fill',
+    (val) => {
+      const probe = document.createElement('div');
+      probe.style.background = 'var(--background-primary)';
+      document.body.appendChild(probe);
+      const want = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return val === want && !/^rgb\(255, 255, 120\)$/.test(val);
+    }],
   ['需求图 reqBox 底透明（Mermaid 默认淡紫）', '#mermaid-struct-fixture .reqBox', 'fill',
     (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
   ['git 图分支标签底透明（Mermaid 默认亮黄）', '.branchLabelBkg', 'fill',
@@ -375,6 +392,10 @@ const CHECKS = [
       probe.remove();
       return got === want && !/Times New Roman/.test(got);
     }],
+  ['思维导图连线用结构线色（不是亮黄/嫩绿/亮紫的分支色）', '.mindmap-edges path', 'stroke',
+    (val) => !/rgb\(255, 255, 120\)|rgb\(215, 255, 134\)|rgb\(134, 134, 255\)/.test(val) && val !== 'none'],
+  ['节点下方那条分支短横线同样归为结构线', '.mindmap-node line', 'stroke',
+    (val) => !/rgb\(255, 255, 120\)|rgb\(215, 255, 134\)/.test(val) && val !== 'none'],
   ['Mermaid 文字带辉光（亮晶晶 · SVG 路径用 drop-shadow）', '.mermaid svg text', 'filter',
     (v) => /drop-shadow/.test(v)],
   ['Mermaid 文字带辉光（HTML 标签路径用 text-shadow）', '.mermaid .nodeLabel', 'textShadow',
