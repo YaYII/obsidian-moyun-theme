@@ -267,6 +267,17 @@
                         「图看不清楚」的成因就是它被 max-width:100% 压成三分之一。
                         刻意不放任何文字元素，避免扰动 verify.mjs 的对比度断言。 -->
                    <div class="mermaid" id="mermaid-wide"><svg viewBox="0 0 900 200" width="900" height="200" role="graphics-document"><g class="cluster"><rect x="4" y="4" width="892" height="192" rx="6"></rect></g><g class="node"><rect x="24" y="60" width="240" height="64" rx="6"></rect></g><g class="node"><rect x="620" y="60" width="240" height="64" rx="6"></rect></g><path class="path" d="M264 92 L620 92" fill="none"></path></svg></div>
+                   <!-- 「铁律」夹具（1.2.8）：源码里【提供了】填充与直角，主题必须照样不渲染。
+                       两类都要仿真实：① classDef —— Mermaid 会写成带 ID 选择器的 !important
+                       规则注入 SVG（实测原文：`#id .painted>*{fill:...!important;rx:0!important}`），
+                       普通 !important 压不住它；② style —— 写成行内 style。 -->
+                   <div class="mermaid" id="mermaid-iron-fixture">
+                     <style>#mermaid-iron-fixture .painted rect{fill:#ECECFF!important;stroke:#9370DB!important;rx:0!important}</style>
+                     <svg viewBox="0 0 260 90" width="260" height="90" role="graphics-document">
+                       <g class="node painted"><rect x="10" y="10" width="100" height="30" rx="0" ry="0" fill="#ECECFF" stroke="#9370DB"></rect></g>
+                       <g class="node"><rect x="140" y="10" width="100" height="30" rx="0" ry="0" style="fill:#FFD700;stroke:#333333;rx:0" ></rect></g>
+                     </svg>
+                   </div>
                    <!-- 结构方框夹具（1.2.5）：mindmap / timeline / 需求图 / git 图 / 旅程图 / 象限图 /
                         xychart / 甘特区块底，各自的方框类名都不一样，是「按类名写样式」时成片漏掉的一支。
                         这里同样复刻 Mermaid 的真实做法：用 ID 选择器把【默认配色】写进 SVG 内部，

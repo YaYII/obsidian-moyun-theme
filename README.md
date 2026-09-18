@@ -105,9 +105,11 @@ no plugin, no JavaScript, no changes to your notes.
 6. **Mermaid diagrams are themed too**, in six selectable styles: ink (follows the accent
    colour), four neon variants (cyan, matrix green, violet, amber, each on its own dark canvas),
    and a print-friendly black-and-white line style.
-   A diagram is drawn as coloured outlines with a transparent interior: a box has colour where
-   it belongs — the stroke — and nothing is painted behind its text. The single exception is an
-   edge label, which keeps an opaque background so that a connector cannot cut through its text.
+   Diagrams are pure line art: every shape is an outline with no fill at all, boxes have rounded
+   corners, and **fills written in the diagram source are not rendered either** — a `classDef` or
+   `style` that asks for a background is ignored (enforced with `@layer`, because Mermaid injects
+   those as ID-scoped `!important` rules). Labels keep a text-coloured halo instead of a backing
+   rectangle, so a connector cannot cut through the words.
    In-diagram text also carries its own font and text metrics, so a diagram keeps its shape when
    something moves it out of the note: the zoom viewer, a Canvas card, an export.
    The same rule covers every diagram type the renderer ships — flowcharts, sequence, state, class,
@@ -344,8 +346,10 @@ MIT. See [LICENSE](LICENSE).
 4. **分辨率自适应字号** —— 字号与版心随窗口宽度缩放，4K 屏不再逼着眼睛看小字；
    同时尊重 Obsidian 自带的字体与字号设置。
 5. **Mermaid 图表六种风格** —— 墨韵（跟随主题色）、赛博霓虹四套配色、极简黑白线框。
-   图的模样是「有色轮廓 + 透明内里」：方框的颜色在描边上，框里不铺任何底色；
-   唯一的例外是边标签 —— 它必须有不透明底色，否则穿过的连线会把文字切开。
+   图表是**纯线稿**：所有形状一律「有色描边 + 完全无填充」，框四角是圆角，
+   而且**源码里写死的填充也不渲染** —— `classDef` / `style` 里指定的底色照样被忽略
+   （用 `@layer` 强制，因为 Mermaid 把它们写成带 ID 选择器的 `!important`）。
+   标签不再铺底，改用文字描边护线，穿过的连线不会切到字。
    图内文字还自带字体与文字度量，所以图被搬出笔记（放大查看器、白板卡片、导出）时不会走形。
    这条规则覆盖渲染器出的**每一种图**（流程图、时序图、状态图、类图、ER 图、思维导图、时间线、
    需求图、git 图、旅程图、象限图、xy 图、甘特图、block、桑基图）—— 因为每种图给方框起的类名都

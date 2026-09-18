@@ -470,11 +470,37 @@ for (const mode of ['dark', 'light']) {
       reason: "形状 " + v.cls + " 的 fill=" + v.fill + "（不透明）—— 结构方框必须只有描边有色、里面透明；" +
         "若它是【用颜色编码数据】的图形，请加进 DATA_SHAPES 白名单并说明理由" });
   }
+  /* 1.2.8 起契约翻转：边标签【不许】有底色 —— 用户明令「框内也不许有背景」。
+   * 代替方案是文字自己的 8 向描边（护线），它不占一块底色。 */
   for (const label of fills.labels) {
-    if (label.alpha < 0.999) {
+    if (label.alpha > 0.001) {
       failures.push({ style: style.key, styleLabel: style.label, mode, diagram: label.diagram, tag: "edgeLabel 底",
-        text: "边标签底色变透明", contrast: 0, fg: "-", bg: "alpha=" + label.alpha,
-        reason: "边标签必须有底色遮住穿过的连线，不能透明" });
+        text: "边标签又铺了底色", contrast: 0, fg: "-", bg: "alpha=" + label.alpha,
+        reason: "边标签底色必须透明（文字用描边护线，不占底色）" });
+    }
+  }
+
+  /* 圆角契约：四边形的 rx/ry 必须 > 0（用户明令：四角是圆角，不是直角）。
+   * 连源码里写死的 rx:0 也要被 @layer 里的 !important 压掉。 */
+  const corners = await page.evaluate(() => {
+    const rows = [];
+    for (const el of Array.from(document.querySelectorAll(".mermaid[data-diagram] svg rect"))) {
+      if (el.getAttribute("width") === "0" || el.closest("defs") || el.closest("marker")) continue;
+      const cs = getComputedStyle(el);
+      rows.push({
+        diagram: el.closest(".mermaid").getAttribute("data-diagram"),
+        cls: el.tagName.toLowerCase() + (el.getAttribute("class") ? "." + el.getAttribute("class") : ""),
+        rx: cs.rx, ry: cs.ry,
+      });
+    }
+    return rows;
+  });
+  for (const corner of corners) {
+    const rx = parseFloat(corner.rx);
+    if (!(rx > 0)) {
+      failures.push({ style: style.key, styleLabel: style.label, mode, diagram: corner.diagram, tag: corner.cls,
+        text: "方框是直角", contrast: 0, fg: "-", bg: "rx=" + corner.rx,
+        reason: "四角必须是圆角（rx/ry > 0）" });
     }
   }
 

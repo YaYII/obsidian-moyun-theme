@@ -44,6 +44,9 @@ const HARNESS = pathToFileURL(path.join(ROOT, 'tools', 'preview', 'harness.html'
  * 断言清单：[说明, 选择器, 属性, 期望值/判定函数]
  * 期望值支持字符串（包含匹配）或函数（返回 true 表示通过）。
  * ------------------------------------------------------------------------ */
+/* 注意：「没有填充」的判定只能写在每个判定函数体内 ——
+ * 它们会被序列化后送进页面执行，模块作用域里的辅助函数在那边不存在（踩过两次了）。 */
+
 const CHECKS = [
   // —— 中文排版核心 ——
   ['正文行高达到中文舒适区间（≥1.7）', '.markdown-rendered p', 'lineHeight',
@@ -241,7 +244,7 @@ const CHECKS = [
    *   ③ 「方框有颜色」靠描边实现，所以描边必须是有色的强调色；
    *   ④ 边标签的底色必须【保留且不透明】：它压在线条上方，透明了连线会切开文字。 */
   ['Mermaid 节点填充为透明（方框里不铺底色）', '.mermaid .node rect', 'fill',
-    (v) => v === 'rgba(0, 0, 0, 0)' || v === 'transparent'],
+    (v) => v === 'none' || v === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(v)],
   ['Mermaid 节点描边有颜色（靠线框区分层级）', '.mermaid .node rect', 'stroke',
     (v) => v !== 'none' && !/^rgba\(0,\s*0,\s*0,\s*0\)$/.test(v)],
   /* 验证台夹具里的边标签是 HTML（<span class="edgeLabel">），真实 Mermaid 渲染下的
@@ -266,15 +269,11 @@ const CHECKS = [
       p.remove();
       return v === want && v !== 'rgb(51, 51, 51)';
     }],
-  ['Mermaid 边标签背景改为纸面色（非 Mermaid 默认 #ECECFF 亮斑）', '.mermaid .edgeLabel', 'backgroundColor',
-    (v) => {
-      const p = document.createElement('div');
-      p.style.background = 'var(--my-surface-primary)';
-      document.body.appendChild(p);
-      const want = getComputedStyle(p).backgroundColor;
-      p.remove();
-      return v === want;
-    }],
+  /* 1.2.8 起：边标签【不许】有底色（用户明令「框内也不行」）。
+   * 取而代之的是文字自己的 8 向描边（护线），它不占一块底色。 */
+  ['Mermaid 边标签不再铺底（透明，靠文字描边护线）', '.mermaid .edgeLabel', 'backgroundColor',
+    (v) => v === 'rgba(0, 0, 0, 0)' || v === 'transparent'],
+  ['Mermaid 边标签的底矩形也不填充', '.mermaid .labelBkg', 'fill', (v) => v === 'none' || v === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(v)],
   ['Mermaid 连线用主题描边色（非 Mermaid 默认 #333）', '.mermaid .edgePath .path', 'stroke',
     (v) => v !== 'rgb(51, 51, 51)' && v !== 'none'],
   ['Mermaid 子图不铺底（只留虚线轮廓）', '.mermaid .cluster rect', 'fill',
@@ -282,6 +281,21 @@ const CHECKS = [
   ['Mermaid 容器透明：图是版面上的插图，不是一张卡片', '.mermaid', 'backgroundColor',
     (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
+
+  /* —— 铁律：只有线框 + 圆角（1.2.8）——
+   * 用户定的规矩：框不给背景（框内也不行）、都是线框、**哪怕源码里提供了也不渲染**、
+   * 四角必须圆角。难点在「提供了也不渲染」：Mermaid 把 classDef/style 写成带 ID 选择器的
+   * !important 注入 SVG，普通 !important 压不住 —— 必须放进 @layer 才赢。
+   * 下面四条就是那道防线：夹具里一个节点用 ID 选择器 !important 给了淡紫底 + rx:0，
+   * 另一个用行内 style 给了金黄色底 + rx:0，两条都必须变成「无填充 + 圆角」。 */
+  ['源码用 classDef 给了底色：照样不渲染', '#mermaid-iron-fixture .painted rect', 'fill',
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['源码用行内 style 给了底色：照样不渲染', '#mermaid-iron-fixture .node:not(.painted) rect', 'fill',
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['源码写了 rx:0：四角仍必须是圆角', '#mermaid-iron-fixture .painted rect', 'rx',
+    (val) => parseFloat(val) > 0],
+  ['行内 style 写了 rx:0：同样强制圆角', '#mermaid-iron-fixture .node:not(.painted) rect', 'rx',
+    (val) => parseFloat(val) > 0],
 
   /* —— markdown 字符串标签的漏网（1.2.7）——
    * Mermaid 把 `带反引号的标签` 渲染成块级 <p>（普通标签是 <span>），而正文的公文体
@@ -303,40 +317,26 @@ const CHECKS = [
   /* 思维导图与时间线是【唯一】允许结构方框带填充的地方：它们的连线从父节点画到子节点，
    * 方框透明了线就从标签上穿过去。合法条件是「填充 == 画布色」（视觉上等同透明），
    * 而且绝不能是 Mermaid 的默认色（纯蓝 #0000EC / 亮黄 #FFFF78）。 */
-  ['思维导图节点底 = 画布色（遮线底，不是 Mermaid 默认纯蓝）', '.mindmap-node .node-bkg', 'fill',
-    (val) => {
-      const probe = document.createElement('div');
-      probe.style.background = 'var(--background-primary)';
-      document.body.appendChild(probe);
-      const want = getComputedStyle(probe).backgroundColor;
-      probe.remove();
-      return val === want && !/^rgb\(0, 0, 236\)$/.test(val);
-    }],
-  ['时间线事件框底 = 画布色（遮线底，不是 Mermaid 默认亮黄）', '.timeline-node .node-bkg', 'fill',
-    (val) => {
-      const probe = document.createElement('div');
-      probe.style.background = 'var(--background-primary)';
-      document.body.appendChild(probe);
-      const want = getComputedStyle(probe).backgroundColor;
-      probe.remove();
-      return val === want && !/^rgb\(255, 255, 120\)$/.test(val);
-    }],
+  ['思维导图节点底：没有填充（连遮线底也不给）', '.mindmap-node .node-bkg', 'fill', (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['时间线事件框底：没有填充', '.timeline-node .node-bkg', 'fill', (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
   ['需求图 reqBox 底透明（Mermaid 默认淡紫）', '#mermaid-struct-fixture .reqBox', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
   ['git 图分支标签底透明（Mermaid 默认亮黄）', '.branchLabelBkg', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
   ['旅程图区段底透明（Mermaid 默认淡紫大块）', '.journey-section', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
   ['象限图四个象限的底透明（原本是四层淡紫渐变）', '.quadrant rect', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
   ['xychart 绘图区底透明（原本是 700x500 纯白）', 'rect.background', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
   ['甘特区段底透明（原本是半透明蓝）', 'rect.section', 'fill',
-    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
-  ['数据图形不受牵连：甘特/旅程的任务条保留填充', 'rect.task', 'fill',
-    (val) => val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent'],
-  ['数据图形不受牵连：象限图数据点保留填充', '.data-point circle', 'fill',
-    (val) => val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent'],
+    (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['数据图形也走线框：任务条没有填充', 'rect.task', 'fill', (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['数据图形改用描边表达（否则没有填充就看不见了）', 'rect.task', 'stroke',
+    (val) => val !== 'none' && !/^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['数据点也没有填充（线框一致）', '.data-point circle', 'fill', (val) => val === 'none' || val === 'transparent' || /^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
+  ['数据点有描边，看得见', '.data-point circle', 'stroke',
+    (val) => val !== 'none' && !/^rgba\(0,\s*0,\s*0,\s*0\)$/.test(val)],
 
   /* —— 「图搬出笔记」防线（1.2.4）——
    * 图会被搬走：放大查看器、白板卡片、导出。真正会咬人的不是「搬走」本身，而是

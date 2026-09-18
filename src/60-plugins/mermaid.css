@@ -330,12 +330,31 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
   font-size: calc(var(--my-font-size-base) * 0.786) !important;
 }
 
+/* 边标签的底衬：1.2.8 起【不再铺底】（用户明令：框内也不许有东西）。
+ * 代价是连线会从标签文字上穿过 —— 用「文字护线」补：给文字一层与画布同色的细描边，
+ * 线穿过时被文字自己的边缘挡开，但没有任何一块底色。 */
 .mermaid .edgeLabel rect,
 .mermaid .edgeLabel foreignObject > div,
 .mermaid .labelBkg {
-  fill: var(--background-primary) !important;
-  background: var(--background-primary) !important;
-  opacity: 1 !important;
+  fill: none !important;
+  background: transparent !important;
+}
+
+/* 护线用的是文字【自己的】描边（8 向无模糊阴影，颜色就是画布色）：
+ * 它是文字的一部分，不是一块底色 —— 所以既不违反「不给框加背景」，
+ * 又能让穿过的线在文字边缘被挡开。 */
+.mermaid .edgeLabel,
+.mermaid .edgeLabel span,
+.mermaid .edgeLabel p,
+.mermaid .edgeLabel text,
+.mermaid .nodeLabel,
+.mermaid .mindmap-node .nodeLabel,
+.mermaid .timeline-node .nodeLabel {
+  text-shadow:
+    2px 0 0 var(--background-primary), -2px 0 0 var(--background-primary),
+    0 2px 0 var(--background-primary), 0 -2px 0 var(--background-primary),
+    2px 2px 0 var(--background-primary), -2px 2px 0 var(--background-primary),
+    2px -2px 0 var(--background-primary), -2px -2px 0 var(--background-primary);
 }
 
 /* --------------------------------------------------------------------------
@@ -403,9 +422,11 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
   stroke: var(--my-border-subtle) !important;
 }
 
-/* 饼图扇区之间的白缝：用纸面色，深色模式下才不会出现一圈亮线 */
-.mermaid .pieCircle {
-  stroke: var(--background-primary) !important;
+/* 饼图：1.2.8 起没有填充，扇区【靠自己的描边】区分 —— 分界线就是数据本身，
+ * 所以这里必须给线色（旧版本靠「纸面色缝隙」把填充块隔开，那套在没有填充后会让扇区彻底消失）。 */
+.mermaid .pieCircle,
+.mermaid .pieOuterCircle {
+  stroke: var(--my-accent) !important;
 }
 
 .mermaid .grid .tick line,
@@ -451,15 +472,10 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
  * ------------------------------------------------------------------------ */
 
 /* 思维导图：根是 circle.node-bkg，分支是 path.node-bkg（都带 node-no-border，原本无描边）
- * 关于填充：这里是【唯一】不能用 transparent 的地方 —— 思维导图的连线又粗又亮，
- * 而且是【从父节点画到子节点】的，节点一旦透明，那根粗线就从标签上穿过去（实测截图里
- * 黄色/绿色/紫色三条粗线横在方框里，看起来比原来的底色还脏）。
- * 所以用与画布同色的「遮线底」：视觉上与透明无异（画布是什么色它就是什么色），
- * 但把从下面穿过的线挡住 —— 与边标签（.labelBkg）是同一手法、同一个理由。 */
+ * 填充一律交给末尾的「铁律」层处理（透明，不给任何底）。 */
 .mermaid .mindmap-node .node-bkg,
 .mermaid .mindmap-node circle,
 .mermaid .mindmap-node path {
-  fill: var(--background-primary) !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -498,10 +514,9 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
   stroke-width: 2px !important;
 }
 
-/* 时间线：事件框是 .node-bkg，轨道线是 .node-line-N；同样用遮线底（虚线轨道会从框里穿过） */
+/* 时间线：事件框是 .node-bkg，轨道线是 .node-line-N（填充统一由「铁律」层清掉） */
 .mermaid .timeline-node .node-bkg,
 .mermaid .timeline-node path {
-  fill: var(--background-primary) !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -551,19 +566,20 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
   fill: transparent !important;
 }
 
-/* 单序列数据图形：颜色不承载信息（长度才是），改用主题强调色 ——
- * 否则深色底上会出现 Mermaid 默认的淡紫柱、灰蓝条，比白块好一点但依旧出戏。
- * 多类别的数据图形（饼扇区、git 提交点、旅程心情条）不动：颜色在那里就是类别。 */
-.mermaid g[class^="bar-plot"] rect {
-  fill: var(--my-accent) !important;
+/* 数据类形状（柱、条、提交点、数据点、任务条）：1.2.8 起一律【只有线】——
+ * 它们原本靠填充色区分，现在统一改成主题线色描边；信息量落在长度与位置上，不再是色块。 */
+.mermaid g[class^="bar-plot"] rect,
+.mermaid rect.task,
+.mermaid rect.task:not([class*="task-type"]),
+.mermaid circle.commit,
+.mermaid .data-point circle,
+.mermaid circle[class^="actor-"] {
+  fill: none !important;
+  stroke: var(--my-accent) !important;
 }
 
 .mermaid g[class^="line-plot"] path {
   stroke: var(--my-accent) !important;
-}
-
-.mermaid rect.task:not([class*="task-type"]) {
-  fill: var(--my-accent) !important;
 }
 
 /* 坐标轴与刻度：结构线，不该抢戏 */
@@ -647,13 +663,6 @@ body[class*="my-mermaid-cyber"] .mermaid circle[class^="actor-"] {
   filter: drop-shadow(0 0 5px var(--my-cyber-glow));
 }
 
-/* 思维导图/时间线的「遮线底」在赛博风格下必须换成赛博画布色：
- * 那里 .mermaid 容器是深色终端底，用 --background-primary 会露出一块方方正正的亮斑。 */
-body[class*="my-mermaid-cyber"] .mermaid .mindmap-node .node-bkg,
-body[class*="my-mermaid-cyber"] .mermaid .timeline-node .node-bkg {
-  fill: var(--my-cyber-bg) !important;
-}
-
 /* 绘图区底与象限底在赛博风格下同样不铺底（原本是纯白与淡紫，霓虹底色上很刺眼） */
 body[class*="my-mermaid-cyber"] .mermaid rect.background,
 body[class*="my-mermaid-cyber"] .mermaid .quadrant rect,
@@ -693,9 +702,20 @@ body[class*="my-mermaid-cyber"] .mermaid .edgeLabel text {
 body[class*="my-mermaid-cyber"] .mermaid .edgeLabel rect,
 body[class*="my-mermaid-cyber"] .mermaid .edgeLabel foreignObject > div,
 body[class*="my-mermaid-cyber"] .mermaid .labelBkg {
-  fill: var(--my-cyber-bg) !important;
-  background: var(--my-cyber-bg) !important;
-  opacity: 1 !important;
+  fill: none !important;
+  background: transparent !important;
+}
+
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel span,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel p,
+body[class*="my-mermaid-cyber"] .mermaid .edgeLabel text,
+body[class*="my-mermaid-cyber"] .mermaid .nodeLabel {
+  text-shadow:
+    2px 0 0 var(--my-cyber-bg), -2px 0 0 var(--my-cyber-bg),
+    0 2px 0 var(--my-cyber-bg), 0 -2px 0 var(--my-cyber-bg),
+    2px 2px 0 var(--my-cyber-bg), -2px 2px 0 var(--my-cyber-bg),
+    2px -2px 0 var(--my-cyber-bg), -2px -2px 0 var(--my-cyber-bg);
 }
 
 /* 子图：品红虚线框，不铺底 */
@@ -923,5 +943,54 @@ body.my-mermaid-line .mermaid .task {
   .markdown-rendered .mermaid * {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+
+/* ==========================================================================
+ * 十一、铁律：只有线框（@layer 强制）
+ * --------------------------------------------------------------------------
+ * 用户定的规矩，写在最前面也写在最后面：
+ *   ① 框不给背景：任何形状都不许有填充，框内也不行；
+ *   ② 都是线框：颜色只出现在线与文字上；
+ *   ③ 【哪怕源码里提供了也不渲染】—— diagram 里写 classDef / style 指定 fill 也不生效；
+ *   ④ 四角必须是圆角，不是直角。
+ *
+ * 为什么必须用 @layer —— 这是实测出来的，不是猜的：
+ * Mermaid 把 classDef / style 写成带 ID 选择器的 !important 规则注入进 SVG：
+ *     #sp .painted>*{fill:rgb(236,236,255)!important;rx:0!important}
+ * 普通 !important 压不住它（ID 特异性永远赢过一串类名）——
+ * 实测：普通 !important 下那个节点仍是淡紫底、rx 仍是 0；
+ * 放进 @layer 的 !important 在层叠顺序上【高于未分层的 !important】，这才压得住：
+ * 实测同样两个节点都变成 fill:none、rx:7px。
+ * ======================================================================== */
+@layer moyun-diagram-force {
+  /* ① 一律不填充。两条边界：
+   *    · 文字不在名单里 —— 文字的颜色本来就是 fill/color，清了就成了隐形字；
+   *    · :not(marker *) 把箭头的三角让开 —— 那是「线」的端点，填充掉就看不见箭头了。 */
+  .mermaid svg :is(rect, circle, ellipse, polygon, path):not(marker *) {
+    fill: none !important;
+  }
+
+  /* ② 标签底衬也是填充 —— 包括 Mermaid 给 HTML 标签的那层 background-color */
+  .mermaid svg .labelBkg,
+  .mermaid svg .label-container,
+  .mermaid svg foreignObject > div,
+  .mermaid svg .edgeLabel,
+  .mermaid svg .nodeLabel {
+    background: transparent !important;
+  }
+
+  /* ③ 四角圆角（rect 的 rx/ry 是 SVG2 的几何属性，CSS 能覆盖，包括源码里的 rx:0） */
+  .mermaid svg rect {
+    rx: 6px !important;
+    ry: 6px !important;
+  }
+  .mermaid svg .cluster rect,
+  .mermaid svg rect.task,
+  .mermaid svg rect.section,
+  .mermaid svg rect.background {
+    rx: 9px !important;
+    ry: 9px !important;
   }
 }
