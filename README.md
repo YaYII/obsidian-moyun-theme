@@ -110,6 +110,13 @@ no plugin, no JavaScript, no changes to your notes.
    edge label, which keeps an opaque background so that a connector cannot cut through its text.
    In-diagram text also carries its own font and text metrics, so a diagram keeps its shape when
    something moves it out of the note: the zoom viewer, a Canvas card, an export.
+   The same rule covers every diagram type the renderer ships — flowcharts, sequence, state, class,
+   ER, mindmap, timeline, requirement, git, journey, quadrant, xy charts, gantt, block and sankey —
+   because each of them names its boxes differently (`node`, `node-bkg`, `reqBox`,
+   `branchLabelBkg`, `journey-section`, `quadrant rect`, `rect.background`, …) and a theme that
+   styles only the common ones leaves the rest in the renderer's default palette. Shapes that
+   *encode* data — pie slices, gantt and journey bars, git commits, sankey links, chart bars, data
+   points — keep their fills, because there the colour and the length are the information.
 
 ### Install
 
@@ -333,6 +340,12 @@ MIT. See [LICENSE](LICENSE).
    图的模样是「有色轮廓 + 透明内里」：方框的颜色在描边上，框里不铺任何底色；
    唯一的例外是边标签 —— 它必须有不透明底色，否则穿过的连线会把文字切开。
    图内文字还自带字体与文字度量，所以图被搬出笔记（放大查看器、白板卡片、导出）时不会走形。
+   这条规则覆盖渲染器出的**每一种图**（流程图、时序图、状态图、类图、ER 图、思维导图、时间线、
+   需求图、git 图、旅程图、象限图、xy 图、甘特图、block、桑基图）—— 因为每种图给方框起的类名都
+   不一样（`node` / `node-bkg` / `reqBox` / `branchLabelBkg` / `journey-section` /
+   `quadrant rect` / `rect.background`…），只盖住常见那几种，剩下的就会顶着渲染器的默认配色。
+   而**用颜色或长度编码数据**的图形（饼扇区、甘特条、旅程任务条、git 提交点、桑基连线、柱状条、
+   数据点）保留填充 —— 那里的颜色和长度就是信息本身。
 6. **全中文的设置面板** —— 37 项设置分八组，每一项都写清取舍而不只是给个滑杆。
 
 ### 安装

@@ -115,7 +115,51 @@ const DIAGRAMS = {
     '    2026-09 : 手機適配',
     '    2026-09 : 插件 1.0',
   ].join('\n'),
+  /* 下面这些图种各自有【私有的方框类名】，正是「按类名写样式」时成片漏掉的一支：
+   * 需求图 .reqBox、git 图 .branchLabelBkg、旅程图 .journey-section、象限图 .quadrant rect、
+   * xychart 的 rect.background（一整块纯白）。补进夹具，让「方框里不许铺底」这条契约覆盖到它们。 */
+  requirement: [
+    'requirementDiagram',
+    '    requirement req1 {',
+    '      id: 1',
+    '      text: verify user permission',
+    '      risk: low',
+    '      verifymethod: test',
+    '    }',
+  ].join('\n'),
+  /* 这些图种的解析器不接受中文标识（实测：requirement 的 text、git 的分支名、quadrant 的
+   * 坐标轴与点标签、xychart 的轴标签都必须是 ASCII 才解析得过），夹具因此用英文标识 ——
+   * 这里要检查的是颜色与底色，不是文案。 */
+  git: ['gitGraph', '    commit id: "a"', '    branch feature', '    commit id: "b"', '    checkout main', '    merge feature'].join('\n'),
+  journey: ['journey', '    title 上線流程', '    section 準備', '    確認清單: 5: 我', '    section 上線', '    灰度: 7: 我'].join('\n'),
+  quadrant: ['quadrantChart', '    title Priority', '    x-axis Low --> High', '    y-axis Low --> High', '    Feature A: [0.3, 0.6]', '    Feature B: [0.7, 0.8]'].join('\n'),
+  xychart: ['xychart-beta', '    title Usage', '    x-axis [Jan, Feb]', '    y-axis 0 --> 10', '    bar [3, 7]', '    line [4, 6]'].join('\n'),
+  block: ['block-beta', '    columns 2', '    a["輸入"] b["輸出"]', '    a --> b'].join('\n'),
+  sankey: ['sankey-beta', 'A,B,10', 'A,C,5'].join('\n'),
 };
+
+/* 「用颜色或长度编码数据」的图形白名单：填充本身就是信息，抹平等于丢数据。
+ * 除此之外，图里【任何】还有底色的形状都算「方框里铺了底」——
+ * 这条契约刻意反过来写（枚举全部形状 + 白名单），而不是列举该透明的类名：
+ * 上一版就是列举式，结果 mindmap / timeline / 需求图 / git 图 / 旅程图 / 象限图 / xychart
+ * 的方框一个都没被抽到，顶着 Mermaid 默认配色却全绿。 */
+const DATA_SHAPES = [
+  '.pieCircle',                 // 饼图扇区
+  'g.legend rect',              // 饼图图例色块
+  'rect.task',                  // 甘特条 / 旅程任务条（长度 = 时长）
+  'g[class^="bar-plot"] rect',  // xychart 柱
+  'g.data-point circle',        // 象限图数据点
+  'circle.commit',              // git 提交点（颜色区分分支）
+  'path.arrow',                 // git 分支箭头
+  'circle.face',                // 旅程心情笑脸
+  'path.mouth',
+  /* 边标签的底衬：它【必须】不透明，否则从标签下方穿过的连线会把文字切开。
+   * 状态图/类图的连线上也有同样一块（Mermaid 不给它类名，只包在 g.edgeLabel / g.label 里），
+   * 所以按祖先类名放行。这一条由下面的「边标签底色」契约单独把关。 */
+  '.labelBkg',
+  'g.edgeLabel rect',
+  'g.label rect',
+];
 
 /* 两套图表风格都要过检查：风格只该改变观感，不该改变可读性 */
 const STYLES = [
@@ -351,8 +395,15 @@ for (const mode of ['dark', 'light']) {
     await handle.screenshot({ path: path.join(OUT, 'mermaid-' + style.key + '-' + mode + '-' + name + '.png') });
   }
   /* 形状透明度契约（用户明确要求：方框「有颜色」指描边有色，里面不许铺底色）。
-   * 边标签是唯一例外：它必须不透明，否则从标签下方穿过的连线会把文字切开。 */
-  const fills = await page.evaluate(() => {
+   * 写法本身就是一次教训：上一版只按【写死的类名清单】取样
+   * （.node rect / .node circle / .actor / .statediagram-state rect / .classGroup rect / .note），
+   * 于是 mindmap 的 .node-bkg、timeline 的 .node-bkg、需求图的 .reqBox、git 图的
+   * .branchLabelBkg、旅程图的 .journey-section、象限图的 .quadrant rect、xychart 的
+   * rect.background 一个都没被抽到 —— 它们顶着 Mermaid 默认的纯蓝 #0000EC、亮黄 #FFFF78、
+   * 嫩绿 #D7FF86、淡紫 #ECECFF 和一块 700×500 的纯白，检查却是全绿。
+   * 现在反过来：枚举图里【每一个真的会被画出来的形状】，不在数据图形白名单里的，
+   * 填充必须透明。宁可疑心，不可漏检。 */
+  const fills = await page.evaluate((dataShapes) => {
     const alphaOf = (value) => {
       if (!value) return 1;
       if (value === "none" || value === "transparent") return 0;
@@ -362,29 +413,41 @@ for (const mode of ['dark', 'light']) {
       }
       return 1;
     };
-    const shapes = [];
+    const violations = [];
     const labels = [];
-    for (const svg of Array.from(document.querySelectorAll(".mermaid svg"))) {
+    /* 只审计本脚本渲染的图（带 data-diagram）：验证台里那几张手写夹具另有 verify.mjs 管，
+     * 混进来会把「夹具自己的形状」误报成主题的问题。 */
+    for (const svg of Array.from(document.querySelectorAll(".mermaid[data-diagram] svg"))) {
       const host = svg.closest(".mermaid");
       const diagram = host ? host.getAttribute("data-diagram") : "?";
-      const shapeSelectors = [".node rect", ".node circle", ".node polygon", ".actor", ".statediagram-state rect", ".classGroup rect", ".note"];
-      for (const sel of shapeSelectors) {
-        for (const el of Array.from(svg.querySelectorAll(sel)).slice(0, 4)) {
-          shapes.push({ diagram: diagram, sel: sel, alpha: alphaOf(getComputedStyle(el).fill) });
-        }
+      for (const el of Array.from(svg.querySelectorAll("rect, circle, ellipse, polygon, path"))) {
+        if (el.closest("defs") || el.closest("marker")) continue; /* 箭头定义：不落笔 */
+        const fill = getComputedStyle(el).fill;
+        const alpha = alphaOf(fill);
+        if (alpha <= 0.001) continue;
+        const box = el.getBoundingClientRect();
+        if (box.width * box.height < 40) continue; /* 极小点（笑脸眼睛等）不参与 */
+        if (dataShapes.some((sel) => el.matches(sel) || el.closest(sel))) continue;
+        violations.push({
+          diagram: diagram,
+          cls: el.tagName.toLowerCase() + (el.getAttribute("class") ? "." + el.getAttribute("class") : ""),
+          alpha: alpha,
+          fill: fill,
+        });
       }
-      for (const el of Array.from(svg.querySelectorAll(".edgeLabel rect, .labelBkg")).slice(0, 4)) {
+      /* 这里只守【连线上的标签】：它的底衬必须不透明，否则穿过的线会把文字切开。
+       * 不能扩到 g.label rect —— 那里面还有节点自己的标签组，它们的 rect 本来就该透明。 */
+      for (const el of Array.from(svg.querySelectorAll("g.edgeLabel rect, .labelBkg")).slice(0, 4)) {
         labels.push({ diagram: diagram, alpha: alphaOf(getComputedStyle(el).fill) });
       }
     }
-    return { shapes: shapes, labels: labels };
-  });
-  for (const shape of fills.shapes) {
-    if (shape.alpha > 0.001) {
-      failures.push({ style: style.key, styleLabel: style.label, mode, diagram: shape.diagram, tag: shape.sel,
-        text: "形状填充不是透明", contrast: 0, fg: "-", bg: "alpha=" + shape.alpha,
-        reason: "节点方框内出现了底色（要求：线框有色、方框内透明）" });
-    }
+    return { violations: violations, labels: labels };
+  }, DATA_SHAPES);
+  for (const v of fills.violations) {
+    failures.push({ style: style.key, styleLabel: style.label, mode, diagram: v.diagram, tag: v.cls,
+      text: "方框里铺了底色", contrast: 0, fg: "-", bg: v.fill,
+      reason: "形状 " + v.cls + " 的 fill=" + v.fill + "（不透明）—— 结构方框必须只有描边有色、里面透明；" +
+        "若它是【用颜色编码数据】的图形，请加进 DATA_SHAPES 白名单并说明理由" });
   }
   for (const label of fills.labels) {
     if (label.alpha < 0.999) {
@@ -418,7 +481,7 @@ for (const s of summary) {
 }
 
 if (failures.length) {
-  console.log('\n✗ 有 ' + failures.length + ' 处文字对比度不足 ' + AA_NORMAL + ':1：');
+  console.log('\n✗ 有 ' + failures.length + ' 处问题（文字对比度 / 方框底色 / 反相滤镜）：');
   for (const r of failures.slice(0, 12)) {
     console.log('   ' + (r.styleLabel || '') + ' ' + r.mode + ' / ' + r.diagram + ' / ' + r.tag + (r.reason ? ' → ' + r.reason : ' 对比度 ' + r.contrast + ' 文字=' + r.fg + ' 背景=' + r.bg + ' "' + r.text + '"'));
   }

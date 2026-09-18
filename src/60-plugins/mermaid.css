@@ -418,6 +418,90 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 }
 
 /* --------------------------------------------------------------------------
+ * 七·二、结构方框的漏网之鱼：思维导图 / 时间线 / 需求图 / git 图 / 旅程图 / 象限图 / xychart
+ * ----------------------------------------------------------------------------
+ * 上面七节覆盖的是流程图、时序图、状态图、类图、饼图、甘特图。其余图种的「方框」
+ * 用的是各自私有的类名（.node-bkg / .reqBox / .branchLabelBkg / .journey-section /
+ * .quadrant rect / rect.background），主题一条都没写 —— 于是 Mermaid 自带调色板
+ * 直接露出来：纯蓝 #0000EC、亮黄 #FFFF78、嫩绿 #D7FF86、淡紫 #ECECFF、以及
+ * xychart 那块 700×500 的纯白绘图底。用户问的「方框里怎么又有背景了」就是这些。
+ *
+ * 这条界线必须写死在注释里，否则下次还会漏：
+ *   · 结构（节点框、分组框、区段底、绘图区底、标签底）→ 透明内里 + 有色描边；
+ *   · 数据（饼扇区、甘特条、旅程任务条、git 提交点、桑基连线、柱状条、数据点）
+ *     → 保留填充：它们的颜色与长度本身就是信息，抹平等于丢数据。
+ * ------------------------------------------------------------------------ */
+
+/* 思维导图：根是 circle.node-bkg，分支是 path.node-bkg（都带 node-no-border，原本无描边） */
+.mermaid .mindmap-node .node-bkg,
+.mermaid .mindmap-node circle,
+.mermaid .mindmap-node path {
+  fill: transparent !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .mindmap-node text,
+.mermaid .mindmap-node tspan,
+.mermaid .mindmap-node .nodeLabel,
+.mermaid .mindmap-node span {
+  fill: var(--my-text-primary) !important;
+  color: var(--my-text-primary) !important;
+}
+
+/* 时间线：事件框是 .node-bkg，轨道线是 .node-line-N */
+.mermaid .timeline-node .node-bkg,
+.mermaid .timeline-node path {
+  fill: transparent !important;
+  stroke: var(--my-accent) !important;
+}
+
+.mermaid .timeline-node .node-line,
+.mermaid .timeline-node line {
+  stroke: var(--my-border-subtle) !important;
+}
+
+/* 需求图：reqBox 是主体框，reqLabelBox 是它上方那块标题底 */
+.mermaid rect.req,
+.mermaid .reqBox,
+.mermaid .reqLabelBox {
+  fill: transparent !important;
+  stroke: var(--my-accent) !important;
+}
+
+/* git 图：分支标签与提交信息原本各有一块底色；提交点保留颜色（它靠颜色区分分支） */
+.mermaid .branchLabelBkg,
+.mermaid .commit-label-bkg,
+.mermaid .tag-label-bkg {
+  fill: transparent !important;
+  stroke: var(--my-accent) !important;
+  opacity: 1 !important;
+}
+
+/* 旅程图：区段底与参与者圆点是「容器」，透明；任务条编码时长与心情，保留 */
+.mermaid .journey-section,
+.mermaid .journey-section rect,
+.mermaid circle[class^="actor-"] {
+  fill: transparent !important;
+  stroke: var(--my-accent) !important;
+}
+
+/* 象限图：四个象限的底色是一整片背景，不是数据；数据点在 .data-point 里，不动 */
+.mermaid .quadrant rect {
+  fill: transparent !important;
+  stroke: var(--my-border-subtle) !important;
+}
+
+/* xychart：整块绘图底（纯白）与柱条的底衬都不铺底；柱条本身是数据，保留 */
+.mermaid rect.background {
+  fill: transparent !important;
+}
+
+/* 甘特图：区段底不铺底（数据在条上），条保留 */
+.mermaid rect.section {
+  fill: transparent !important;
+}
+
+/* --------------------------------------------------------------------------
  * 八、赛博霓虹（body.my-mermaid-cyber）
  * ----------------------------------------------------------------------------
  * 风格定位：深色终端画布 + 青蓝镭射描边 + 品红次级信息，线条与文字都发光。
@@ -478,10 +562,25 @@ body[class*="my-mermaid-cyber"] .mermaid .node path,
 body[class*="my-mermaid-cyber"] .mermaid .labelBox,
 body[class*="my-mermaid-cyber"] .mermaid .actor,
 body[class*="my-mermaid-cyber"] .mermaid .statediagram-state rect,
-body[class*="my-mermaid-cyber"] .mermaid .classGroup rect {
+body[class*="my-mermaid-cyber"] .mermaid .classGroup rect,
+body[class*="my-mermaid-cyber"] .mermaid .mindmap-node .node-bkg,
+body[class*="my-mermaid-cyber"] .mermaid .timeline-node .node-bkg,
+body[class*="my-mermaid-cyber"] .mermaid rect.req,
+body[class*="my-mermaid-cyber"] .mermaid .reqLabelBox,
+body[class*="my-mermaid-cyber"] .mermaid .branchLabelBkg,
+body[class*="my-mermaid-cyber"] .mermaid .commit-label-bkg,
+body[class*="my-mermaid-cyber"] .mermaid .journey-section,
+body[class*="my-mermaid-cyber"] .mermaid circle[class^="actor-"] {
   fill: transparent !important;
   stroke: var(--my-cyber-cyan) !important;
   filter: drop-shadow(0 0 5px var(--my-cyber-glow));
+}
+
+/* 绘图区底与象限底在赛博风格下同样不铺底（原本是纯白与淡紫，霓虹底色上很刺眼） */
+body[class*="my-mermaid-cyber"] .mermaid rect.background,
+body[class*="my-mermaid-cyber"] .mermaid .quadrant rect,
+body[class*="my-mermaid-cyber"] .mermaid rect.section {
+  fill: transparent !important;
 }
 
 /* 连线与箭头：同色发光，让「数据在流动」这件事看得见 */

@@ -283,6 +283,34 @@ const CHECKS = [
     (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
 
+  /* —— 结构方框的漏网之鱼（1.2.5）——
+   * 1.2.3 只把流程图/时序图/状态图/类图的方框透明了。其余图种用的是各自私有的类名
+   * （.node-bkg / .reqBox / .branchLabelBkg / .journey-section / .quadrant rect /
+   *  rect.background / rect.section），主题一条没写 —— Mermaid 自带调色板于是直接露出来，
+   * 用户看到的就是「方框里怎么又有背景了」。
+   * 下面 8 条守「结构必须透明」，后 2 条守「数据不许被一起抹平」：饼扇区、甘特条、
+   * 旅程任务条这些用颜色/长度编码数据的图形，透明了等于丢信息。 */
+  ['思维导图节点底透明（Mermaid 默认纯蓝，必须压掉）', '.mindmap-node .node-bkg', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['时间线事件框底透明（Mermaid 默认亮黄）', '.timeline-node .node-bkg', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['需求图 reqBox 底透明（Mermaid 默认淡紫）', '#mermaid-struct-fixture .reqBox', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['git 图分支标签底透明（Mermaid 默认亮黄）', '.branchLabelBkg', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['旅程图区段底透明（Mermaid 默认淡紫大块）', '.journey-section', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['象限图四个象限的底透明（原本是四层淡紫渐变）', '.quadrant rect', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['xychart 绘图区底透明（原本是 700x500 纯白）', 'rect.background', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['甘特区段底透明（原本是半透明蓝）', 'rect.section', 'fill',
+    (val) => val === 'rgba(0, 0, 0, 0)' || val === 'transparent'],
+  ['数据图形不受牵连：甘特/旅程的任务条保留填充', 'rect.task', 'fill',
+    (val) => val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent'],
+  ['数据图形不受牵连：象限图数据点保留填充', '.data-point circle', 'fill',
+    (val) => val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent'],
+
   /* —— 「图搬出笔记」防线（1.2.4）——
    * 图会被搬走：放大查看器、白板卡片、导出。真正会咬人的不是「搬走」本身，而是
    * 【搬走之后，图内文字的样式不能再靠祖先给】：祖先要是还提供正文的行高（1.8）、

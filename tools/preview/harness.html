@@ -259,6 +259,26 @@
                         「图看不清楚」的成因就是它被 max-width:100% 压成三分之一。
                         刻意不放任何文字元素，避免扰动 verify.mjs 的对比度断言。 -->
                    <div class="mermaid" id="mermaid-wide"><svg viewBox="0 0 900 200" width="900" height="200" role="graphics-document"><g class="cluster"><rect x="4" y="4" width="892" height="192" rx="6"></rect></g><g class="node"><rect x="24" y="60" width="240" height="64" rx="6"></rect></g><g class="node"><rect x="620" y="60" width="240" height="64" rx="6"></rect></g><path class="path" d="M264 92 L620 92" fill="none"></path></svg></div>
+                   <!-- 结构方框夹具（1.2.5）：mindmap / timeline / 需求图 / git 图 / 旅程图 / 象限图 /
+                        xychart / 甘特区块底，各自的方框类名都不一样，是「按类名写样式」时成片漏掉的一支。
+                        这里同样复刻 Mermaid 的真实做法：用 ID 选择器把【默认配色】写进 SVG 内部，
+                        主题若没有 !important 就压不住。带底色的数据图形（.task 数据条、象限数据点）
+                        刻意留在里面，用来守「数据不能被一起抹平」。 -->
+                   <div class="mermaid" id="mermaid-struct-fixture">
+                     <style>#mermaid-struct-fixture .node-bkg{fill:#0000EC}#mermaid-struct-fixture .reqBox{fill:#ECECFF}#mermaid-struct-fixture .branchLabelBkg{fill:#FFFF78}#mermaid-struct-fixture .journey-section{fill:#ECECFF}#mermaid-struct-fixture .quadrant rect{fill:#F1F1FF}#mermaid-struct-fixture rect.background{fill:#FFFFFF}#mermaid-struct-fixture rect.section{fill:rgba(102,102,255,0.49)}#mermaid-struct-fixture rect.task{fill:#5A89BB}#mermaid-struct-fixture .data-point circle{fill:#8676FF}</style>
+                     <svg viewBox="0 0 320 220" width="320" height="220" role="graphics-document">
+                       <g class="mindmap-nodes"><g class="mindmap-node section--1"><circle class="node-bkg node-circle" cx="30" cy="28" r="14"></circle></g></g>
+                       <g class="timeline-node section-0"><path class="node-bkg node-undefined" d="M60 16 H150 V44 H60 Z"></path></g>
+                       <g class="req"><rect class="req reqBox" x="176" y="16" width="80" height="28" rx="3"></rect></g>
+                       <rect class="branchLabelBkg label0" x="266" y="16" width="40" height="18"></rect>
+                       <rect class="journey-section section-type-0" x="16" y="58" width="90" height="24"></rect>
+                       <g class="quadrant"><rect x="120" y="58" width="80" height="40"></rect></g>
+                       <rect class="background" x="16" y="96" width="130" height="50"></rect>
+                       <rect class="section section0" x="160" y="96" width="140" height="14"></rect>
+                       <rect class="task task0" x="160" y="120" width="90" height="12"></rect>
+                       <g class="data-point"><circle cx="230" cy="168" r="6"></circle></g>
+                     </svg>
+                   </div>
                    <!-- Canvas 卡片夹具：白板里卡片是窄的、内部不能平移，但整块画布可以双指缩放，
                         所以卡片内的图应当缩放进屏（与手机版心内的策略相反）。同样不放文字。 -->
                    <div class="canvas-node-content markdown-embed"><div class="markdown-embed-content"><div class="markdown-preview-view markdown-rendered"><div class="mermaid" id="mermaid-in-canvas"><svg viewBox="0 0 900 200" width="900" height="200" role="graphics-document"><rect x="4" y="4" width="892" height="192" rx="6"></rect><path class="path" d="M40 100 L860 100" fill="none"></path></svg></div></div></div></div>
