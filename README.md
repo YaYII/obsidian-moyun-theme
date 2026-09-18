@@ -105,6 +105,11 @@ no plugin, no JavaScript, no changes to your notes.
 6. **Mermaid diagrams are themed too**, in six selectable styles: ink (follows the accent
    colour), four neon variants (cyan, matrix green, violet, amber, each on its own dark canvas),
    and a print-friendly black-and-white line style.
+   A diagram is drawn as coloured outlines with a transparent interior: a box has colour where
+   it belongs — the stroke — and nothing is painted behind its text. The single exception is an
+   edge label, which keeps an opaque background so that a connector cannot cut through its text.
+   In-diagram text also carries its own font and text metrics, so a diagram keeps its shape when
+   something moves it out of the note: the zoom viewer, a Canvas card, an export.
 
 ### Install
 
@@ -325,6 +330,9 @@ MIT. See [LICENSE](LICENSE).
 4. **分辨率自适应字号** —— 字号与版心随窗口宽度缩放，4K 屏不再逼着眼睛看小字；
    同时尊重 Obsidian 自带的字体与字号设置。
 5. **Mermaid 图表六种风格** —— 墨韵（跟随主题色）、赛博霓虹四套配色、极简黑白线框。
+   图的模样是「有色轮廓 + 透明内里」：方框的颜色在描边上，框里不铺任何底色；
+   唯一的例外是边标签 —— 它必须有不透明底色，否则穿过的连线会把文字切开。
+   图内文字还自带字体与文字度量，所以图被搬出笔记（放大查看器、白板卡片、导出）时不会走形。
 6. **全中文的设置面板** —— 37 项设置分八组，每一项都写清取舍而不只是给个滑杆。
 
 ### 安装
