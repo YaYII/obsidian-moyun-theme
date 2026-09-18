@@ -34,6 +34,36 @@
 }
 
 /* ==========================================================================
+ * 一·二、浮层的层级与不透明度（1.2.9）
+ * --------------------------------------------------------------------------
+ * 两个反馈都出在手机上，但根因不同，分开写：
+ *
+ * ① 【层级】宿主给命令面板写的是 `.prompt { z-index: 1 }`，
+ *    而主题里阅读进度条是 z-index 6、看板卡片 2、dataview 1 —— 都在它之上，
+ *    于是打开命令面板/菜单时，文字与卡片看着"压在菜单上面"。
+ *    这里把浮层统一提到宿主自己的层级变量（--layer-menu = 65，比 --layer-modal = 50 高一档），
+ *    不写魔数、也不越权到 tooltip（70）。验证台里没有宿主的变量，所以带一个同值兜底。
+ *
+ * ② 【不透明度】宿主在移动端把菜单/命令面板做成半透明：
+ *      .is-mobile .menu   { background-color: color-mix(in srgb, var(--menu-background) var(--blur-opacity-m), transparent) }
+ *      .is-mobile .prompt { background-color: color-mix(in srgb, var(--prompt-background) var(--blur-opacity-m), transparent) }
+ *    正常靠毛玻璃糊掉背景，而宿主默认与本主题都把 --menu/prompt-backdrop-filter 设为 none，
+ *    于是成了「半透明 + 没模糊」：中文正文从底下透上来，看着就是字浮在菜单上。
+ *    移动端一律拉回不透明的浮层底色（桌面端本来就不透明，不受影响）。
+ * ======================================================================== */
+.menu,
+.prompt,
+.suggestion-container {
+  z-index: var(--layer-menu, 65);
+}
+
+body.is-mobile .menu,
+body.is-mobile .prompt,
+body.is-mobile .suggestion-container {
+  background-color: var(--my-surface-elevated) !important;
+}
+
+/* ==========================================================================
  * 二、模态框
  * 层次：遮罩（压暗）→ 卡片（抬起）→ 标题栏（分隔）→ 内容（滚动的正文）
  * ======================================================================== */

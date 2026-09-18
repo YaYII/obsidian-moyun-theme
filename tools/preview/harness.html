@@ -34,6 +34,19 @@
 </style>
 </head>
 <body class="theme-dark is-frameless my-gov-style">
+  <!-- 浮层探针（1.2.9）：菜单与命令面板放在屏幕外，只为量计算样式，不影响版面。
+       下面这段 <style> 是【从 obsidian 的 app.css 逐字抄来的移动端规则】——
+       宿主在手机上就是这么把菜单做成半透明的；主题必须用 !important 把它拉回不透明。 -->
+  <style>
+    /* 与 app.css 逐字一致：只有类选择器、没有 !important（这点很关键 ——
+       夹具若写成 ID + !important，就把主题的 !important 也压住了，测出来的失败是假的） */
+    .is-mobile .menu,
+    .is-mobile .prompt {
+      background-color: color-mix(in srgb, var(--my-surface-elevated) 90%, transparent);
+    }
+  </style>
+  <div class="menu" id="menu-fixture" style="position: fixed; inset-inline-start: -9999px; top: 0"><div class="menu-item">菜单项</div></div>
+  <div class="prompt" id="prompt-fixture" style="position: fixed; inset-inline-start: -9999px; top: 0"><input class="prompt-input" /></div>
 
 <div class="app-container">
   <div class="horizontal-main-container">

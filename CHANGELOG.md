@@ -2,6 +2,38 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.9] - 2026-09-18
+
+### 修复（手机）：菜单半透明看穿正文 + 浮层被正文压住
+
+两个反馈都出在手机上，根因不同，分开修：
+
+**① 菜单是半透明的，正文从底下透上来。** 这是宿主自己的移动端设计，不是主题的 bug ——
+Obsidian 的 `app.css` 里写着：
+
+```css
+.is-mobile .menu   { background-color: color-mix(in srgb, var(--menu-background) var(--blur-opacity-m), transparent) }
+.is-mobile .prompt { background-color: color-mix(in srgb, var(--prompt-background) var(--blur-opacity-m), transparent) }
+```
+
+也就是移动端菜单/命令面板默认带 10% 透明（`--blur-opacity-m: 90%`）。正常靠毛玻璃把背景糊掉，
+但宿主默认与主题都把 `--menu/prompt-backdrop-filter` 设为 `none` —— 于是成了
+**「半透明 + 没模糊」**：中文正文密密麻麻透上来，看着就是「字浮在菜单上」。桌面端不受影响。
+修法：移动端把菜单、命令面板、自动完成的底色拉回**不透明**的浮层色
+（`--my-surface-elevated`），桌面端不动。
+
+**② 浮层被正文里的元素压住。** 宿主给命令面板写的是 `.prompt { z-index: 1 }`，
+而主题里阅读进度条是 `z-index: 6`、看板卡片 2、dataview 1 —— 都在它之上。
+现在把菜单 / 命令面板 / 自动完成统一提到**宿主自己的层级变量**
+`z-index: var(--layer-menu, 65)`（比 `--layer-modal: 50` 高一档，不越权到 tooltip 70），
+不写魔数；验证台没有宿主的变量，所以带一个同值兜底。
+
+**防线**：夹具里逐字复刻了上面那两条移动端规则（同款 `color-mix` + `transparent`，
+**故意不带 `!important`**，因为宿主原规则也没有），并加 4 条断言：手机上菜单与命令面板的底色
+必须完全不透明、两者的层级必须高于正文浮层。验过会响：把移动端不透明规则去掉，
+两条断言立刻报回半透明的底色（× 明暗两模式）。
+**89 条断言 × 明暗两模式全绿。**
+
 ## [1.2.8] - 2026-09-18
 
 ### 铁律：只有线框（+ 圆角），连源码里给的填充也不渲染

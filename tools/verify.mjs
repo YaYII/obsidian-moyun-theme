@@ -282,6 +282,39 @@ const CHECKS = [
     (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
 
+  /* —— 浮层层级与不透明度（1.2.9）——
+   * 手机上打开菜单，正文从底下透出来、看着像"字浮在菜单上"。两件事：
+   *   ① 宿主给 .prompt 写的是 z-index: 1，主题里的进度条(6)/看板(2) 都在它之上；
+   *   ② 宿主在移动端把菜单写成 color-mix(..., transparent)——半透明 + 无模糊。
+   * 这里把 body 临时加上 is-mobile（验证台没有宿主的 app.css，用夹具里那段同款规则复刻），
+   * 量完立刻还原，避免影响别的断言。 */
+  ['手机上菜单不透明（正文不许透上来）', '#menu-fixture', 'backgroundColor',
+    (_v, el) => {
+      const body = document.body;
+      const had = body.classList.contains('is-mobile');
+      body.classList.add('is-mobile');
+      const got = getComputedStyle(el).backgroundColor;
+      if (!had) body.classList.remove('is-mobile');
+      const m = /rgba?\(([^)]+)\)/.exec(got);
+      const parts = m ? m[1].split(',').map(Number) : [];
+      return parts.length === 3 || (parts.length === 4 && parts[3] >= 0.999);
+    }],
+  ['手机上命令面板同样不透明', '#prompt-fixture', 'backgroundColor',
+    (_v, el) => {
+      const body = document.body;
+      const had = body.classList.contains('is-mobile');
+      body.classList.add('is-mobile');
+      const got = getComputedStyle(el).backgroundColor;
+      if (!had) body.classList.remove('is-mobile');
+      const m = /rgba?\(([^)]+)\)/.exec(got);
+      const parts = m ? m[1].split(',').map(Number) : [];
+      return parts.length === 3 || (parts.length === 4 && parts[3] >= 0.999);
+    }],
+  ['命令面板的层级高于正文里的浮层（不被文字压住）', '#prompt-fixture', 'zIndex',
+    (v) => Number(v) >= 30],
+  ['菜单的层级同样在最上层', '#menu-fixture', 'zIndex',
+    (v) => Number(v) >= 30],
+
   /* —— 铁律：只有线框 + 圆角（1.2.8）——
    * 用户定的规矩：框不给背景（框内也不行）、都是线框、**哪怕源码里提供了也不渲染**、
    * 四角必须圆角。难点在「提供了也不渲染」：Mermaid 把 classDef/style 写成带 ID 选择器的
