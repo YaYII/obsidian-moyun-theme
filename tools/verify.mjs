@@ -283,6 +283,16 @@ const CHECKS = [
     (v) => v === 'rgba(0, 0, 0, 0)'],
   ['Mermaid 超宽图形横向滚动而非被裁切', '.mermaid', 'overflowX', (v) => v === 'auto'],
 
+  /* —— markdown 字符串标签的漏网（1.2.7）——
+   * Mermaid 把 `带反引号的标签` 渲染成块级 <p>（普通标签是 <span>），而正文的公文体
+   * 首行缩进是高特异性规则（body:is(.my-gov-style,…) .markdown-rendered p → (0,2,2)），
+   * 它压得过 .mermaid foreignObject p (0,1,1) —— 于是「笔记里首行缩进、放大后正常」。
+   * 这两条守的就是它：图内 <p> 的缩进必须是 0，对齐必须是居中。 */
+  ['markdown 字符串标签（<p>）不吃正文首行缩进', '.mermaid foreignObject p', 'textIndent',
+    (val) => val === '0px'],
+  ['markdown 字符串标签（<p>）必须居中', '.mermaid foreignObject p', 'textAlign',
+    (val) => val === 'center'],
+
   /* —— 结构方框的漏网之鱼（1.2.5）——
    * 1.2.3 只把流程图/时序图/状态图/类图的方框透明了。其余图种用的是各自私有的类名
    * （.node-bkg / .reqBox / .branchLabelBkg / .journey-section / .quadrant rect /

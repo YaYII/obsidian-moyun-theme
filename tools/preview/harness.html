@@ -247,6 +247,14 @@
                       <g class="cluster"><rect x="4" y="4" width="252" height="112" rx="4"></rect><text x="12" y="20">分组</text></g>
                       <g class="node"><rect x="20" y="34" width="80" height="32" rx="4"></rect><text class="label" x="40" y="55">起点</text></g>
                       <g class="node"><rect x="140" y="34" width="90" height="32" rx="4"></rect><foreignObject x="140" y="34" width="90" height="32"><div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">终点</span></div></foreignObject></g>
+                      <!-- markdown 字符串标签（`第一行
+第二行`）：Mermaid 把这种标签渲染成
+                           块级 <p>，而不是 <span>。正文的「公文体首行缩进」是一条高特异性规则
+                           （body:is(.my-gov-style,…) .markdown-rendered p），于是它会顺着 <p>
+                           漏进图里 —— 图在笔记里时命中、搬进查看器后祖先不在就不命中，
+                           表现就是「放大前首行缩进、放大后正常」。夹具按真实结构复刻。 -->
+                      <g class="node" id="md-label-node"><rect x="20" y="70" width="120" height="34" rx="4"></rect><foreignObject x="20" y="70" width="120" height="34"><div xmlns="http://www.w3.org/1999/xhtml"><p class="nodeLabel md-string">第一行
+第二行</p></div></foreignObject></g>
                       <g class="edgePath"><path class="path" d="M100 50 L140 50" fill="none"></path></g>
                       <!-- 真实 Mermaid 的边标签是「底矩形 + 文字」：底矩形专门用来遮住从下方穿过的连线。
                            原先这里写的是 HTML <span>，而 <span> 出现在 <svg> 里会被解析器丢弃（实测 outerHTML

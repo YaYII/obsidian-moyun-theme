@@ -2,6 +2,38 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.7] - 2026-09-18
+
+### 修复：图里的文字「从中间开始写」—— 正文的首行缩进漏进了标签
+
+用户反馈：同一张图，**放大后正常，放大前文字不居中、像是从中间开始写**。
+
+根因是两条规则打了一架，而且**只在笔记里打得起来**：
+
+```css
+/* 正文的公文体首行缩进（特异性 0,2,2） */
+body:is(.my-indent-on, .my-gov-style) .markdown-rendered p { text-indent: 2em }
+/* 图内标签的归零（特异性 0,1,1 —— 输了） */
+.mermaid foreignObject p { text-indent: 0 }
+```
+
+Mermaid 的普通标签渲染成 `<span>`（不受影响），但**带反引号的 markdown 字符串标签渲染成块级 `<p>`** ——
+那一条就正好落进上面这场架里：
+
+| 图在哪里 | `.markdown-rendered` 祖先 | 结果 |
+|---|---|---|
+| 笔记里 | 存在 | `text-indent: 2em` 生效 → 首行被推右约两个字，看起来像从中间开始写 |
+| 放大查看器里 | 不存在（图被搬走了） | 缩进规则不匹配 → 居中正常 |
+
+于是「放大前不居中、放大后正常」。修法是把标签的**缩进与对齐钉死**：
+`.mermaid foreignObject div/p/span/li` 与 `.nodeLabel / .label / .labelText / .edgeLabel`
+一律 `text-indent: 0 !important; text-align: center !important` —— 这两条不能靠层叠碰运气。
+顺带一个真实收益：编辑视图（Live Preview）里 `.cm-line` 也带着 2em 缩进，同一处修复一并覆盖。
+
+**防线**：夹具里补了一个真实的 markdown 字符串标签（`<p>` 结构），并加两条断言
+（缩进必须是 0、对齐必须是居中）。验过会响：把 `!important` 去掉，断言立刻报
+`textIndent = 28.924px`（正是 2em），**2 项未通过**。
+
 ## [1.2.6] - 2026-09-18
 
 ### 接 1.2.5：底色去掉之后露出来的两件事

@@ -238,18 +238,36 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
  * 一旦要求祖先存在，搬出去就全丢 —— 标签会重新吃正文的 2em 首行缩进与 1.8 行高，
  * 撑破自己的外框、文字互相覆盖。用户截图里「放大后编成鬼样子」的根因就是这个。
  * 挂在 .mermaid 下即可：只会命中图内元素，不会影响正文。 */
+/* 这里的 !important 是被一个真实的漏网 bug 逼出来的：markdown 字符串标签
+ * （Mermaid 把它渲染成块级 <p>，而不是 <span>）会吃到正文的「公文体首行缩进」——
+ *   body:is(.my-indent-on, .my-gov-style) .markdown-rendered p { text-indent: 2em }
+ * 这条规则的特异性 (0,2,2) 高过 .mermaid foreignObject p (0,1,1)，于是：
+ *   图在【笔记里】→ 祖先 .markdown-rendered 存在 → 首行缩进 2em（看起来像从中间开始写）；
+ *   图在【查看器里】→ 祖先不存在 → 缩进 0（正常）。
+ * 这正是用户看到的「放大前不居中、放大后正常」。缩进与对齐必须钉死，不能靠层叠碰运气。 */
+.mermaid foreignObject div,
+.mermaid foreignObject p,
+.mermaid foreignObject span,
+.mermaid foreignObject li,
+.mermaid .nodeLabel,
+.mermaid .label,
+.mermaid .labelText,
+.mermaid .edgeLabel {
+  text-indent: 0 !important;
+  text-align: center !important;
+}
+
 .mermaid foreignObject div,
 .mermaid .nodeLabel,
 .mermaid .edgeLabel {
-  text-indent: 0;
   margin: 0;
   line-height: 1.35;
-  text-align: center;
 }
 
-.mermaid foreignObject p {
-  text-indent: 0;
+.mermaid foreignObject p,
+.mermaid foreignObject li {
   margin: 0;
+  line-height: 1.35;
 }
 
 /* --------------------------------------------------------------------------
