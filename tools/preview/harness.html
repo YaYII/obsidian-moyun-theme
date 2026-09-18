@@ -248,7 +248,10 @@
                       <g class="node"><rect x="20" y="34" width="80" height="32" rx="4"></rect><text class="label" x="40" y="55">起点</text></g>
                       <g class="node"><rect x="140" y="34" width="90" height="32" rx="4"></rect><foreignObject x="140" y="34" width="90" height="32"><div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">终点</span></div></foreignObject></g>
                       <g class="edgePath"><path class="path" d="M100 50 L140 50" fill="none"></path></g>
-                      <g class="edgeLabel"><span class="edgeLabel">写入</span></g>
+                      <!-- 真实 Mermaid 的边标签是「底矩形 + 文字」：底矩形专门用来遮住从下方穿过的连线。
+                           原先这里写的是 HTML <span>，而 <span> 出现在 <svg> 里会被解析器丢弃（实测 outerHTML
+                           是空的 <g class="edgeLabel"></g>），于是「标签底必须不透明」这条契约没有可断言的对象。 -->
+                      <g class="edgeLabel"><rect class="labelBkg" x="98" y="38" width="44" height="20" rx="3"></rect><text class="edgeLabel" x="104" y="52">写入</text></g>
                       <g class="actor"><rect x="20" y="80" width="80" height="24"></rect><text x="30" y="96">参与者</text></g>
                     </svg>
                   </div>

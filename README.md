@@ -132,6 +132,12 @@ trade-off rather than just offering a slider:
 
 ### Diagram styles
 
+Nodes are drawn as **coloured outlines with a transparent interior** — the stroke and the text
+carry the meaning, the box itself has no fill, so a diagram looks the same over any background
+(note, board, or the image viewer). Edge labels keep an opaque background on purpose: they sit on
+top of a line, and without a backing the connector would cut through the text. Shapes that encode
+data with colour (pie slices, Gantt bars) keep their fills.
+
 Mermaid diagrams are themed too, and there are six styles to choose from in Style Settings.
 All seven images below are **real renders** (same diagrams, same Mermaid version and the same
 initialisation arguments Obsidian uses), not mock-ups. Regenerate them any time with
@@ -397,6 +403,10 @@ Android 上若确实需要放大，系统级「设置 → 辅助功能 → 放�
 是**缩放进屏**的，与手机版心内「保持原尺寸 + 横向滑动」的策略刚好相反。
 
 ### 图表风格（六选一）
+
+节点一律画成**有色轮廓 + 透明内里**：描边与文字承载信息，方框本身不铺底色，因此无论在笔记里、
+白板上还是放大查看器里，图都与所在背景一致。唯一的例外是连线上的边标签 —— 它压在线条上方，
+没有底色的话连线会把文字切开。用颜色编码数据的图形（饼图扇区、甘特条）保持填充。
 
 Mermaid 图也跟着主题走，可在 **设置 → Style Settings → ✨ 内容增强 → 图表风格** 里切换。
 下面几张都是**真实渲染**（同一张图、同一版 Mermaid、Obsidian 的真实初始化参数），不是效果图；

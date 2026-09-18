@@ -236,17 +236,18 @@ const CHECKS = [
   /* Mermaid 的图【画在透明画布上】，只有线与文字。因此这几条守的是：
    *   ① 文字色必须被接管（fill 与 color 双路径：SVG <text> 看 fill，
    *      foreignObject 里的 HTML 看 color —— 只覆盖一个就是用户踩过的隐形字 bug）；
-   *   ② 不铺面板底色，图形直接落在纸面上；
-   *   ③ 边标签的 HTML 背景色也要接管（Mermaid 默认刷 #ECECFF/#e8e8e8，深色下是亮斑）。 */
-  ['Mermaid 节点只用轮廓：填充为纸面色（非 Mermaid 默认淡紫）', '.mermaid .node rect', 'fill',
-    (v) => {
-      const p = document.createElement('div');
-      p.style.background = 'var(--my-surface-primary)';
-      document.body.appendChild(p);
-      const want = getComputedStyle(p).backgroundColor;
-      p.remove();
-      return v === want;
-    }],
+   *   ② 方框里不铺任何底色：填充必须是透明（既不是 Mermaid 默认的淡紫，
+   *      也不再是「不透明的纸面色」—— 用户要求放大看图时方框里有色、框里透明）；
+   *   ③ 「方框有颜色」靠描边实现，所以描边必须是有色的强调色；
+   *   ④ 边标签的底色必须【保留且不透明】：它压在线条上方，透明了连线会切开文字。 */
+  ['Mermaid 节点填充为透明（方框里不铺底色）', '.mermaid .node rect', 'fill',
+    (v) => v === 'rgba(0, 0, 0, 0)' || v === 'transparent'],
+  ['Mermaid 节点描边有颜色（靠线框区分层级）', '.mermaid .node rect', 'stroke',
+    (v) => v !== 'none' && !/^rgba\(0,\s*0,\s*0,\s*0\)$/.test(v)],
+  /* 验证台夹具里的边标签是 HTML（<span class="edgeLabel">），真实 Mermaid 渲染下的
+   * 标签底矩形由 tools/check-mermaid.mjs 用真实渲染另行断言，两者互补。 */
+  ['Mermaid 边标签底色不透明（遮住穿过的连线）', '.mermaid .labelBkg', 'fill',
+    (v) => v !== 'rgba(0, 0, 0, 0)' && v !== 'transparent'],
   ['Mermaid SVG 文字用主题正文色（fill 路径，非默认 #333）', '.mermaid .node .label', 'fill',
     (v) => {
       const p = document.createElement('div');

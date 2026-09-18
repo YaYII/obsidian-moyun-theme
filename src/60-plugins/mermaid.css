@@ -240,10 +240,10 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 /* --------------------------------------------------------------------------
  * 三、流程图节点：只留轮廓，不铺底
  * ----------------------------------------------------------------------------
- * 填充用「纸面色」而不是 transparent：视觉上与透明无异，但它是【不透明】的，
- * 因此可以挡住从节点下方穿过的连线 —— 这是 fill:none 做不到的。
- * 效果：节点看起来就是纸面上的一个方框，文字直接压在纸面上，
- * 对比度由纸面本身保证（实测 12:1 / 16:1），不会再出现自造底色的翻车。
+ * 填充曾经用「纸面色」而不是 transparent：视觉上与透明无异，但它是【不透明】的，
+ * 因此可以挡住从节点下方穿过的连线。但用户要的是「方框里有色、里面无底色」，
+ * 效果：节点就是「有色轮廓 + 实心文字」，线框负责区分层级，底色一概不铺。
+ * 于是改成【完全透明】：方框里不留任何底色，放大看图时与笔记里、与任何背景
  * ------------------------------------------------------------------------ */
 .mermaid .node rect,
 .mermaid .node circle,
@@ -251,7 +251,7 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 .mermaid .node polygon,
 .mermaid .node path,
 .mermaid .labelBox {
-  fill: var(--my-surface-primary) !important;
+  fill: transparent !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -293,15 +293,15 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 .mermaid .edgeLabel text {
   color: var(--my-text-secondary) !important;
   fill: var(--my-text-secondary) !important;
-  background: var(--my-surface-primary) !important;
+  background: var(--background-primary) !important;
   font-size: calc(var(--my-font-size-base) * 0.786) !important;
 }
 
 .mermaid .edgeLabel rect,
 .mermaid .edgeLabel foreignObject > div,
 .mermaid .labelBkg {
-  fill: var(--my-surface-primary) !important;
-  background: var(--my-surface-primary) !important;
+  fill: var(--background-primary) !important;
+  background: var(--background-primary) !important;
   opacity: 1 !important;
 }
 
@@ -328,7 +328,7 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
  * 六、时序图（sequenceDiagram）
  * ------------------------------------------------------------------------ */
 .mermaid .actor {
-  fill: var(--my-surface-primary) !important;
+  fill: transparent !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -344,7 +344,7 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 
 /* 便签是「标注」不是节点：给一层很淡的警告色，文字仍是正文色 */
 .mermaid .note {
-  fill: rgb(var(--my-warning-rgb) / 0.12) !important;
+  fill: transparent !important;
   stroke: var(--my-warning) !important;
 }
 
@@ -354,13 +354,13 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 
 /* --------------------------------------------------------------------------
  * 七、状态图 / 类图 / 饼图 / 甘特图
- * 元素名不统一，统一用「轮廓 + 文字」兜住：底一律纸面色，边用强调色。
+ * 元素名不统一，统一用「透明底 + 强调色轮廓 + 正文文字」兜住。
  * ------------------------------------------------------------------------ */
 .mermaid .statediagram-state rect,
 .mermaid .stateGroup rect,
 .mermaid .classGroup rect,
 .mermaid .entityBox {
-  fill: var(--my-surface-primary) !important;
+  fill: transparent !important;
   stroke: var(--my-accent) !important;
 }
 
@@ -372,7 +372,7 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 
 /* 饼图扇区之间的白缝：用纸面色，深色模式下才不会出现一圈亮线 */
 .mermaid .pieCircle {
-  stroke: var(--my-surface-primary) !important;
+  stroke: var(--background-primary) !important;
 }
 
 .mermaid .grid .tick line,
@@ -454,7 +454,7 @@ body[class*="my-mermaid-cyber"] .mermaid svg text {
   filter: drop-shadow(0 0 6px var(--my-cyber-glow-strong));
 }
 
-/* 节点：不透明深色面板 + 青蓝描边 + 外发光（填充不透明才能遮住穿过的连线） */
+/* 节点：透明底 + 青蓝描边 + 外发光（底色一概不铺，与墨韵风格一致） */
 body[class*="my-mermaid-cyber"] .mermaid .node rect,
 body[class*="my-mermaid-cyber"] .mermaid .node circle,
 body[class*="my-mermaid-cyber"] .mermaid .node ellipse,
@@ -464,7 +464,7 @@ body[class*="my-mermaid-cyber"] .mermaid .labelBox,
 body[class*="my-mermaid-cyber"] .mermaid .actor,
 body[class*="my-mermaid-cyber"] .mermaid .statediagram-state rect,
 body[class*="my-mermaid-cyber"] .mermaid .classGroup rect {
-  fill: var(--my-cyber-panel) !important;
+  fill: transparent !important;
   stroke: var(--my-cyber-cyan) !important;
   filter: drop-shadow(0 0 5px var(--my-cyber-glow));
 }
@@ -529,7 +529,7 @@ body[class*="my-mermaid-cyber"] .mermaid .actor-line {
 }
 
 body[class*="my-mermaid-cyber"] .mermaid .note {
-  fill: var(--my-cyber-amber-soft) !important;
+  fill: transparent !important;
   stroke: var(--my-cyber-amber) !important;
 }
 
@@ -691,7 +691,7 @@ body.my-mermaid-line .mermaid .edgeLabel p {
 body.my-mermaid-line .mermaid .edgeLabel rect,
 body.my-mermaid-line .mermaid .edgeLabel foreignObject > div,
 body.my-mermaid-line .mermaid .labelBkg {
-  fill: var(--my-surface-primary) !important;
+  fill: var(--background-primary) !important;
   background: var(--my-surface-primary) !important;
   opacity: 1 !important;
 }

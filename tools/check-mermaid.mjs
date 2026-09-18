@@ -93,6 +93,28 @@ const DIAGRAMS = {
   class: ['classDiagram', '    class 使用者 {', '      +String 名稱', '      +登入()', '    }', '    使用者 --> 權限 : 擁有'].join('\n'),
   pie: ['pie title 權限分佈', '    "管理" : 30', '    "查詢" : 70'].join('\n'),
   gantt: ['gantt', '    title 投產計畫', '    dateFormat YYYY-MM-DD', '    section 前置', '    確認清單 :a1, 2026-01-01, 3d', '    section 上線', '    灰度 :a2, after a1, 5d'].join('\n'),
+  /* 思维导图与时间线是「用图说话」的知识库笔记最常用的两种图，
+   * 而它们的文字节点没有 .label 类（mindmap 用 .mindmap-node / section-root，
+   * timeline 用 .timeline-node），恰好是「按类名写样式」时会漏掉的一支 ——
+   * 所以补进夹具，让主题对它们也有对比度保证。 */
+  mindmap: [
+    'mindmap',
+    '  root((墨韻))',
+    '    排版',
+    '      首行縮進',
+    '      中西文間距',
+    '    配色',
+    '      八韻',
+    '    移動端',
+    '      縮放',
+  ].join('\n'),
+  timeline: [
+    'timeline',
+    '    title 專案里程碑',
+    '    2026-09 : 主題 1.0 : 圖表風格',
+    '    2026-09 : 手機適配',
+    '    2026-09 : 插件 1.0',
+  ].join('\n'),
 };
 
 /* 两套图表风格都要过检查：风格只该改变观感，不该改变可读性 */
@@ -328,6 +350,50 @@ for (const mode of ['dark', 'light']) {
     await handle.scrollIntoViewIfNeeded();
     await handle.screenshot({ path: path.join(OUT, 'mermaid-' + style.key + '-' + mode + '-' + name + '.png') });
   }
+  /* 形状透明度契约（用户明确要求：方框「有颜色」指描边有色，里面不许铺底色）。
+   * 边标签是唯一例外：它必须不透明，否则从标签下方穿过的连线会把文字切开。 */
+  const fills = await page.evaluate(() => {
+    const alphaOf = (value) => {
+      if (!value) return 1;
+      if (value === "none" || value === "transparent") return 0;
+      if (value.indexOf("rgba(") === 0) {
+        const parts = value.slice(5, -1).split(",");
+        return parts.length >= 4 ? parseFloat(parts[3]) : 1;
+      }
+      return 1;
+    };
+    const shapes = [];
+    const labels = [];
+    for (const svg of Array.from(document.querySelectorAll(".mermaid svg"))) {
+      const host = svg.closest(".mermaid");
+      const diagram = host ? host.getAttribute("data-diagram") : "?";
+      const shapeSelectors = [".node rect", ".node circle", ".node polygon", ".actor", ".statediagram-state rect", ".classGroup rect", ".note"];
+      for (const sel of shapeSelectors) {
+        for (const el of Array.from(svg.querySelectorAll(sel)).slice(0, 4)) {
+          shapes.push({ diagram: diagram, sel: sel, alpha: alphaOf(getComputedStyle(el).fill) });
+        }
+      }
+      for (const el of Array.from(svg.querySelectorAll(".edgeLabel rect, .labelBkg")).slice(0, 4)) {
+        labels.push({ diagram: diagram, alpha: alphaOf(getComputedStyle(el).fill) });
+      }
+    }
+    return { shapes: shapes, labels: labels };
+  });
+  for (const shape of fills.shapes) {
+    if (shape.alpha > 0.001) {
+      failures.push({ style: style.key, styleLabel: style.label, mode, diagram: shape.diagram, tag: shape.sel,
+        text: "形状填充不是透明", contrast: 0, fg: "-", bg: "alpha=" + shape.alpha,
+        reason: "节点方框内出现了底色（要求：线框有色、方框内透明）" });
+    }
+  }
+  for (const label of fills.labels) {
+    if (label.alpha < 0.999) {
+      failures.push({ style: style.key, styleLabel: style.label, mode, diagram: label.diagram, tag: "edgeLabel 底",
+        text: "边标签底色变透明", contrast: 0, fg: "-", bg: "alpha=" + label.alpha,
+        reason: "边标签必须有底色遮住穿过的连线，不能透明" });
+    }
+  }
+
   const list = rows.rows;
   const bad = list.filter((r) => r.contrast !== null && r.contrast < AA_NORMAL);
   const worst = list.slice().sort((a, b) => a.contrast - b.contrast).slice(0, 3);
