@@ -118,6 +118,13 @@ no plugin, no JavaScript, no changes to your notes.
    *encode* data — pie slices, gantt and journey bars, git commits, sankey links, chart bars, data
    points — keep their fills, because there the colour and the length are the information.
 
+### Diagram sizing
+
+Box size is decided by Mermaid's own layout engine, not by CSS: `flowchart.wrappingWidth` caps a
+label at 200 px, so long Chinese labels fold into narrow strips. No theme can change that — a theme
+is CSS. The companion plugin **Zoomable Reader** does it instead (boxes follow the text, the way
+PlantUML lays them out); install it if you want roomier diagrams.
+
 ### Install
 
 1. **Settings → Appearance → Themes → Manage**, search for `MoYun`, install, then select it.
@@ -347,6 +354,12 @@ MIT. See [LICENSE](LICENSE).
    而**用颜色或长度编码数据**的图形（饼扇区、甘特条、旅程任务条、git 提交点、桑基连线、柱状条、
    数据点）保留填充 —— 那里的颜色和长度就是信息本身。
 6. **全中文的设置面板** —— 37 项设置分八组，每一项都写清取舍而不只是给个滑杆。
+
+### 图表框的大小
+
+框的大小由 Mermaid 的布局引擎决定，CSS 够不到：`flowchart.wrappingWidth` 把标签压到 200px，
+中文长标签就被折成窄条。**主题是纯 CSS，改不了这个上限**；配套插件 **Zoomable Reader** 负责这一块
+（框随文字走，学 PlantUML 的做法），需要更透气的图表就装上它。
 
 ### 安装
 
