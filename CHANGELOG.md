@@ -2,6 +2,40 @@
 
 本项目的版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.10] - 2026-09-21
+
+### 图表：字号固定 ≤16px，不再跟着正文一起浮动
+
+用户要求：「mermaid 里面的文字大小应该是固定的，不能超过 16px 的大小」。
+
+以前主题里三处字号都是**跟着正文字号算**的：
+
+```css
+.mermaid .node .label, .mermaid .nodeLabel, .mermaid .labelText { font-size: calc(var(--my-font-size-base) * 0.875) }
+.mermaid .edgeLabel …                                    { font-size: calc(var(--my-font-size-base) * 0.786) }
+.mermaid .messageText …                                  { font-size: calc(var(--my-font-size-base) * 0.8) }
+```
+
+而 `--my-font-size-base` = 正文字号 + 分辨率增益：把「设置 → 外观 → 字体大小」调到 20px、
+或在大屏上吃满增益时，图里的字会涨到 17.5px 以上 —— 与「不超过 16px」直接冲突。
+再叠加「把 svg 拉伸到版心宽度」那条规则（配套插件 1.3.9~1.3.11 有过），屏幕上的字能到 30~43px。
+
+现在三处都改用**固定令牌**：
+
+```css
+--my-mermaid-label-size: 14px;   /* 节点文字：固定，不随正文浮动，≤16px */
+--my-mermaid-edge-size:  12.5px; /* 边标签 / 时序消息：次级信息，小一档 */
+```
+
+14px 正是「0.875 × 16」在默认正文字号下的取值 —— 观感与以前一致，只是不再浮动。
+
+配套（插件 1.3.12）：图里的长标签自动折行（Mermaid 只对 markdown 字符串标签折行，插件负责改写），
+并且不再把图表拉伸到版心/版面宽度（只保留 max-width）。两边合起来，屏幕上图内文字永远是 14px、
+且长标签折成两三行，不再「一行顶一个宽度」。
+
+验证：`npm test` 28 条、目视台 `npm run verify` 89/89（日间 + 夜间各一遍）、
+`npm run verify:mermaid` 的对比度与几何断言全过。
+
 ## [1.2.9] - 2026-09-18
 
 ### 修复（手机）：菜单半透明看穿正文 + 浮层被正文压住

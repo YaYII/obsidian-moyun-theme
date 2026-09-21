@@ -292,7 +292,10 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 .mermaid .node text,
 .mermaid .nodeLabel,
 .mermaid .labelText {
-  font-size: calc(var(--my-font-size-base) * 0.875) !important;
+  /* 固定字号（≤16px），不跟正文一起浮动 —— 用户明确要求「图形里面的文字大小应该是固定的」。
+   * 以前是 calc(正文字号 × 0.875)：正文被调到 20px、或分辨率增益打开时，
+   * 图里的字会跟着涨到 17.5px 以上，与「不超过 16px」冲突。 */
+  font-size: var(--my-mermaid-label-size) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -327,7 +330,7 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
   color: var(--my-text-secondary) !important;
   fill: var(--my-text-secondary) !important;
   background: var(--background-primary) !important;
-  font-size: calc(var(--my-font-size-base) * 0.786) !important;
+  font-size: var(--my-mermaid-edge-size) !important;
 }
 
 /* 边标签的底衬：1.2.8 起【不再铺底】（用户明令：框内也不许有东西）。
@@ -391,7 +394,7 @@ body.is-mobile.my-mobile-diagram-fit .markdown-source-view.mod-cm6 .mermaid svg 
 .mermaid .messageText,
 .mermaid .loopText,
 .mermaid .noteText {
-  font-size: calc(var(--my-font-size-base) * 0.8) !important;
+  font-size: var(--my-mermaid-edge-size) !important;
 }
 
 /* 便签是「标注」不是节点：给一层很淡的警告色，文字仍是正文色 */

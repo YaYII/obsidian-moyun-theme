@@ -249,6 +249,13 @@
   --my-mermaid-glow-size: 3px;
   /* 连线与箭头：浅色纸面上彩色线太吵，保持中性 */
   --my-mermaid-edge:      var(--my-border-strong);
+  /* 图形内文字：【固定】字号，不随正文一起变，且绝不超过 16px。
+   * 用户原话：「mermaid 里面的文字大小应该是固定的，不能超过 16px 的大小」。
+   * 14px = 0.875 × 16（默认正文字号）—— 与本主题一直以来的观感一致，
+   * 只是不再跟着「设置 → 外观 → 字体大小」和分辨率增益浮动；
+   * 再加上插件侧不再拉伸 svg，屏幕上看到的就永远是 14px（≤16px）。 */
+  --my-mermaid-label-size: 14px;
+  --my-mermaid-edge-size:  12.5px;   /* 边标签/时序消息：次级信息，小一档 */
 
   /* —— 强调色（由 .my-tone-* 覆盖；此处为默认青花） —— */
   --my-accent:        var(--my-accent-custom, var(--my-qinghua-500));
